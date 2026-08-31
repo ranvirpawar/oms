@@ -1,0 +1,2 @@
+D:/s2-projects/lifenity_connect/android/app/.cxx/RelWithDebInfo/682z2hz3/armeabi-v7a/CMakeFiles/edit_cache.dir
+D:/s2-projects/lifenity_connect/android/app/.cxx/RelWithDebInfo/682z2hz3/armeabi-v7a/CMakeFiles/rebuild_cache.dir

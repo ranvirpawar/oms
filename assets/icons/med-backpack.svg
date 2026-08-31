@@ -1,0 +1,14 @@
+<?xml version="1.0" ?>
+<!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
+<svg width="800px" height="800px" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<style>.cls-1{fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-width:2px;}</style>
+</defs>
+<title/>
+<g data-name="Layer 5" id="Layer_5">
+<path class="cls-1" d="M25,10c3.56,4.14,3.56,11.86,0,16"/>
+<path class="cls-1" d="M7,10C3.44,14.14,3.44,21.86,7,26"/>
+<path d="M22,6H21a4,4,0,0,0-4-4H15a4,4,0,0,0-4,4H10a4,4,0,0,0-4,4V24.92A5.09,5.09,0,0,0,11.08,30h9.84A5.09,5.09,0,0,0,26,24.92V10A4,4,0,0,0,22,6ZM18,21v7H14V21a1,1,0,0,0-1-1H8V19H24v1H19A1,1,0,0,0,18,21ZM8,11H24v6H8Zm7-7h2a2,2,0,0,1,2,2H13A2,2,0,0,1,15,4ZM10,8H22a2,2,0,0,1,1.72,1H8.28A2,2,0,0,1,10,8ZM8,24.92V22h4v6h-.92A3.08,3.08,0,0,1,8,24.92ZM20.92,28H20V22h4v2.92A3.08,3.08,0,0,1,20.92,28Z"/>
+<path d="M15,12v1H14a1,1,0,0,0,0,2h1v1a1,1,0,0,0,2,0V15h1a1,1,0,0,0,0-2H17V12a1,1,0,0,0-2,0Z"/>
+</g>
+</svg>

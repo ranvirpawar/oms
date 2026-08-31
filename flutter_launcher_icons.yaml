@@ -1,0 +1,16 @@
+flutter_launcher_icons:
+  image_path: "assets/images/lifenity-logo.png"
+  android: "launcher_icon"
+  min_sdk_android: 21
+  ios: true
+  remove_alpha_channel_ios: true
+  flavors:
+    beta:
+      android:
+        enabled: true
+        image_path: "assets/images/lifenity-beta.png"
+      ios:
+        enabled: true
+        image_path: "assets/images/lifenity-beta.png"
+        icon_name: "AppIcon-beta"
+        remove_alpha_channel_ios: true

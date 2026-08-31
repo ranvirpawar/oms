@@ -1,0 +1,2 @@
+C:/flutter_project/lifenity_connect/android/app/.cxx/RelWithDebInfo/5g3h3r2r/x86/CMakeFiles/edit_cache.dir
+C:/flutter_project/lifenity_connect/android/app/.cxx/RelWithDebInfo/5g3h3r2r/x86/CMakeFiles/rebuild_cache.dir

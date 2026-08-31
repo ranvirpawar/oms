@@ -1,0 +1,74 @@
+name: lifenity_connect
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.32.0+27
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+
+
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.3.0
+  shared_preferences:
+  get:
+  flutter_secure_storage:
+  device_info_plus:
+  package_info_plus:
+  android_id:
+  upgrader:
+  flutter_svg:
+  shimmer:
+  dio:
+  connectivity_plus:
+  table_calendar:
+  rxdart:
+  intl:
+  signature:
+  path_provider:
+  mobile_scanner: ^7.2.0
+  uuid: ^4.0.0
+  url_launcher:
+  share_plus:
+  flutter_pdfview: ^1.4.1+1
+  permission_handler: ^11.3.1
+  open_filex:
+  flutter_riverpod:
+  cached_network_image: ^3.4.1
+  image_picker: ^1.2.1
+  fl_chart: ^1.1.1
+  geolocator: ^13.0.1
+  file_picker:
+  photo_view:
+
+  http: any
+  http_parser: any
+  google_maps_flutter:
+  latlong2:
+dependency_overrides:
+  vector_math: ^2.2.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/lifenity-logo.png"
+
+  flavors:
+    beta:
+      android: true
+      ios: true
+      image_path: "assets/images/lifenity-beta.png"
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icons/
+    - assets/images/
