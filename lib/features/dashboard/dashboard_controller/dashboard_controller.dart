@@ -203,7 +203,7 @@ class DashboardController extends GetxController {
       title: AppStrings.assignedPatient,
       backgroundImage: AppAssets.assignedPatients,
       borderColor: Colors.orange,
-      onTap: RouteManager.navigateToSampleRecollection,
+      onTap: RouteManager.navigateToPatientQueue,
     ),
     const DashboardTileCard(
       title: AppStrings.collectedSampleBags,

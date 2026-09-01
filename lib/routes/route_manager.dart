@@ -6,6 +6,7 @@ import 'package:lifenity_connect/features/lab_technician/passkey/view/passkey_vi
 import 'package:lifenity_connect/features/lab_technician/sample_accept/view/sample_accept_view.dart';
 import 'package:lifenity_connect/features/phlebotomist/accept_bag/view/accept_bag_view.dart';
 import 'package:lifenity_connect/features/phlebotomist/bag_status/view/bag_status_page.dart';
+import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/patient_queue_view.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_registration/bag_status_dashboard/view/patient_registration_dashboard.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_registration/view/registered_patient_list.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_pickup/view/sample%20pickup_entry.dart';
@@ -34,6 +35,7 @@ import '../features/phlebotomist/sample_recollection/controller/sample_recollect
 import '../features/cms_eho/view/test_analysis_page.dart';
 import '../features/team_lead/barcode_merging/view/merge_barcode_view.dart';
 import '../features/team_lead/sample_live_tracking/view/live_tracking_view.dart';
+import 'dependancy_injection/patient_queue_binding.dart';
 
 class RouteManager {
   static void redirectToHomeDashboard() {
@@ -48,8 +50,6 @@ class RouteManager {
   static void redirectToForgotPassword() {}
 
   static void redirectToSignUp() {}
-
-
 
   static void navigateToPatientRegistration(String bagId) {
     Get.to(
@@ -240,11 +240,12 @@ class RouteManager {
 
   static void navigateToSampleLiveTracking() {
     Get.to(
-      () =>  LiveTrackingView(),
+      () => LiveTrackingView(),
       transition: Transition.circularReveal,
       duration: const Duration(milliseconds: 200),
     );
   }
+
   static void navigateToMergeBarcode() {
     Get.to(
       () => MergeBarcodeView(),
@@ -320,6 +321,12 @@ class RouteManager {
       duration: const Duration(milliseconds: 200),
     );
   }
-
-
+  static void navigateToPatientQueue() {
+    Get.to(
+      () => const PatientQueueView(),
+      binding: PatientQueueBinding(),
+      transition: Transition.circularReveal,
+      duration: const Duration(milliseconds: 200),
+    );
+  }
 }
