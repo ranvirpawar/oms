@@ -40,7 +40,7 @@ class TestSelectionController extends GetxController {
   final Rx<Map<String, dynamic>> patientArray = Rx<Map<String, dynamic>>({});
   final RxString hmisVoucherNumber = ''.obs;
 
-  final APIClient _apiClient = Get.put(APIClient());
+  final APIClient _apiClient = Get.find<APIClient>();
   final PatientRegistrationService _registrationService =
   Get.put(PatientRegistrationService());
 

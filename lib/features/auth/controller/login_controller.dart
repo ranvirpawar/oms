@@ -10,6 +10,7 @@ import 'package:lifenity_connect/routes/route_manager.dart';
 import 'package:get/get.dart';
 
 
+import '../../../network/session_coordinator.dart';
 import '../../../services/auth_manager.dart';
 import '../../../services/snackbar_service.dart';
 import '../service/login_service.dart';
@@ -160,6 +161,7 @@ class LoginController extends GetxController {
           passwordController.text.trim(),
         );
         await _authManager.saveLoginResponseModel(loginResponse);
+        Get.find<SessionCoordinator>().notifyLoginSuccess();
         await _authManager.setUserRole(loginResponse.user?.designation);
         await fetchUserProfile(loginResponse.user!.empCode.toString());
         RouteManager.redirectToHomeDashboard();

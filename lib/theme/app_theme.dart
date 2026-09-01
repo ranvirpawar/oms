@@ -22,10 +22,10 @@ class AppTheme {
 
     // Preload fonts to prevent jank during first render
     await GoogleFonts.pendingFonts([
-      GoogleFonts.nunitoSans(),
-      GoogleFonts.nunitoSans(fontWeight: FontWeight.w500),
-      GoogleFonts.nunitoSans(fontWeight: FontWeight.w600),
-      GoogleFonts.nunitoSans(fontWeight: FontWeight.w700),
+      GoogleFonts.inter(),
+      GoogleFonts.inter(fontWeight: FontWeight.w500),
+      GoogleFonts.inter(fontWeight: FontWeight.w600),
+      GoogleFonts.inter(fontWeight: FontWeight.w700),
     ]);
   }
 
@@ -125,8 +125,8 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: isDark ? AppColors.backgroundDark : AppColors.background,
 
-      // Text theme using nunitoSans font
-      textTheme: GoogleFonts.nunitoSansTextTheme().copyWith(
+      // Text theme using inter font
+      textTheme: GoogleFonts.interTextTheme().copyWith(
         displayLarge: _textStyle(size: 32, weight: FontWeight.bold, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary),
         displayMedium: _textStyle(size: 28, weight: FontWeight.bold, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary),
         displaySmall: _textStyle(size: 24, weight: FontWeight.bold, color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimary),
@@ -373,7 +373,7 @@ class AppTheme {
     TextDecoration? decoration,
     double? letterSpacing,
   }) {
-    return GoogleFonts.nunitoSans(
+    return GoogleFonts.inter(
       fontSize: size,
       fontWeight: weight,
       color: color,

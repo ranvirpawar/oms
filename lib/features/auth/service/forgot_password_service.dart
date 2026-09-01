@@ -6,7 +6,7 @@ import '../../../services/snackbar_service.dart';
 
 
 class ForgotPasswordService {
-  final APIClient _apiClient = Get.put(APIClient());
+  final APIClient _apiClient = Get.find<APIClient>();
 
   /// Phase 1 — Send OTP to given mobile number.
   /// Returns true on success, false on API-level failure.

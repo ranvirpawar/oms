@@ -1,4 +1,4 @@
-package com.example.lifenity_connect
+package com.lifenity_health.oms
 
 import io.flutter.embedding.android.FlutterActivity
 

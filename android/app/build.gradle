@@ -13,7 +13,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.lifenity_connect"
+    namespace = "com.lifenity_health.oms"
     compileSdk = 36
     ndkVersion = "29.0.14206865"
 
@@ -27,7 +27,7 @@ android {
         }
         beta {
             dimension "environment"
-            applicationId "com.example.lifenity_connect.beta"
+            applicationId "com.lifenity_health.oms"
             versionName "1.41.0"
         }
     }
@@ -52,7 +52,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.lifenityhealth.connect"
+        applicationId = "com.lifenity_health.oms"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = flutter.versionCode

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +14,7 @@ import 'package:lifenity_connect/theme/theme_provider.dart';
 import 'features/auth/view/splash_screen.dart';
 import 'features/dashboard/dashboard_controller/dashboard_controller.dart';
 import 'network/app_urls.dart';
+import 'network/session_coordinator.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +31,11 @@ void main() async {
   await AppTheme.initialize();
   Get.put(ThemeProvider());
   Get.put(AuthManager());
-  Get.put(APIClient());
+  Get.put(SessionCoordinator(Get.find<AuthManager>()));
+  Get.put(APIClient(
+    dio: Dio(),
+    sessionManager: Get.find<SessionCoordinator>(),        // <-- was AuthManager before
+  ));
   HttpOverrides.global = MyHttpOverrides();
   runApp(const MyApp());
 }
