@@ -176,6 +176,12 @@ class DashboardController extends GetxController {
       onTap: RouteManager.navigateToPatientRegistrationDashboard,
     ),
     const DashboardTileCard(
+      title: AppStrings.assignedPatient,
+      backgroundImage: AppAssets.assignedPatients,
+      borderColor: Colors.orange,
+      onTap: RouteManager.navigateToSampleRecollection,
+    ),
+    const DashboardTileCard(
       title: AppStrings.collectedSampleBags,
       backgroundImage: AppAssets.collectedBagsCard,
       borderColor: Colors.green,
@@ -184,12 +190,14 @@ class DashboardController extends GetxController {
 
     const DashboardTileCard(
       title: AppStrings.sampleRecollection,
-      icon: AppAssets.sampleRecollection,
+      backgroundImage: AppAssets.sampleRecollectionCard,
+      borderColor: Colors.purple,
       onTap: RouteManager.navigateToSampleRecollection,
     ),
     const DashboardTileCard(
       title: AppStrings.bagStatus,
-      icon: AppAssets.bagStatus,
+      backgroundImage: AppAssets.bagHistoryCard,
+      borderColor: Colors.cyan,
       onTap: RouteManager.navigateToBagStatus,
     ),
 

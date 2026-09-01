@@ -65,7 +65,7 @@ class CollectedBagsTileWithBanner extends StatelessWidget {
               title: AppStrings.collectedSampleBags,
               icon: AppAssets.bagsCollected,
               onTap: onTap,
-              isGridMode: isGridMode,
+
             ),
           ),
         ],

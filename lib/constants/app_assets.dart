@@ -95,6 +95,14 @@ class AppAssets {
   static const String mergeBarcode = 'assets/images/scan.png';
 
 
+  /// Dashboard cards
+  static const String collectSampleCard = 'assets/cards/sample-collection.png';
+  static const String collectedBagsCard= 'assets/cards/collected-bags.png';
+  static const String sampleRecollectionCard= 'assets/cards/sample-recollection.png';
+  static const String assignedPatients= 'assets/cards/patient-queue.png';
+  static const String bagHistoryCard= 'assets/cards/bag-history.png';
+
+
   /// sample live tracking dashboard
   static const String bagOpenedIcon = 'assets/images/bag-opened-icon.jpg';
   static const String bagCollectedIcon = 'assets/images/collected-icon.jpg';

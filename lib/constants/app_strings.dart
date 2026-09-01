@@ -24,6 +24,7 @@ class AppStrings {
 
   static const String performanceDashboard = 'Performance Dashboard';
   static const String patientRegistration = 'Patient Registration';
+  static const String collectSample = 'Collect Sample';
   static const String patientRegistrationDashboard = 'Patient Registration Dashboard';
   static const String samplePickup = 'Sample Pickup';
   static const String reportDelivery = 'Report Delivery';
@@ -39,7 +40,7 @@ class AppStrings {
   static const String sampleRemark = 'Sample Remark';
   static const String zeroSampleCalendar = 'Zero Sample Calendar';
   static const String collectDestinationBag = 'Collect Destination Bag';
-  static const String collectedSampleBags = 'Collected Sample Bags';
+  static const String collectedSampleBags = 'Collected Bags';
   static const String invoiceTracking = 'Invoice Tracking';
   static const String mergeBarcode = 'Merge Barcode';
   static const String sampleLiveTracking = 'Sample Live Tracking';
@@ -49,6 +50,8 @@ class AppStrings {
 
 
   static const String sampleCollection = 'Sample Collection';
+  static const String assignedPatient = 'Assigned Patient';
+
 
 
 
