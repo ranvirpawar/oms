@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lifenity_connect/features/dashboard/dashboard_controller/dashboard_controller.dart';
+import 'package:lifenity_connect/features/dashboard/view/widget/dashboard_header.dart';
 import 'package:lifenity_connect/features/dashboard/view/widget/dashboard_tile_card.dart';
 import 'package:lifenity_connect/utils/widgets/app_drawer.dart';
 
@@ -17,38 +18,26 @@ class DashboardScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+    final topPad = MediaQuery.of(context).padding.top;
 
     return Scaffold(
       backgroundColor: isDark
           ? const Color(0xFF0F0F1A)
           : const Color(0xFFF5F6FA),
-      appBar: const CustomAppBar(
-        title: AppStrings.dashboard,
-        showBackButton: false,
-        showDrawerButton: true,
-      ),
+
       drawer: CustomDrawer(controller: controller),
 
       body: RefreshIndicator(
         onRefresh: () async {
           controller.refreshBagCount();
+          controller.refreshDashboardStats();
         },
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(), // important
           ),
           slivers: [
-            // ── Welcome Card ───────────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 18, 18, 0),
-                child: _WelcomeCard(
-                  controller: controller,
-                  isDark: isDark,
-                  cs: cs,
-                ),
-              ),
-            ),
+            DashboardHeaderSliver(controller: controller, topPadding: topPad),
 
             // ── Section Label ──────────────────────────────────────────────
             SliverToBoxAdapter(
@@ -111,10 +100,6 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Grid sliver — uses Obx per-card for banner reactivity
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _GridSliver extends StatelessWidget {
   final List<DashboardTileCard> cards;

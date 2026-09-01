@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:lifenity_connect/features/auth/model/login_response_model.dart';
 import 'package:lifenity_connect/features/auth/model/profile_model.dart';
@@ -10,12 +11,9 @@ import '../../../constants/app_strings.dart';
 import '../../../routes/route_manager.dart';
 import '../../../utils/helper_functions/helper_methods.dart';
 import '../../runner_boy/collected_sample_bags/service/collected_bags_service.dart';
+import '../model/notice_model.dart';
 import '../view/widget/dashboard_tile_card.dart';
 import 'package:flutter/material.dart';
-
-
-
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DashboardController
@@ -26,8 +24,6 @@ class DashboardController extends GetxController {
   final UserService _userService = Get.put(UserService());
   final CollectedBagsService _bagsService = CollectedBagsService();
 
-
-
   // ── Observables ──────────────────────────────────────────────────────────────
 
   final RxString userName = ''.obs;
@@ -36,6 +32,35 @@ class DashboardController extends GetxController {
   final Rx<ProfileData?> userProfile = Rx<ProfileData?>(null);
   final RxInt collectedBagsCount = 0.obs;
   final RxBool isLoadingBagCount = false.obs;
+  final RxInt assignedPatientsCount = 0.obs;
+  final RxInt testCollectedCount = 0.obs;
+  final RxInt handoverCount = 0.obs;
+  final RxInt pendingHandoverCount = 0.obs;
+  final RxBool isLoadingStats = false.obs;
+
+  final RxBool isAvailable = true.obs;
+  final RxString currentLocation = 'Fetching location…'.obs;
+
+  /// Drives the header's rotating notice banner ("New patient assigned",
+  /// "Visit soon" reminders, etc). TODO: populate from a real
+  /// notifications/orders API instead of the placeholder list below.
+  final RxList<DashboardNotice> notices = <DashboardNotice>[
+    const DashboardNotice(
+      icon: Icons.person_add_alt_1_rounded,
+      message: 'New patient assigned — Rahul Sharma, Bavdhan',
+      color: Color(0xFF3B82F6),
+    ),
+    const DashboardNotice(
+      icon: Icons.schedule_rounded,
+      message: 'Scheduled collection at 4:30 PM — please visit soon',
+      color: Color(0xFFF59E0B),
+    ),
+    const DashboardNotice(
+      icon: Icons.local_shipping_rounded,
+      message: '3 bags pending handover to the lab',
+      color: Color(0xFF8B5CF6),
+    ),
+  ].obs;
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -65,10 +90,13 @@ class DashboardController extends GetxController {
   // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
   Future<void> _bootstrap() async {
-    await _loadUserData();                    // fast — reads local/cached data
+    await _loadUserData(); // fast — reads local/cached data
     await Future.wait([
-      _loadUserProfile(),                     // non-blocking profile fetch
-      _fetchCollectedBagsCount(),             // bag count (runner/connector only)
+      _loadUserProfile(), // non-blocking profile fetch
+      _fetchCollectedBagsCount(),
+      _fetchDashboardStats(),
+      _fetchCurrentLocation(),
+      _fetchNotices(),
     ]);
   }
 
@@ -90,7 +118,7 @@ class DashboardController extends GetxController {
 
       final parsed = UserModel.fromJson(userMap);
       userData.value = parsed;
-      userName.value = parsed.name ;
+      userName.value = parsed.name;
       userRole.value = _authManager.getUserRole();
 
       kPrint('✅ User: ${userName.value} | Role: ${userRole.value}');
@@ -124,8 +152,9 @@ class DashboardController extends GetxController {
         return;
       }
 
-      final response =
-      await _bagsService.getCollectedQRBagDetails(user.empCode);
+      final response = await _bagsService.getCollectedQRBagDetails(
+        user.empCode,
+      );
 
       if (response.isSuccess && response.output != null) {
         collectedBagsCount.value = response.output!.length;
@@ -163,11 +192,6 @@ class DashboardController extends GetxController {
     }
   }
 
-  // ── Card Definitions ──────────────────────────────────────────────────────────
-  // Navigation: RouteManager methods are void (they call Get.to internally).
-  // Bag-count refresh is handled automatically via DashboardRouteObserver —
-  // no .then() wrappers needed here, keeping card definitions clean.
-
   List<DashboardTileCard> _phlebotomistCards() => [
     const DashboardTileCard(
       title: AppStrings.collectSample,
@@ -200,7 +224,6 @@ class DashboardController extends GetxController {
       borderColor: Colors.cyan,
       onTap: RouteManager.navigateToBagStatus,
     ),
-
   ];
 
   List<DashboardTileCard> _runnerBoyCards() => [
@@ -270,7 +293,7 @@ class DashboardController extends GetxController {
       icon: AppAssets.bagAcceptedInLab,
       onTap: RouteManager.navigateToAcceptBagInLaboratory,
     ),
-   /* DashboardTileCard(
+    /* DashboardTileCard(
       title: AppStrings.handOverToInventory,
       icon: AppAssets.bagInventory,
       onTap: RouteManager.navigateToHandOverBagToInventory,
@@ -281,8 +304,6 @@ class DashboardController extends GetxController {
       onTap: RouteManager.navigateToBagStatus,
     ),
   ];
-
-
 
   List<DashboardTileCard> _defaultCards() => [
     DashboardTileCard(
@@ -303,9 +324,71 @@ class DashboardController extends GetxController {
   final RxInt refreshTick = 0.obs;
 
   void tickRefresh() => refreshTick.value++;
+  /// Fetches the "orders board" numbers shown in the header stat strip.
+  /// TODO: wire to real API — this only shows the phlebotomist's own counts.
+  Future<void> _fetchDashboardStats() async {
+    try {
+      isLoadingStats.value = true;
+
+      // ── Replace with real call, e.g.:
+      // final stats = await _dashboardStatsService.getStats(user.empCode);
+      // assignedPatientsCount.value = stats.assigned;
+      // testCollectedCount.value    = stats.collected;
+      // handoverCount.value         = stats.handedOver;
+      // pendingHandoverCount.value  = stats.pendingHandover;
+
+      await Future.delayed(const Duration(milliseconds: 300)); // placeholder
+      assignedPatientsCount.value = 12;
+      testCollectedCount.value = 45;
+      handoverCount.value = 4;
+      pendingHandoverCount.value = 9;
+    } catch (e) {
+      kPrint('❌ _fetchDashboardStats: $e');
+    } finally {
+      isLoadingStats.value = false;
+    }
+  }
+
+  /// Public — call after a collection/handover action completes so the
+  /// header numbers update immediately, same pattern as refreshBagCount().
+  Future<void> refreshDashboardStats() => _fetchDashboardStats();
+
+  /// Toggles the phlebotomist's availability. Optimistic update with revert
+  /// on failure — swap the TODO for your real endpoint when ready.
+  Future<void> toggleAvailability() async {
+    final previous = isAvailable.value;
+    isAvailable.value = !previous;
+
+    try {
+      // TODO: await _userService.updateAvailability(isAvailable.value);
+    } catch (e) {
+      isAvailable.value = previous; // revert on failure
+      kPrint('❌ toggleAvailability: $e');
+    }
+  }
+
+  /// TODO: integrate a geolocation package (e.g. geolocator) + reverse
+  /// geocoding to resolve a human-readable label here.
+  Future<void> _fetchCurrentLocation() async {
+    try {
+      // final pos = await Geolocator.getCurrentPosition();
+      // final placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
+      // currentLocation.value = '${placemarks.first.subLocality}, ${placemarks.first.locality}';
+      currentLocation.value = 'Kothrud, Pune';
+    } catch (e) {
+      currentLocation.value = 'Location unavailable';
+      kPrint('❌ _fetchCurrentLocation: $e');
+    }
+  }
+  Future<void> refreshLocation() => _fetchCurrentLocation();
+  Future<void> _fetchNotices() async {
+    // notices.value = await _notificationsService.getForToday();
+  }
 }
+
 class DashboardRouteObserver extends NavigatorObserver {
   DashboardRouteObserver._();
+
   static final instance = DashboardRouteObserver._();
 
   final List<VoidCallback> _listeners = [];
