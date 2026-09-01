@@ -111,7 +111,7 @@ class _SuccessDialogContentState extends State<_SuccessDialogContent> with Singl
                     widget.onDismiss();
 
                     RouteManager.redirectToHomeDashboard();
-                    RouteManager.navigateToPatientRegistrationDashboard();
+                    // RouteManager.navigateToPatientRegistrationDashboard();
                     RouteManager.navigateToBagStatusDashboard();
                   },
                   style: ElevatedButton.styleFrom(

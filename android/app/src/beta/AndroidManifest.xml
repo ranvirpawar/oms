@@ -2,7 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <application
-        android:label="LC Beta"
+        android:label="OMS"
         tools:replace="android:label,android:icon"
         android:icon="@mipmap/beta"
         android:usesCleartextTraffic="true"

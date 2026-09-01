@@ -23,7 +23,7 @@ class PatientRegistrationDashboard extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F8),
       appBar: CustomAppBar(
-        title: AppStrings.patientRegistrationDashboard,
+        title: AppStrings.bagStatusDashboard,
         actions: [
           IconButton(
             icon: const Icon(Icons.list_alt, color: AppColors.surfaceContainer),
@@ -1065,9 +1065,12 @@ class _SmallButton extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10)),
               ),
               icon: Icon(icon, size: 15),
-              label: Text(label,
-                  style: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w600)),
+              label: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(label,
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
             ),
     );
   }

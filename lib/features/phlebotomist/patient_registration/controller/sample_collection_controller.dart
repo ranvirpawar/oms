@@ -107,6 +107,7 @@ class TestBarcodeController extends GetxController {
 
 
     if (!bagController.isBagOpen.value) {
+      /// todo
       // Bag was closed externally, go back to dashboard
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Get.until((route) {

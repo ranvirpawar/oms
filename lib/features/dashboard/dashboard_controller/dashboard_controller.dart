@@ -173,7 +173,7 @@ class DashboardController extends GetxController {
       title: AppStrings.collectSample,
       backgroundImage: AppAssets.collectSampleCard,
       borderColor: Colors.blue,
-      onTap: RouteManager.navigateToPatientRegistrationDashboard,
+      onTap: RouteManager.navigateToBagStatusDashboard,
     ),
     const DashboardTileCard(
       title: AppStrings.assignedPatient,

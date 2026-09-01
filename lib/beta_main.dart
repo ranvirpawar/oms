@@ -10,6 +10,7 @@ import 'package:lifenity_connect/services/app_envirionment_service.dart';
 import 'package:lifenity_connect/services/auth_manager.dart';
 import 'package:lifenity_connect/theme/app_theme.dart';
 import 'package:lifenity_connect/theme/theme_provider.dart';
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
 
 import 'features/auth/view/splash_screen.dart';
 import 'features/dashboard/dashboard_controller/dashboard_controller.dart';
@@ -34,7 +35,7 @@ void main() async {
   Get.put(SessionCoordinator(Get.find<AuthManager>()));
   Get.put(APIClient(
     dio: Dio(),
-    sessionManager: Get.find<SessionCoordinator>(),        // <-- was AuthManager before
+    sessionManager: Get.find<SessionCoordinator>(),
   ));
   HttpOverrides.global = MyHttpOverrides();
   runApp(const MyApp());
@@ -48,7 +49,8 @@ class MyApp extends StatelessWidget {
     return ProviderScope(
       child: GetMaterialApp(
         navigatorObservers: [DashboardRouteObserver.instance],
-        title: 'Lifenity Connect Beta',
+        navigatorKey: LiquidSnack.navigatorKey,
+        title: 'OMS',
         debugShowCheckedModeBanner: false,
         theme: ThemeProvider.to.lightTheme,
         home: SplashScreen(),
