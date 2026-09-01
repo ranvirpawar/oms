@@ -33,8 +33,8 @@ class DashboardScreen extends StatelessWidget {
           controller.refreshDashboardStats();
         },
         child: CustomScrollView(
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(), // important
+          physics: const ClampingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
           ),
           slivers: [
             DashboardHeaderSliver(controller: controller, topPadding: topPad),
@@ -93,7 +93,7 @@ class DashboardScreen extends StatelessWidget {
               );
             }),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 110)),
+            const SliverToBoxAdapter(child: SizedBox(height: 250)),
           ],
         ),
       ),

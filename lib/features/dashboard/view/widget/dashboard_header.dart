@@ -1,45 +1,53 @@
 // dashboard_header.dart
 //
-// v5 — fixes "SliverGeometry ... layoutExtent exceeds paintExtent" crash
-// for good (not just for the dropdown case).
+// v6 — fixes the "orange content doesn't fully disappear on collapse"
+// bug, and adds: collapse-driven gradient/color transition on the sticky
+// bar, and bottom-rounded corners on the whole header.
 //
-// ROOT CAUSE:
-//   SliverPersistentHeaderDelegate.maxExtent was a hand-guessed constant
-//   (kHeaderExpandedExtra = 268). The actual header content (pill row +
-//   stats row + notice ticker) was laid out with mainAxisSize.min and NO
-//   hard ceiling on its height, so on real devices/fonts/text-scale it
-//   simply needed more room than the constant promised. The sliver ends
-//   up with a real layoutExtent bigger than the paintExtent it promised
-//   the viewport → hard crash. (v4 additionally fixed a *related* bug
-//   where opening the dropdown pill grew the content further — that fix
-//   is still included below — but it was never the whole story.)
+// WHAT CHANGED FROM v5 AND WHY
+// -----------------------------------------------------------------------
+// 1) COLLAPSE-TO-ZERO FIX (the "blue pill height remains" bug)
+//    v5 used `Align(heightFactor: (1 - progress))` to shrink the
+//    collapsible content. The problem: Align's box size is derived from
+//    the CHILD's live intrinsic layout on that frame. Combined with the
+//    async measure -> setState(expandedExtra) feedback loop, there's a
+//    window where the Align math and the actual measured height disagree
+//    by a frame or two — and because alignment is topCenter, what's left
+//    over when that happens is a sliver of the FIRST child (the
+//    availability pill), which is exactly the "blue-height leftover"
+//    that was reported.
 //
-// FIX (two layers, so this class of bug is now structurally impossible):
-//   1. MEASURE, DON'T GUESS. `DashboardHeaderSliver` (the new public
-//      entry point — use this instead of building SliverPersistentHeader
-//      yourself) measures the real natural height of the collapsible
-//      content after every frame via a GlobalKey, and feeds that back in
-//      as `expandedExtra`. The sliver's maxExtent therefore always
-//      matches what the content actually needs, on any device/font
-//      scale/data length.
-//   2. HARD SAFETY CLAMP. The delegate still forces its returned widget
-//      into an exact `SizedBox(height: currentExtent)` + `ClipRect`. If
-//      a measurement is ever stale for a single frame (e.g. right after
-//      data changes), the worst case is a harmless clipped frame — never
-//      a SliverGeometry assertion.
+//    Fix: don't derive the shrink from live intrinsic sizing at all.
+//    Drive it explicitly from the SAME `expandedExtra` value already
+//    being fed into the sliver's maxExtent:
+//        height: expandedExtra * (1 - progress)
+//    wrapped in ClipRect. At progress == 1 that's exactly 0.0 — not
+//    "whatever Align's algorithm computes this frame" — so there is
+//    structurally nothing left to leak through. The child itself is
+//    rendered via OverflowBox (capped at expandedExtra) so it's free to
+//    lay out at its natural height and simply gets clipped by the outer
+//    SizedBox, same "hard safety clamp" philosophy as the delegate uses.
 //
-// Usage in DashboardScreen — replace the old raw SliverPersistentHeader
-// with the self-contained widget below:
+// 2) COLLAPSE GRADIENT + WHITE TEXT/ICONS
+//    The sticky bar's background now lerps from the neutral bg color
+//    toward `AppColors.primary` as `progress` -> 1, eased with
+//    Curves.easeIn so it's barely noticeable until you're most of the
+//    way collapsed (kept "subtle" per request). Greeting text and the
+//    two icon buttons lerp toward white over the same curve so they stay
+//    legible against the primary-tinted bar.
+//
+// 3) BOTTOM ROUNDED CORNERS
+//    The whole header is now wrapped in a ClipRRect with only the bottom
+//    corners rounded (`kHeaderBottomRadius`), so it reads as a floating
+//    rounded panel instead of a hard-edged bar.
+//
+// Usage in DashboardScreen — unchanged:
 //
 //   final topPad = MediaQuery.of(context).padding.top;
 //   DashboardHeaderSliver(
 //     controller: controller,
 //     topPadding: topPad,
 //   ),
-//
-// (DashboardHeaderSliver returns a SliverPersistentHeader internally, so
-// it drops straight into CustomScrollView's `slivers: [...]` list exactly
-// like the old one did.)
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -52,6 +60,8 @@ import '../../dashboard_controller/dashboard_controller.dart';
 
 const double kHeaderCompactHeight = 56; // sticky bar height (excl. safe area)
 const double kHeaderExpandedExtraFallback = 268;
+const double kHeaderBottomRadius = 22;
+const bool kDebugHeaderCollapse = false;
 
 class DashboardHeaderSliver extends StatefulWidget {
   final DashboardController controller;
@@ -71,13 +81,30 @@ class _DashboardHeaderSliverState extends State<DashboardHeaderSliver> {
   double _expandedExtra = kHeaderExpandedExtraFallback;
 
   void _handleContentMeasured(double measuredHeight) {
-    // Clamp to a sane range so a transient bad measurement (e.g. during
-    // a hot-reload frame) can't produce a huge or negative extent.
     final target = measuredHeight.clamp(40.0, 700.0);
+
+    if (kDebugHeaderCollapse) {
+      debugPrint(
+        '[HEADER][MEASURE] '
+        'measuredHeight=$measuredHeight '
+        'currentExpandedExtra=$_expandedExtra '
+        'target=$target '
+        'difference=${(target - _expandedExtra).abs()}',
+      );
+    }
+
     if ((target - _expandedExtra).abs() > 0.5) {
-      // Never call setState mid-layout/mid-build — defer to next frame.
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _expandedExtra = target);
+        if (!mounted) return;
+
+        if (kDebugHeaderCollapse) {
+          debugPrint(
+            '[HEADER][MEASURE][SETSTATE] '
+            'expandedExtra: $_expandedExtra -> $target',
+          );
+        }
+
+        setState(() => _expandedExtra = target);
       });
     }
   }
@@ -131,7 +158,39 @@ class DashboardHeaderDelegate extends SliverPersistentHeaderDelegate {
       minExtent,
       maxExtent,
     );
+    if (kDebugHeaderCollapse) {
+      debugPrint(
+        '[HEADER][BUILD] '
+        'shrinkOffset=${shrinkOffset.toStringAsFixed(2)} '
+        'minExtent=${minExtent.toStringAsFixed(2)} '
+        'maxExtent=${maxExtent.toStringAsFixed(2)} '
+        'range=${range.toStringAsFixed(2)} '
+        'progress=${progress.toStringAsFixed(4)} '
+        'currentExtent=${currentExtent.toStringAsFixed(2)} '
+        'expandedExtra=${expandedExtra.toStringAsFixed(2)} '
+        'overlapsContent=$overlapsContent',
+      );
 
+      if (progress >= 0.99) {
+        debugPrint(
+          '🔥 [HEADER][NEAR COLLAPSED] '
+          'progress=${progress.toStringAsFixed(4)} '
+          'shrinkOffset=${shrinkOffset.toStringAsFixed(2)} '
+          'remainingCollapsibleHeight='
+          '${(expandedExtra * (1 - progress)).toStringAsFixed(2)} '
+          'currentExtent=${currentExtent.toStringAsFixed(2)}',
+        );
+      }
+
+      if (progress >= 0.999) {
+        debugPrint(
+          '✅ [HEADER][FULL COLLAPSE] '
+          'progress=${progress.toStringAsFixed(4)} '
+          'expectedCollapsibleHeight=0 '
+          'currentExtent=${currentExtent.toStringAsFixed(2)}',
+        );
+      }
+    }
     // Hard safety net: force the returned box to EXACTLY the height the
     // sliver promised the viewport, no matter what the content inside
     // wants. Combined with the measurement feedback above, this makes
@@ -144,6 +203,7 @@ class DashboardHeaderDelegate extends SliverPersistentHeaderDelegate {
           controller: controller,
           progress: progress,
           topPadding: topPadding,
+          expandedExtra: expandedExtra,
           onContentMeasured: onContentMeasured,
         ),
       ),
@@ -166,12 +226,14 @@ class _DashboardHeaderContent extends StatefulWidget {
   final DashboardController controller;
   final double progress; // 0 = fully expanded, 1 = fully collapsed
   final double topPadding;
+  final double expandedExtra; // measured natural height of collapsible part
   final ValueChanged<double> onContentMeasured;
 
   const _DashboardHeaderContent({
     required this.controller,
     required this.progress,
     required this.topPadding,
+    required this.expandedExtra,
     required this.onContentMeasured,
   });
 
@@ -191,18 +253,40 @@ class _DashboardHeaderContentState extends State<_DashboardHeaderContent>
   bool _pillExpanded = false;
   bool _isDarkCached = false;
 
-  // Wraps the collapsible content (pill + stats + ticker) purely so we can
+  // Wraps the collapsible content (pill + stats row) purely so we can
   // read its real, natural height after layout and report it upward —
   // this is what lets the sliver's maxExtent match reality instead of a
-  // guessed constant.
+  // guessed constant, AND lets the collapse height below hit exactly 0.
   final GlobalKey _contentKey = GlobalKey();
 
   void _measureContent() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final renderBox =
-          _contentKey.currentContext?.findRenderObject() as RenderBox?;
+      if (!mounted) return;
+
+      final context = _contentKey.currentContext;
+      final renderObject = context?.findRenderObject();
+
+      final renderBox = renderObject is RenderBox ? renderObject : null;
+
       if (renderBox != null && renderBox.hasSize) {
-        widget.onContentMeasured(renderBox.size.height);
+        final actualHeight = renderBox.size.height;
+
+        if (kDebugHeaderCollapse) {
+          debugPrint(
+            '[HEADER][RENDERBOX] '
+            'actualContentHeight=${actualHeight.toStringAsFixed(2)} '
+            'widgetExpandedExtra=${widget.expandedExtra.toStringAsFixed(2)} '
+            'progress=${widget.progress.toStringAsFixed(4)} '
+            'expectedVisibleHeight='
+            '${(widget.expandedExtra * (1 - widget.progress))}'
+            '.clamp(0.0, double.infinity)'
+            '.toStringAsFixed(2)}',
+          );
+        }
+
+        widget.onContentMeasured(actualHeight);
+      } else if (kDebugHeaderCollapse) {
+        debugPrint('[HEADER][RENDERBOX] ❌ RenderBox unavailable/has no size');
       }
     });
   }
@@ -306,89 +390,157 @@ class _DashboardHeaderContentState extends State<_DashboardHeaderContent>
     // settles after 1-2 frames and then goes quiet.
     _measureContent();
 
-    final bg = isDark ? const Color(0xFF15151F) : const Color(0xFFF5F6FA);
+    final neutralBg = isDark
+        ? const Color(0xFF15151F)
+        : const Color(0xFFF5F6FA);
+    final neutralTextColor = isDark ? Colors.white : const Color(0xFF1D2333);
+    final neutralIconColor = isDark ? Colors.white : AppColors.primary;
+    final neutralCircleBg = isDark
+        ? Colors.white.withOpacity(0.08)
+        : AppColors.primary.withOpacity(0.1);
 
-    return Container(
-      color: bg,
-      // Hairline shadow appears only once content is tucked under the bar —
-      // mirrors iOS nav bar picking up a divider on scroll.
-      foregroundDecoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.black.withOpacity(0.06 * progress),
-            width: 1,
-          ),
-        ),
+    // ── Collapse-driven color transition ──────────────────────────────
+    // Eased so the shift stays subtle until the header is mostly
+    // collapsed, then fully resolves to AppColors.primary + white text
+    // right at progress == 1.
+    final collapseT = Curves.easeIn.transform(progress);
+    final barBgStart = Color.lerp(neutralBg, AppColors.primary, collapseT)!;
+    final barBgEnd = Color.lerp(
+      neutralBg,
+      AppColors.primary.withOpacity(0.85),
+      collapseT,
+    )!;
+    final barTextColor = Color.lerp(neutralTextColor, Colors.white, collapseT)!;
+    final barIconColor = Color.lerp(neutralIconColor, Colors.white, collapseT)!;
+    final barCircleBg = Color.lerp(
+      neutralCircleBg,
+      Colors.white.withOpacity(0.18),
+      collapseT,
+    )!;
+    final collapsibleHeight = (widget.expandedExtra * (1 - progress)).clamp(
+      0.0,
+      double.infinity,
+    );
+
+    if (kDebugHeaderCollapse) {
+      debugPrint(
+        '[HEADER][CONTENT] '
+        'progress=${progress.toStringAsFixed(4)} '
+        'expandedExtra=${widget.expandedExtra.toStringAsFixed(2)} '
+        'collapsibleHeight=${collapsibleHeight.toStringAsFixed(2)} '
+        'opacity=${(1 - progress * 1.4).clamp(0.0, 1.0).toStringAsFixed(3)}',
+      );
+    }
+    return ClipRRect(
+      // Whole header reads as a floating rounded panel.
+      borderRadius: const BorderRadius.only(
+        bottomLeft: Radius.circular(kHeaderBottomRadius),
+        bottomRight: Radius.circular(kHeaderBottomRadius),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // ── Sticky compact bar (always visible) ─────────────────────────
-          SizedBox(
-            height: kHeaderCompactHeight + widget.topPadding,
-            child: Padding(
-              padding: EdgeInsets.only(top: widget.topPadding),
-              child: Row(
-                children: [
-                  const SizedBox(width: 10),
-                  Builder(
-                    builder: (ctx) => _CircleIconButton(
-                      icon: Icons.menu_rounded,
-                      isDark: isDark,
-                      onTap: () => Scaffold.of(ctx).openDrawer(),
-                    ),
-                  ),
-                  // Always-visible name + "Your day at a glance" line —
-                  // stays put through both expanded and collapsed states.
-                  Expanded(
-                    child: Center(
-                      child: _CompactGreeting(controller: widget.controller),
-                    ),
-                  ),
-                  _CircleIconButton(
-                    icon: Icons.notifications_none_rounded,
-                    isDark: isDark,
-                    onTap: () {},
-                  ),
-                  const SizedBox(width: 10),
-                ],
-              ),
+      child: Container(
+        color: neutralBg,
+        // Hairline shadow appears only once content is tucked under the bar —
+        // mirrors iOS nav bar picking up a divider on scroll.
+        foregroundDecoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: Colors.black.withOpacity(0.06 * progress),
+              width: 1,
             ),
           ),
-
-          // ── Collapsible content (fades + shrinks under the bar) ─────────
-          // NOTE: this subtree's height is now fully deterministic (no
-          // dropdown growth inside it), so it will never exceed maxExtent.
-          ClipRect(
-            child: Align(
-              alignment: Alignment.topCenter,
-              heightFactor: (1 - progress).clamp(0.0, 1.0),
-              child: Opacity(
-                opacity: (1 - progress * 1.4).clamp(0.0, 1.0),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Sticky compact bar (always visible) ─────────────────────────
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [barBgStart, barBgEnd],
+                ),
+              ),
+              child: SizedBox(
+                height: kHeaderCompactHeight + widget.topPadding,
                 child: Padding(
-                  key: _contentKey,
-                  padding: const EdgeInsets.fromLTRB(18, 4, 18, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+                  padding: EdgeInsets.only(top: widget.topPadding),
+                  child: Row(
                     children: [
-                      // Anchor for the floating popover — this widget's box
-                      // never changes size when the dropdown opens.
-                      CompositedTransformTarget(
-                        link: _pillLink,
-                        child: _buildAvailabilityPill(isDark),
+                      const SizedBox(width: 10),
+                      Builder(
+                        builder: (ctx) => _CircleIconButton(
+                          icon: Icons.menu_rounded,
+                          iconColor: barIconColor,
+                          bgColor: barCircleBg,
+                          onTap: () => Scaffold.of(ctx).openDrawer(),
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      _buildStatsRow(isDark),
-                      /* const SizedBox(height: 14),
-                      _NoticeTicker(controller: widget.controller),*/
+                      // Always-visible name + "Your day at a glance" line —
+                      // stays put through both expanded and collapsed states.
+                      Expanded(
+                        child: Center(
+                          child: _CompactGreeting(
+                            controller: widget.controller,
+                            textColor: barTextColor,
+                          ),
+                        ),
+                      ),
+                      _CircleIconButton(
+                        icon: Icons.notifications_none_rounded,
+                        iconColor: barIconColor,
+                        bgColor: barCircleBg,
+                        onTap: () {},
+                      ),
+                      const SizedBox(width: 10),
                     ],
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+
+            // ── Collapsible content (fades + shrinks under the bar) ─────────
+            // Height is driven explicitly from the measured natural height
+            // (`widget.expandedExtra`), not from live intrinsic sizing, so
+            // at progress == 1 this is exactly 0px — nothing can leak
+            // through regardless of measurement timing.
+            ClipRect(
+              child: SizedBox(
+                // height: (widget.expandedExtra * (1 - progress)).clamp(
+                //   0.0,
+                //   double.infinity,
+                // ),
+                height: collapsibleHeight,
+                child: OverflowBox(
+                  minHeight: 0,
+                  maxHeight: widget.expandedExtra,
+                  alignment: Alignment.topCenter,
+                  child: Opacity(
+                    opacity: (1 - progress * 1.4).clamp(0.0, 1.0),
+                    child: Padding(
+                      key: _contentKey,
+                      padding: const EdgeInsets.fromLTRB(18, 4, 18, 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Anchor for the floating popover — this widget's
+                          // box never changes size when the dropdown opens.
+                          CompositedTransformTarget(
+                            link: _pillLink,
+                            child: _buildAvailabilityPill(isDark),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildStatsRow(isDark),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -419,8 +571,8 @@ class _DashboardHeaderContentState extends State<_DashboardHeaderContent>
             ),
             child: Obx(() {
               final available = widget.controller.isAvailable.value;
-              return Align(alignment: Alignment.center,
-
+              return Align(
+                alignment: Alignment.center,
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -566,7 +718,7 @@ class _DashboardHeaderContentState extends State<_DashboardHeaderContent>
     final stats = <_StatItem>[
       _StatItem(
         icon: Icons.people_alt_rounded,
-        label: 'Assigned\n(Patients)',
+        label: 'Assigned\nPatients',
         valueGetter: () => widget.controller.assignedPatientsCount.value,
         color: const Color(0xFF3B82F6),
       ),
@@ -668,14 +820,12 @@ class _PopoverEntranceState extends State<_PopoverEntrance>
 
 class _CompactGreeting extends StatelessWidget {
   final DashboardController controller;
+  final Color textColor;
 
-  const _CompactGreeting({required this.controller});
+  const _CompactGreeting({required this.controller, required this.textColor});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : const Color(0xFF1D2333);
-
     return Obx(() {
       final name = controller.userName.value;
       final first = name.trim().isNotEmpty ? name.trim().split(' ').first : '';
@@ -700,7 +850,7 @@ class _CompactGreeting extends StatelessWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w500,
-              color: textColor.withOpacity(0.55),
+              color: textColor.withOpacity(0.7),
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -895,41 +1045,33 @@ class _StatCardState extends State<_StatCard>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Notice ticker — auto-rotating "new patient assigned" style banner
-// ─────────────────────────────────────────────────────────────────────────────
-
-
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Small shared bits
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _CircleIconButton extends StatelessWidget {
   final IconData icon;
-  final bool isDark;
+  final Color iconColor;
+  final Color bgColor;
   final VoidCallback onTap;
 
   const _CircleIconButton({
     required this.icon,
-    required this.isDark,
+    required this.iconColor,
+    required this.bgColor,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: isDark ? Colors.white.withOpacity(0.08) : AppColors.primary.withOpacity(0.1),
+      color: bgColor,
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(9),
-          child: Icon(
-            icon,
-            color: isDark ? Colors.white : AppColors.primary,
-            size: 19,
-          ),
+          child: Icon(icon, color: iconColor, size: 19),
         ),
       ),
     );
