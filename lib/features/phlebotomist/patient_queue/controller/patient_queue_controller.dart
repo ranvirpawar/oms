@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
+import 'package:lifenity_connect/services/auth_manager.dart';
 
 import '../model/patient_queue_model.dart';
 import '../service/patient_queue_service.dart';
@@ -11,14 +12,10 @@ enum QueueFilter { all, homeVisit, clinicVisit, rescheduled }
 /// isLoading/hasError booleans) so the view can switch on a single value.
 enum QueueLoadState { initial, loading, loaded, empty, error }
 
-/// Controller for the Assigned Patients screen.
-///
-/// Owns all UI state: the patient list, loading/error/empty state,
-/// active filter, search query, and per-card "processing" flags used to
-/// prevent duplicate taps on action buttons. All business logic lives
-/// here — the view only observes and calls these methods.
+
 class PatientQueueController extends GetxController {
   final PatientQueueService _service;
+  AuthManager authManager = Get.find<AuthManager>();
 
   PatientQueueController({PatientQueueService? service})
       : _service = service ?? PatientQueueService();
@@ -34,6 +31,10 @@ class PatientQueueController extends GetxController {
   final Rx<QueueFilter> activeFilter = QueueFilter.all.obs;
   final RxString searchQuery = ''.obs;
 
+  // Session values needed for the accept payload.
+  final RxString empId = ''.obs;
+  final RxInt unitId = 0.obs;
+
   /// IDs currently mid-action (accept/reject/reschedule/start) — used to
   /// disable buttons and show inline spinners so rapid double taps can't
   /// fire duplicate requests.
@@ -44,7 +45,7 @@ class PatientQueueController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    fetchPatients();
+    getUserdata().then((_) => fetchPatients());
     searchController.addListener(() {
       searchQuery.value = searchController.text.trim();
     });
@@ -123,7 +124,17 @@ class PatientQueueController extends GetxController {
       _patients.where((p) => p.status == PatientStatus.rescheduled).length;
 
   bool get isSearching => searchQuery.value.isNotEmpty;
-
+/// user loading
+  Future<void> getUserdata() async{
+    authManager.getUserData().then((data) {
+      if (data != null) {
+        final user = data['user'];
+        if (user != null && user.containsKey('EmpCode')) {
+          empId.value = user['EmpCode'].toString();
+        }
+      }
+    }).catchError((_) {});
+  }
   // ---------------------------------------------------------------------
   // Data loading
   // ---------------------------------------------------------------------
@@ -132,11 +143,11 @@ class PatientQueueController extends GetxController {
     loadState.value = QueueLoadState.loading;
     errorMessage.value = '';
     try {
-      final result = await _service.fetchAssignedPatients();
+      final result =
+      await _service.fetchAssignedPatients(userId: empId.value);
       _patients.assignAll(result);
-      loadState.value = result.isEmpty
-          ? QueueLoadState.empty
-          : QueueLoadState.loaded;
+      loadState.value =
+      result.isEmpty ? QueueLoadState.empty : QueueLoadState.loaded;
     } on PatientQueueException catch (e) {
       errorMessage.value = e.message;
       loadState.value = QueueLoadState.error;
@@ -153,32 +164,27 @@ class PatientQueueController extends GetxController {
     if (isRefreshing.value) return;
     isRefreshing.value = true;
     try {
-      final result = await _service.fetchAssignedPatients();
+      final result =
+      await _service.fetchAssignedPatients(userId: empId.value);
       _patients.assignAll(result);
       loadState.value =
-          result.isEmpty ? QueueLoadState.empty : QueueLoadState.loaded;
+      result.isEmpty ? QueueLoadState.empty : QueueLoadState.loaded;
       errorMessage.value = '';
     } on PatientQueueException catch (e) {
-      Get.snackbar(
-        'Refresh failed',
-        e.message,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      Get.snackbar('Refresh failed', e.message,
+          snackPosition: SnackPosition.BOTTOM);
     } catch (_) {
-      Get.snackbar(
-        'Refresh failed',
-        'Please check your connection and try again.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      Get.snackbar('Refresh failed',
+          'Please check your connection and try again.',
+          snackPosition: SnackPosition.BOTTOM);
     } finally {
       isRefreshing.value = false;
     }
   }
 
+
   void retry() => fetchPatients();
-
   void setFilter(QueueFilter filter) => activeFilter.value = filter;
-
   void clearSearch() {
     searchController.clear();
     searchQuery.value = '';
@@ -188,41 +194,61 @@ class PatientQueueController extends GetxController {
   // Actions (guarded against duplicate taps via processingIds)
   // ---------------------------------------------------------------------
 
-  Future<void> acceptAndStart(String patientId) => _runAction(
-        patientId,
-        () => _service.acceptAndStart(patientId),
-        PatientStatus.inProgress,
-        successMessage: 'Visit started',
+  Future<void> acceptAndStart(AssignedPatient patient) async {
+    if (processingIds.contains(patient.id)) return;
+    processingIds.add(patient.id);
+    try {
+      final success = await _service.acceptAndStart(
+        patient,
+        createdBy: int.tryParse(empId.value) ?? 0,
+        unitId: unitId.value,
       );
+      if (success) {
+        Get.snackbar('Visit accepted', '',
+            snackPosition: SnackPosition.BOTTOM,
+            duration: const Duration(seconds: 2));
+        await fetchPatients(); // refresh from server
+      } else {
+        Get.snackbar('Action failed', 'Please try again.',
+            snackPosition: SnackPosition.BOTTOM);
+      }
+    } catch (_) {
+      Get.snackbar('Action failed',
+          'Please check your connection and try again.',
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      processingIds.remove(patient.id);
+    }
+  }
 
   Future<void> startRoute(String patientId) => _runAction(
-        patientId,
+    patientId,
         () => _service.startRoute(patientId),
-        PatientStatus.inProgress,
-        successMessage: 'Route started',
-      );
+    PatientStatus.inProgress,
+    successMessage: 'Route started',
+  );
 
   Future<void> reject(String patientId) => _runAction(
-        patientId,
+    patientId,
         () => _service.reject(patientId),
-        PatientStatus.cancelled,
-        successMessage: 'Assignment rejected',
-      );
+    PatientStatus.cancelled,
+    successMessage: 'Assignment rejected',
+  );
 
   Future<void> reschedule(String patientId) => _runAction(
-        patientId,
+    patientId,
         () => _service.reschedule(patientId),
-        PatientStatus.rescheduled,
-        successMessage: 'Visit rescheduled',
-      );
+    PatientStatus.rescheduled,
+    successMessage: 'Visit rescheduled',
+  );
 
   Future<void> _runAction(
-    String patientId,
-    Future<bool> Function() action,
-    PatientStatus nextStatus, {
-    required String successMessage,
-  }) async {
-    if (processingIds.contains(patientId)) return; // already in flight
+      String patientId,
+      Future<bool> Function() action,
+      PatientStatus nextStatus, {
+        required String successMessage,
+      }) async {
+    if (processingIds.contains(patientId)) return;
     processingIds.add(patientId);
     try {
       final success = await action();
@@ -231,25 +257,17 @@ class PatientQueueController extends GetxController {
         if (index != -1) {
           _patients[index] = _patients[index].copyWith(status: nextStatus);
         }
-        Get.snackbar(
-          successMessage,
-          '',
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 2),
-        );
+        Get.snackbar(successMessage, '',
+            snackPosition: SnackPosition.BOTTOM,
+            duration: const Duration(seconds: 2));
       } else {
-        Get.snackbar(
-          'Action failed',
-          'Please try again.',
-          snackPosition: SnackPosition.BOTTOM,
-        );
+        Get.snackbar('Action failed', 'Please try again.',
+            snackPosition: SnackPosition.BOTTOM);
       }
     } catch (_) {
-      Get.snackbar(
-        'Action failed',
-        'Please check your connection and try again.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      Get.snackbar('Action failed',
+          'Please check your connection and try again.',
+          snackPosition: SnackPosition.BOTTOM);
     } finally {
       processingIds.remove(patientId);
     }

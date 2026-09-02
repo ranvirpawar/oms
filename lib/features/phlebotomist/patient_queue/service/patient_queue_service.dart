@@ -1,10 +1,135 @@
+import 'dart:convert';
 import 'dart:math';
 
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_instance/src/extension_instance.dart';
+import 'package:lifenity_connect/network/app_urls.dart';
+
+import '../../../../network/api_client.dart';
 import '../model/patient_queue_model.dart';
 
 
+class PatientQueueException implements Exception {
+  final String message;
+  final bool isNetworkError;
+  PatientQueueException(this.message, {this.isNetworkError = false});
+  @override
+  String toString() => message;
+}
 
-/// Thrown by [PatientQueueService] to represent a recoverable failure
+class PatientQueueService {
+  final APIClient _apiClient = Get.find<APIClient>();
+
+  Future<List<AssignedPatient>> fetchAssignedPatients({
+    required String userId,
+  }) async {
+    try {
+      final response =
+      await _apiClient.get('${AppUrls.getOrdersList}?userId=$userId');
+
+      final Map<String, dynamic> body = response.data is String
+          ? jsonDecode(response.data as String) as Map<String, dynamic>
+          : response.data as Map<String, dynamic>;
+
+      if ((body['status'] as String?)?.toLowerCase() != 'success') {
+        throw PatientQueueException(
+          body['message'] as String? ?? 'Unable to load your patient queue.',
+        );
+      }
+
+      final output = body['output'];
+      final List<dynamic> list = output is List ? output : [output];
+
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map(AssignedPatient.fromJson)
+          .toList();
+    } on PatientQueueException {
+      rethrow;
+    } catch (e) {
+      throw PatientQueueException(
+        'Unable to load your patient queue. Please check your connection and try again.',
+        isNetworkError: true,
+      );
+    }
+  }
+
+  /// Accepts an assignment. `createdBy` / `unitId` come from the logged-in
+  /// user's session, not from the order payload — pass them in from the
+  /// controller.
+  Future<bool> acceptAndStart(
+      AssignedPatient patient, {
+        required int createdBy,
+        required int unitId,
+      }) async {
+    final now = DateTime.now();
+    final body = {
+      "patientId": patient.patientId,
+      "title": patient.title ?? "",
+      "fname": patient.firstName,
+      "mname": patient.middleName ?? "",
+      "lname": patient.lastName ?? "",
+      "gender": patient.gender ?? "",
+      "mobile": patient.phone ?? "",
+      "ageYears": patient.age ?? 0,
+      "ageMonth": 0,
+      "ageDay": 0,
+      "address": patient.address ?? "",
+      "email": "",
+      "unitId": unitId,
+      "createdBy": createdBy,
+      "weight": 0,
+      "height": 0,
+      "collectedDate":
+      "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}",
+      "collectedTime":
+      "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}",
+      "customerId": 0,
+      "visitCode": patient.orderId,
+      "campId": "",
+      "hmisPatientId": 0,
+      "totalAmount": 0,
+      "listTestDetails": patient.rawTests
+          .map((t) => {
+        "subServiceId": t.testId,
+        "amount": 0,
+        "subServiceName": t.testName,
+        // API gives SampleTypeName, not an ID — sending 0 for now.
+        // Swap this for a real lookup if the accept endpoint needs it.
+        "sampleTypeId": 0,
+        "barCode": "",
+        "quantity": 1,
+        "templateWise": t.sampleTypeName ?? "",
+      })
+          .toList(),
+    };
+// todo
+    final response = await _apiClient.post(AppUrls.updateOrder,data:  body);
+    final Map<String, dynamic> respBody = response.data is String
+        ? jsonDecode(response.data as String) as Map<String, dynamic>
+        : response.data as Map<String, dynamic>;
+    return (respBody['status'] as String?)?.toLowerCase() == 'success';
+  }
+
+  Future<bool> startRoute(String patientId) async {
+    // TODO: wire to the real start-route endpoint once available.
+    await Future.delayed(const Duration(milliseconds: 500));
+    return true;
+  }
+
+  Future<bool> reject(String patientId, {String? reason}) async {
+    // TODO: wire to the real reject endpoint once available.
+    await Future.delayed(const Duration(milliseconds: 500));
+    return true;
+  }
+
+  Future<bool> reschedule(String patientId, {DateTime? newSlot}) async {
+    // TODO: wire to the real reschedule endpoint once available.
+    await Future.delayed(const Duration(milliseconds: 500));
+    return true;
+  }
+}
+/*/// Thrown by [PatientQueueService] to represent a recoverable failure
 /// (network error, timeout, server error) so the controller can show a
 /// proper error state with a retry action instead of an unhandled crash.
 class PatientQueueException implements Exception {
@@ -17,40 +142,20 @@ class PatientQueueException implements Exception {
   String toString() => message;
 }
 
-/// Handles all data access for the Assigned Patients module.
-///
-/// Currently backed by dummy/in-memory data so the UI can be fully
-/// evaluated without the backend. When the real endpoint is ready, only
-/// the body of [fetchAssignedPatients] (and the mutation methods) needs to
-/// change to call through the project's existing centralized API client,
-/// e.g.:
-///
-/// ```dart
-/// class PatientQueueService {
-///   final APIClient _apiClient = Get.find<APIClient>();
-///
-///   Future<List<AssignedPatient>> fetchAssignedPatients() async {
-///     final response = await _apiClient.get('/phlebotomist/assigned-patients');
-///     return (response.data['patients'] as List)
-///         .map((e) => AssignedPatient.fromJson(e))
-///         .toList();
-///   }
-/// }
-/// ```
-///
-/// The rest of the module (controller, view, widgets) only depends on the
-/// public method signatures below, so swapping the implementation is a
-/// contained change.
+
 class PatientQueueService {
-  /// Simulates fetching today's assigned patients.
-  ///
-  /// [simulateFailure] / [simulateEmpty] are here purely so the UI's error
-  /// and empty states can be exercised during development — remove once
-  /// the real API is wired up.
+  final APIClient _apiClient = Get.find<APIClient>();
+
+
   Future<List<AssignedPatient>> fetchAssignedPatients({
     bool simulateFailure = false,
     bool simulateEmpty = false,
   }) async {
+
+    final url = AppUrls.getOrdersList;
+    final response = await _apiClient.get(url);
+
+
     await Future.delayed(const Duration(milliseconds: 900));
 
     if (simulateFailure) {
@@ -294,4 +399,4 @@ class PatientQueueService {
 
 /// Utility to reshuffle dummy IDs when simulating "a new assignment
 /// appears" during manual/dev testing.
-String generateDummyId() => 'p${Random().nextInt(9999)}';
+String generateDummyId() => 'p${Random().nextInt(9999)}';*/

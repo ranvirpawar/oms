@@ -41,6 +41,7 @@ class PatientCard extends StatelessWidget {
       opacity: _isTerminal ? 0.72 : 1,
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
+
         decoration: BoxDecoration(
           color: AppColors.bgCard,
           borderRadius: BorderRadius.circular(18),
@@ -89,7 +90,7 @@ class PatientCard extends StatelessWidget {
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.only(right: 10, top: 0),
-      decoration: BoxDecoration(color: AppColors.bgCardAlt),
+      decoration: const BoxDecoration(color: AppColors.bgCardAlt),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -360,89 +361,92 @@ class PatientCard extends StatelessWidget {
 
 
   Widget _buildActionsRow() {
-    if (_isTerminal) {
-      // No actions for completed/cancelled/failed items — keep the
-      // footer quiet rather than showing disabled buttons.
-      return const SizedBox.shrink();
-    }
+    if (_isTerminal) return const SizedBox.shrink();
 
-    final isRescheduled = patient.status == PatientStatus.rescheduled;
-
-    // A rescheduled visit has nothing to "start" until its new slot
-    // arrives, so it only offers Reject + a disabled Rescheduled marker —
-    // showing a live "Accept & Start" button here would be misleading.
-    if (isRescheduled) {
-      return Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: QueueActionButton(
-              label: 'Reject',
-              icon: Icons.close_rounded,
-              color: AppColors.redText,
-              style: QueueActionStyle.outlined,
-              isDisabled: isProcessing,
-              onPressed: onReject,
+    switch (patient.status) {
+      case PatientStatus.rescheduled:
+        return Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: QueueActionButton(
+                label: 'Reject',
+                color: AppColors.redText,
+                style: QueueActionStyle.outlined,
+                isDisabled: isProcessing,
+                onPressed: onReject,
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 3,
-            child: QueueActionButton(
-              label: 'Rescheduled',
-              icon: Icons.event_repeat_rounded,
-              color: AppColors.blue,
-              style: QueueActionStyle.outlined,
-              isDisabled: true,
-              onPressed: null,
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 3,
+              child: QueueActionButton(
+                label: 'Rescheduled',
+                color: AppColors.blue,
+                style: QueueActionStyle.outlined,
+                isDisabled: true,
+                onPressed: null,
+              ),
             ),
-          ),
-        ],
-      );
-    }
+          ],
+        );
 
-    return Row(
-      children: [
-        Expanded(
-          flex: 1,
-          child: QueueActionButton(
-            label: 'Reject',
-            icon: Icons.close_rounded,
-            color: AppColors.redText,
-            style: QueueActionStyle.outlined,
-            isDisabled: isProcessing,
-            onPressed: onReject,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: QueueActionButton(
-            label: 'Reschedule',
-            icon: Icons.calendar_month_outlined,
-            color: AppColors.blue,
-            style: QueueActionStyle.filled,
-            isDisabled: isProcessing,
-            onPressed: onReschedule,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: QueueActionButton(
-            label: patient.status == PatientStatus.accepted
-                ? 'Start Route'
-                : 'Accept & Start',
-            icon: patient.status == PatientStatus.accepted
-                ? Icons.alt_route_rounded
-                : Icons.play_circle_outline_rounded,
-            color: AppColors.accent700,
-            gradient: AppColors.accentGradient,
-            style: QueueActionStyle.gradient,
-            isLoading: isProcessing,
-            onPressed: onPrimaryAction,
-          ),
-        ),
-      ],
-    );
+      case PatientStatus.accepted:
+      // No reject once accepted — only Reschedule + Start.
+        return Row(
+          children: [
+            Expanded(
+              child: QueueActionButton(
+                label: 'Reschedule',
+                color: AppColors.blue,
+                style: QueueActionStyle.filled,
+                isDisabled: isProcessing,
+                onPressed: onReschedule,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: QueueActionButton(
+                label: 'Start Route',
+                color: AppColors.accent700,
+                gradient: AppColors.accentGradient,
+                style: QueueActionStyle.gradient,
+                isLoading: isProcessing,
+                onPressed: onPrimaryAction,
+              ),
+            ),
+          ],
+        );
+
+      case PatientStatus.assigned:
+      case PatientStatus.pending:
+      default:
+      // Assigned/pending — just Reject + Accept, nothing else.
+        return Row(
+          children: [
+            Expanded(
+              child: QueueActionButton(
+                label: 'Reject',
+                color: AppColors.redText,
+                style: QueueActionStyle.outlined,
+                isDisabled: isProcessing,
+                onPressed: onReject,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: QueueActionButton(
+                label: 'Accept',
+                color: AppColors.accent700,
+                gradient: AppColors.accentGradient,
+                style: QueueActionStyle.gradient,
+                isLoading: isProcessing,
+                onPressed: onPrimaryAction,
+              ),
+            ),
+          ],
+        );
+    }
   }
 
   String _identitySubtitle() {

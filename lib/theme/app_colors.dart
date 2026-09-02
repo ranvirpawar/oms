@@ -395,3 +395,121 @@ class AppColors {
 }
 
 
+
+
+class AppColors2 {
+  AppColors2._();
+
+  // ── Primary palette - Soft Periwinkle Blue ──────────────────────
+  static const Color primary = primary700;
+  static const Color primary50 = Color(0xFFF0F1FF);
+  static const Color primary100 = Color(0xFFE1E4FF);
+  static const Color primary200 = Color(0xFFCBD0FF);
+  static const Color primary300 = Color(0xFFAAB2FF);
+  static const Color primary400 = Color(0xFF9BA3FF);
+  static const Color primary500 = Color(0xFF8C94FF);
+  static const Color primary600 = Color(0xFF7B83FF);
+  static const Color primary700 = Color(0xFF6B72FF);
+  static const Color primary800 = Color(0xFF5A61E8);
+  static const Color primary900 = Color(0xFF4A4FD1);
+
+  // ── Secondary - Warm Coral ───────────────────────────────────────
+  static const Color secondary = Color(0xFFFF8A80);
+  static const Color secondary500 = Color(0xFFFF7043);
+  static const Color secondary700 = Color(0xFFE64A19);
+
+  // ── Neutral - Light ──────────────────────────────────────────────
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color background = Color(0xFFFBFCFF);
+  static const Color backgroundSubtle = Color(0xFFF5F7FF);
+  static const Color outline = Color(0xFFE4E7EC);
+  static const Color divider = Color(0xFFD0D5DD);
+
+  // ── Neutral - Dark ───────────────────────────────────────────────
+  static const Color surfaceDark = Color(0xFF0D0E1A);
+  static const Color backgroundDark = Color(0xFF080914);
+  static const Color backgroundSubtleDark = Color(0xFF111325);
+  static const Color outlineDark = Color(0xFF2D3142);
+  static const Color dividerDark = Color(0xFF3D4258);
+
+  // ── Text - Light ─────────────────────────────────────────────────
+  static const Color textPrimary = Color(0xFF0A0B14);
+  static const Color textSecondary = Color(0xFF2D3142);
+
+  // ── Text - Dark ──────────────────────────────────────────────────
+  static const Color textPrimaryDark = Color(0xFFF9FAFB);
+  static const Color textSecondaryDark = Color(0xFFE4E7EC);
+
+  // ── Functional colors ────────────────────────────────────────────
+  static const Color success = Color(0xFF10B981);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color error = Color(0xFFEF4444);
+  static const Color info = Color(0xFF3B82F6);
+
+  // FIX (Critical #1): errorContainer/onErrorContainer were both set to
+  // `error`, producing 1:1 contrast and invisible text. Restored as a
+  // proper soft-fill / dark-text pair.
+  static const Color errorContainer = Color(0xFFFEE2E2);
+  static const Color onErrorContainer = Color(0xFF7F1D1D);
+  static const Color errorContainerDark = Color(0xFF491010);
+  static const Color onErrorContainerDark = Color(0xFFEF4444);
+
+  // ── Category colors (health app) ─────────────────────────────────
+  // FIX (Critical #2): these previously had no dark-mode counterparts.
+  // Use `categoryColor(context, ...)` below rather than the raw
+  // constants directly so brightness is always respected.
+  static const Color generalHealth = Color(0xFF059669);
+  static const Color generalHealthDark = Color(0xFF34D399);
+  static const Color eyeCare = Color(0xFF7C3AED);
+  static const Color eyeCareDark = Color(0xFFA78BFA);
+  static const Color vaccination = Color(0xFFEA580C);
+  static const Color vaccinationDark = Color(0xFFFB923C);
+  static const Color dentalCare = Color(0xFFDC2626);
+  static const Color dentalCareDark = Color(0xFFF87171);
+  static const Color womensHealth = Color(0xFFDB2777);
+  static const Color womensHealthDark = Color(0xFFF472B6);
+
+  /// Returns the brightness-correct variant of a category color instead of
+  /// forcing callers to branch on Theme.of(context).brightness themselves.
+  static Color categoryColorFor(BuildContext context, {
+    required Color light,
+    required Color dark,
+  }) {
+    return Theme.of(context).brightness == Brightness.dark ? dark : light;
+  }
+
+  // ── Chart colors ─────────────────────────────────────────────────
+  static const List<Color> chartColors = [
+    Color(0xFF2563EB),
+    Color(0xFF16A34A),
+    Color(0xFF7C3AED),
+    Color(0xFFF59E0B),
+    Color(0xFFDC2626),
+  ];
+  static const List<Color> chartColorsDark = [
+    Color(0xFF60A5FA),
+    Color(0xFF4ADE80),
+    Color(0xFFA78BFA),
+    Color(0xFFFBBF24),
+    Color(0xFFF87171),
+  ];
+  static List<Color> chartColorsFor(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark ? chartColorsDark : chartColors;
+
+  // ── Interaction-state colors ────────────────────────────────────
+  // FIX (Critical #3): previously static regardless of brightness, so
+  // dark-mode presses were invisible. These are now brightness-aware
+  // overlay colors, not standalone fills — apply with .withOpacity()
+  // via the WidgetStateProperty helpers in AppTheme.
+  static Color pressOverlay(BuildContext context) =>
+      (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black)
+          .withOpacity(0.10);
+
+  static Color hoverOverlay(BuildContext context) =>
+      (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black)
+          .withOpacity(0.05);
+
+  static Color focusOverlay(BuildContext context) =>
+      (Theme.of(context).brightness == Brightness.dark ? primary300 : primary700)
+          .withOpacity(0.18);
+}

@@ -13,19 +13,19 @@ class AppUrls {
 
   // ASMX Base URLs
   static const String _betaAsmxBase =
-      'http://betaclinicapi.lifenityhealth.com/api/Legacy';
+      'https://betaomsmobapi.lifenityhealth.com/api/Legacy';
   static const String _liveAsmxBase =
       'https://connect.lifenityhealth.com/Webservices/HBTC_Webservices.asmx';
 
   // ASMX Base URLs updated search
   static const String _betaAsmxSearchBase =
-      'http://betaclinicapi.lifenityhealth.com/api/Legacy';
+      'https://betaomsmobapi.lifenityhealth.com/api/Legacy';
   static const String _liveAsmxSearchBase =
       'https://connect.lifenityhealth.com/Webservices/HBTCPateintSearch.asmx';
 
   // ASHX Base URLs
   static const String _betaAshxBase =
-      'http://betaclinicapi.lifenityhealth.com/api/';
+      'https://betaomsmobapi.lifenityhealth.com/api/';
   static const String _liveAshxBase =
       'https://connect.lifenityhealth.com/Webservices/Handler/';
 
@@ -42,8 +42,6 @@ class AppUrls {
 
   static String get _asmxSearchBase =>
       _env == Environment.beta ? _betaAsmxSearchBase : _liveAsmxSearchBase;
-
-
 
   // -------------------------
   // API Endpoints (.asmx)
@@ -98,16 +96,16 @@ class AppUrls {
   static String get savePatientDetails =>
       '$_asmxSearchBase/Insert_PatientBasicInfo_ForCitizenApp';
 
-/*  static String get orderInputUrl =>
+  /*  static String get orderInputUrl =>
       '$_asmxBase/InsertPatientwiseServiceTubecountNewForPatOtpVerify';*/
 
-/*  static String get orderInputUrl =>
+  /*  static String get orderInputUrl =>
       '$_asmxBase/InsertPatientwiseServiceTubecountNewForPatOtpVerify';*/
 
   static String get orderInputUrl =>
       '$_asmxBase/InsertPatientwiseServiceTubecountNewForPatOtpVerifyFlutter';
 
-/*  static String get orderInputUrl =>
+  /*  static String get orderInputUrl =>
       '$_asmxBase/InsertPatientwiseServiceTubecountNewForPatOtpVerifyFlutter';*/
 
   static String get getFacilityData =>
@@ -132,7 +130,6 @@ class AppUrls {
       '$_asmxBase/GetPhleboRegisteredPatientList';
 
   static String get updatePatientDetails =>
-
       '$_asmxBase/UpdatePatientOPDReceipt';
 
   static String get getFacilityListUserWise =>
@@ -198,27 +195,29 @@ class AppUrls {
       '$_asmxBase/GetFacilityloadonWardFtype';
 
   static String get sendReportToWhatsApp => '$_asmxBase/SendReportWithPdf';
-  static String get SendConsentMessage_Consent => '$_asmxBase/SendConsentMessage_Consent';
+
+  static String get SendConsentMessage_Consent =>
+      '$_asmxBase/SendConsentMessage_Consent';
+
   static String get consentStatus => '$_asmxBase/Getwhatappconsentsattus';
+
   static String get getPatientTestListWithStatus =>
       '$_asmxBase/GetPatientTestList_withSTatus';
 
   static String get getHMISPatientTests =>
       '$_asmxBase/GetTestandTreatmentid_HMIS';
 
-
   static String get consumptionDashboard => '$_asmxBase/GetConsuptionDashboard';
+
   static String get projectFinancialYear => '$_asmxBase/GetProjectFinacialYear';
 
   /* ------------------ DPDP consent  --------------------*/
 
-  static String get sendRegistrationOtpWithDpdpConsent => '$_asmxBase/SendRegistrationOTPWithDPDPConsent';
-  static String get getBeneficiaryConsentDetails => '$_asmxBase/GetBeneficiaryConsentDetails';
+  static String get sendRegistrationOtpWithDpdpConsent =>
+      '$_asmxBase/SendRegistrationOTPWithDPDPConsent';
 
-
-
-
-
+  static String get getBeneficiaryConsentDetails =>
+      '$_asmxBase/GetBeneficiaryConsentDetails';
 
   /* ------------------ Qr Code Flow Runner-Boy  --------------------*/
   /*------------------ collect empty bag  --------------------*/
@@ -237,12 +236,12 @@ class AppUrls {
   static String get getScanQRForAndTransactionID =>
       '$_asmxBase/GetScanQRForAndTransactionID';
 
-/*------------------- Hand over to Connector----------------------*/
+  /*------------------- Hand over to Connector----------------------*/
 
   static String get updateBagTransactionStatus =>
       '$_asmxBase/UpdateInnitiateBagTransaction';
 
-/*------------------- Collected Bags for Submission ----------------------*/
+  /*------------------- Collected Bags for Submission ----------------------*/
 
   static String get collectedBagsForLabSubmission =>
       '$_asmxBase/GetClosedSampleBagList_forLabSubmission';
@@ -272,9 +271,11 @@ class AppUrls {
   static String get getInvoiceStages => '$_asmxBase/GetinvoiceStages';
 
   /*----------------- Sample Live Tracking ------------------------------*/
-  static String get getSampleLiveTrackingRb => '$_asmxBase/GetSamplebagTrackingReport_inAppRBConnector';
+  static String get getSampleLiveTrackingRb =>
+      '$_asmxBase/GetSamplebagTrackingReport_inAppRBConnector';
 
-  static String get getBagDetailsRbTrackingDashboard  => '$_asmxBase/GetBagDetails_Rb_trackingDahsboard';
+  static String get getBagDetailsRbTrackingDashboard =>
+      '$_asmxBase/GetBagDetails_Rb_trackingDahsboard';
 
   /*----------------- Eho facility wise summary ------------------------------*/
 
@@ -312,11 +313,10 @@ class AppUrls {
   static String get getRegistrationDetailsQRBag =>
       '$_asmxBase/GetRegistrationDetails_QRBag';
 
-
- static String get getPatientDetailsForMergingTest =>
+  static String get getPatientDetailsForMergingTest =>
       '$_asmxBase/GetPatientDetailsFor_MergingTest';
 
- static String get mergeSugarBarcode =>
+  static String get mergeSugarBarcode =>
       '$_asmxBase/InsertMergeSugarTest_Barcode';
 
   /// collect bag from phlebotomist (RB login)
@@ -336,9 +336,23 @@ class AppUrls {
 
   static String getScanQRBag = '$_asmxBase/GETScanQRBag';
 
-// Step 2 — Fetch detailed bag info for lab team
+  // Step 2 — Fetch detailed bag info for lab team
   static String getBagDetailsForLabTeam =
       '$_asmxBase/Proc_GetQRBagDetails_ForLabTeam';
+
+  // -------------------------
+  // Sample Collection
+  // -------------------------
+  static String getOrdersList = '$_asmxBase/orders/details';
+  static String updateOrder = '$_asmxBase/UpdateSampleOrderStatus';
+
+  static String getSampleComplicationsList =
+      '$_asmxBase/GetSampleCollectionComplicationDetails';
+
+
+
+
+
 
   // -------------------------
   // API Endpoints (.ashx)
@@ -352,5 +366,6 @@ class AppUrls {
       '${_ashxBase}InsertFaciltyWiseInvoiceStatus';
 
   static String get uploadTrfImage => '${_ashxBase}AddTrfPhoto';
+
   static String get addConsentPhoto => '${_ashxBase}AddConsentPhoto';
 }

@@ -35,7 +35,7 @@ class LoginController extends GetxController {
 
   final Rx<String?> selectedBetaUser = Rx<String?>(null);
   final Map<String, Map<String, String>> betaUsers = {
-    'Phlebotomist': {'user': '9975020286', 'pass': '123456'},
+    'Phlebotomist': {'user': '9975020273', 'pass': '123456'},
     'Runnerboy': {'user': '9975020297', 'pass': '123456'},
     'Team Lead': {'user': '9975020260', 'pass': '123456'},
     'Lab Accession': {'user': '9975020298', 'pass': '1234567'},

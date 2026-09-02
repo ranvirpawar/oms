@@ -3,12 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../controller/patient_queue_controller.dart';
 
-/// The "All / Rescheduled / Home Visit / Clinic Visit" stat row.
-///
-/// Doubles as a filter control — tapping a stat filters the list to that
-/// segment — so it earns its screen space instead of being purely
-/// decorative. The active filter is highlighted so the phlebotomist
-/// always knows what subset they're looking at.
+
 class QueueSummaryBar extends StatelessWidget {
   final QueueFilter activeFilter;
   final int allCount;
@@ -126,15 +121,30 @@ class _StatItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.14),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, size: 15, color: color),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.14),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, size: 12, color: color),
+                ),
+
+                Text(
+                  '$count',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: isActive ? color : AppColors.textPrimary,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 6),
+           /* const SizedBox(height: 6),
             Text(
               '$count',
               style: TextStyle(
@@ -142,14 +152,14 @@ class _StatItem extends StatelessWidget {
                 fontWeight: FontWeight.w800,
                 color: isActive ? color : AppColors.textPrimary,
               ),
-            ),
-            const SizedBox(height: 1),
+            ),*/
+            const SizedBox(height: 4),
             Text(
               label,
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 9.5,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textQuaternary,

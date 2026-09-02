@@ -23,7 +23,12 @@ class PatientQueueView extends GetView<PatientQueueController> {
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       appBar: CustomAppBar(
-        title: "Patient Queue",
+        title: 'Patient Queue',
+        enableSearch: true,
+        searchHint: 'Search by name, ID, or test',
+        searchController: controller.searchController,
+        onSearchClosed: controller.clearSearch,
+        onSearchCleared: controller.clearSearch,
         actions: [
           Obx(
                 () => IconButton(
@@ -98,13 +103,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
               onFilterSelected: controller.setFilter,
             ),
           ),
-          Obx(
-                () => QueueSearchBar(
-              controller: controller.searchController,
-              showClear: controller.isSearching,
-              onClear: controller.clearSearch,
-            ),
-          ),
+
           Expanded(
             child: Obx(() {
               final patients = controller.filteredPatients;
@@ -167,7 +166,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
     if (patient.status == PatientStatus.accepted) {
       controller.startRoute(patient.id);
     } else {
-      controller.acceptAndStart(patient.id);
+      controller.acceptAndStart(patient);
     }
   }
 

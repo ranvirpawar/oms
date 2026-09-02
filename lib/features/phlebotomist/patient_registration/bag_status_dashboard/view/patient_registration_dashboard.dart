@@ -595,7 +595,7 @@ class _ActionRow extends StatelessWidget {
             // AFTER
             Expanded(
               child: _SmallButton(
-                label: 'Register',
+                label: 'Collect',
                 icon: Icons.person_add_alt_1,
                 color: controller.isBagFull(session.bagId)
                     ? const Color(0xFFCBD5E0) // greyed out when full
