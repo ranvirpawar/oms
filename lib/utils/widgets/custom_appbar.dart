@@ -3,6 +3,10 @@ import 'package:get/get.dart';
 
 import '../../theme/app_colors.dart';
 
+import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final Object title;
   final bool showBackButton;
@@ -20,7 +24,7 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   // ── Search API ──────────────────────────────────────────────────
   final bool enableSearch;
   final String searchHint;
-  final TextEditingController? searchController; // optional – owns one if null
+  final TextEditingController? searchController;
   final ValueChanged<String>? onSearchChanged;
   final ValueChanged<String>? onSearchSubmitted;
   final VoidCallback? onSearchOpened;
@@ -41,7 +45,6 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
     this.onDrawerPressed,
     this.centerTitle = true,
     this.flexibleSpace,
-    // Search
     this.enableSearch = false,
     this.searchHint = 'Search...',
     this.searchController,
@@ -64,6 +67,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
   late final FocusNode _focusNode;
   bool _isSearchMode = false;
   bool _ownsController = false;
+  bool _hasText = false;
 
   @override
   void initState() {
@@ -90,14 +94,15 @@ class _CustomAppBarState extends State<CustomAppBar> {
 
   void _onTextChanged() {
     widget.onSearchChanged?.call(_controller.text);
-    // Rebuild so clear button appears/disappears
-    setState(() {});
+    final hasText = _controller.text.isNotEmpty;
+    if (hasText != _hasText) {
+      setState(() => _hasText = hasText); // only rebuild when it flips
+    }
   }
 
   void _openSearch() {
     setState(() => _isSearchMode = true);
     widget.onSearchOpened?.call();
-    // Wait one frame so the TextField is in the tree
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNode.requestFocus();
     });
@@ -106,7 +111,10 @@ class _CustomAppBarState extends State<CustomAppBar> {
   void _closeSearch() {
     _controller.clear();
     widget.onSearchCleared?.call();
-    setState(() => _isSearchMode = false);
+    setState(() {
+      _isSearchMode = false;
+      _hasText = false;
+    });
     _focusNode.unfocus();
     widget.onSearchClosed?.call();
   }
@@ -114,6 +122,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
   void _clearSearch() {
     _controller.clear();
     widget.onSearchCleared?.call();
+    _focusNode.requestFocus(); // keep editing, don't collapse the field
   }
 
   @override
@@ -122,7 +131,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
 
     return AppBar(
       leading: _buildLeading(context, theme),
-      title: _isSearchMode ? _buildSearchField() : _buildTitle(context),
+      title: _buildTitleArea(context),
       centerTitle: false,
       backgroundColor: Colors.transparent,
       flexibleSpace: Container(
@@ -142,14 +151,38 @@ class _CustomAppBarState extends State<CustomAppBar> {
       ),
       elevation: 4,
       leadingWidth: _isSearchMode ? 48 : 34,
-      actions: _isSearchMode ? _buildSearchActions() : _buildNormalActions(),
+      actions: _buildActions(),
     );
   }
 
-  // ── Title ───────────────────────────────────────────────────────
-  Widget _buildTitle(BuildContext context) {
-    if (widget.title is Widget) return widget.title as Widget;
+  // ── Title / Search swap ─────────────────────────────────────────
+  Widget _buildTitleArea(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SizeTransition(
+            axis: Axis.horizontal,
+            axisAlignment: -1,
+            sizeFactor: animation,
+            child: child,
+          ),
+        );
+      },
+      child: _isSearchMode
+          ? _buildGlassSearchField(key: const ValueKey('search'))
+          : _buildTitle(context, key: const ValueKey('title')),
+    );
+  }
+
+  Widget _buildTitle(BuildContext context, {Key? key}) {
+    if (widget.title is Widget)
+      return KeyedSubtree(key: key, child: widget.title as Widget);
     return Text(
+      key: key,
       widget.title as String,
       style: TextStyle(
         fontSize: 16,
@@ -159,50 +192,152 @@ class _CustomAppBarState extends State<CustomAppBar> {
     );
   }
 
-  // ── Search Field ────────────────────────────────────────────────
-  Widget _buildSearchField() {
-    return TextField(
-      controller: _controller,
-      focusNode: _focusNode,
-      autofocus: true,
-      textInputAction: TextInputAction.search,
-      style: const TextStyle(
-        fontSize: 16,
-        color: Colors.white,
-        fontWeight: FontWeight.w500,
+  // ── Liquid-glass search field ────────────────────────────────────
+  Widget _buildGlassSearchField({Key? key}) {
+    return Container(
+      key: key,
+      height: 40,
+      margin: const EdgeInsets.only(right: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 8,
+            offset: const Offset(0, 0),
+          ),
+        ],
       ),
-      cursorColor: Colors.white,
-      decoration: InputDecoration(
-        hintText: widget.searchHint,
-        hintStyle: TextStyle(
-          color: Colors.white.withOpacity(0.75),
-          fontSize: 15,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: Colors.white.withOpacity(0.16),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.30),
+                width: 1,
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withOpacity(0.10),
+                  Colors.white.withOpacity(0.02),
+                ],
+              ),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: 12),
+                Icon(
+                  Icons.search_rounded,
+                  size: 18,
+                  color: Colors.white.withOpacity(0.75),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    autofocus: true,
+                    textInputAction: TextInputAction.search,
+                    cursorColor: Colors.white,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    decoration: InputDecoration(
+                      // Explicitly kill any inherited theme fill —
+                      // this is what was causing white-on-white.
+                      filled: false,
+                      fillColor: Colors.transparent,
+                      isCollapsed: true,
+                      hintText: widget.searchHint,
+                      hintStyle: TextStyle(
+                        color: Colors.white.withOpacity(0.65),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                    ),
+                    onSubmitted: (value) {
+                      widget.onSearchSubmitted?.call(value);
+                    },
+                  ),
+                ),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 150),
+                  transitionBuilder: (child, anim) => FadeTransition(
+                    opacity: anim,
+                    child: ScaleTransition(scale: anim, child: child),
+                  ),
+                  child: _hasText
+                      ? IconButton(
+                          key: const ValueKey('clear'),
+                          icon: Icon(
+                            Icons.clear_rounded,
+                            size: 18,
+                            color: Colors.white.withOpacity(0.85),
+                          ),
+                          splashRadius: 16,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
+                          onPressed: _clearSearch,
+                          tooltip: 'Clear',
+                        )
+                      : const SizedBox(width: 4, key: ValueKey('empty')),
+                ),
+              ],
+            ),
+          ),
         ),
-        border: InputBorder.none,
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(vertical: 12),
       ),
-      onSubmitted: (value) {
-        widget.onSearchSubmitted?.call(value);
-        _focusNode.unfocus();
-      },
     );
   }
 
   // ── Leading ─────────────────────────────────────────────────────
   Widget? _buildLeading(BuildContext context, ThemeData theme) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 200),
+      transitionBuilder: (child, anim) => FadeTransition(
+        opacity: anim,
+        child: ScaleTransition(scale: anim, child: child),
+      ),
+      child: _resolveLeading(context, theme),
+    );
+  }
+
+  Widget? _resolveLeading(BuildContext context, ThemeData theme) {
     if (_isSearchMode) {
       return IconButton(
+        key: const ValueKey('close'),
         icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
         onPressed: _closeSearch,
         tooltip: 'Close search',
       );
     }
 
-    if (widget.leading != null) return widget.leading;
+    if (widget.leading != null) {
+      return KeyedSubtree(
+        key: const ValueKey('custom'),
+        child: widget.leading!,
+      );
+    }
 
     if (widget.showBackButton) {
       return IconButton(
+        key: const ValueKey('back'),
         icon: Icon(
           Icons.arrow_back_ios_new_rounded,
           color: widget.titleColor ?? theme.colorScheme.onPrimary,
@@ -213,22 +348,27 @@ class _CustomAppBarState extends State<CustomAppBar> {
 
     if (widget.showDrawerButton) {
       return IconButton(
+        key: const ValueKey('drawer'),
         icon: Icon(
           Icons.menu,
           color: widget.titleColor ?? theme.colorScheme.onPrimary,
         ),
-        onPressed: widget.onDrawerPressed ?? () => Scaffold.of(context).openDrawer(),
+        onPressed:
+            widget.onDrawerPressed ?? () => Scaffold.of(context).openDrawer(),
       );
     }
 
-    return null;
+    return const SizedBox.shrink(key: ValueKey('none'));
   }
 
   // ── Actions ─────────────────────────────────────────────────────
-  List<Widget> _buildNormalActions() {
+  // Clear icon now lives inside the glass field itself, so in search
+  // mode we just show whatever extra actions were passed in (if any);
+  // the search toggle icon only appears when not searching.
+  List<Widget> _buildActions() {
     return [
       if (widget.actions != null) ...widget.actions!,
-      if (widget.enableSearch)
+      if (widget.enableSearch && !_isSearchMode)
         IconButton(
           icon: const Icon(Icons.search_rounded, color: Colors.white),
           onPressed: _openSearch,
@@ -236,18 +376,9 @@ class _CustomAppBarState extends State<CustomAppBar> {
         ),
     ];
   }
+}
 
-  List<Widget> _buildSearchActions() {
-    if (_controller.text.isEmpty) return const [];
-    return [
-      IconButton(
-        icon: const Icon(Icons.clear_rounded, color: Colors.white, size: 20),
-        onPressed: _clearSearch,
-        tooltip: 'Clear',
-      ),
-    ];
-  }
-}/*class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
+/*class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Object title;
   final bool showBackButton;
   final bool showDrawerButton; // New property
@@ -349,5 +480,3 @@ class _CustomAppBarState extends State<CustomAppBar> {
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }*/
-
-
