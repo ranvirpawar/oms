@@ -200,8 +200,7 @@ class PatientQueueController extends GetxController {
     try {
       final success = await _service.acceptAndStart(
         patient,
-        createdBy: int.tryParse(empId.value) ?? 0,
-        unitId: unitId.value,
+        updatedBy: int.tryParse(empId.value) ?? 0,
       );
       if (success) {
         Get.snackbar('Visit accepted', '',
@@ -212,6 +211,9 @@ class PatientQueueController extends GetxController {
         Get.snackbar('Action failed', 'Please try again.',
             snackPosition: SnackPosition.BOTTOM);
       }
+    } on PatientQueueException catch (e) {
+      Get.snackbar('Action failed', e.message,
+          snackPosition: SnackPosition.BOTTOM);
     } catch (_) {
       Get.snackbar('Action failed',
           'Please check your connection and try again.',
@@ -228,19 +230,35 @@ class PatientQueueController extends GetxController {
     successMessage: 'Route started',
   );
 
-  Future<void> reject(String patientId) => _runAction(
-    patientId,
-        () => _service.reject(patientId),
+  Future<void> reject(AssignedPatient patient, {int? reasonId}) => _runAction(
+    patient.id,
+        () => _service.reject(
+      patient,
+      updatedBy: int.tryParse(empId.value) ?? 0,
+      reasonId: reasonId,
+    ),
     PatientStatus.cancelled,
     successMessage: 'Assignment rejected',
   );
 
-  Future<void> reschedule(String patientId) => _runAction(
-    patientId,
-        () => _service.reschedule(patientId),
-    PatientStatus.rescheduled,
-    successMessage: 'Visit rescheduled',
-  );
+  Future<void> reschedule(
+      AssignedPatient patient, {
+        required DateTime newDate,
+        required String startTime,
+        required String endTime,
+      }) =>
+      _runAction(
+        patient.id,
+            () => _service.reschedule(
+          patient,
+          updatedBy: int.tryParse(empId.value) ?? 0,
+          newDate: newDate,
+          startTime: startTime,
+          endTime: endTime,
+        ),
+        PatientStatus.rescheduled,
+        successMessage: 'Visit rescheduled',
+      );
 
   Future<void> _runAction(
       String patientId,

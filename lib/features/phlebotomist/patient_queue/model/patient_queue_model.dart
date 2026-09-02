@@ -71,17 +71,20 @@ class TubeRequirement {
 class AssignedPatient {
   // Identifiers needed later for the accept API body
   final int sampleCollectionOrderId;
-  final int patientId;
+  final String patientId;
   final int? orderAssignDetailId;
   final int? assignStatusId;
   final int? userId;
 
-  final String orderId;      // OMSOrderID / OrderID for display
+
+  final String orderId;      // OrderID for display
+  final String? omsOrderId;      // OrderID for display
   final String? title;
   final String firstName;
   final String? middleName;
   final String? lastName;
   final String name;         // PatientName, display-ready
+  final int? userRosterId;
 
   final int? age;
   final String? gender;
@@ -112,6 +115,8 @@ class AssignedPatient {
     this.assignStatusId,
     this.userId,
     required this.orderId,
+    this.omsOrderId,
+    this.userRosterId,
     this.title,
     required this.firstName,
     this.middleName,
@@ -271,16 +276,15 @@ class AssignedPatient {
     return AssignedPatient(
       sampleCollectionOrderId:
       (json['SampleCollectionOrderID'] as num?)?.toInt() ?? 0,
-      patientId: (json['PatientID'] is String)
-          ? (int.tryParse(
-          RegExp(r'\d+').firstMatch(json['PatientID'] as String)?.group(0) ?? '0') ??
-          0)
-          : (json['PatientID'] as num?)?.toInt() ?? 0,
+      patientId: json['PatientID'] as String? ?? '',
+
       orderAssignDetailId: (json['OrderAssignDetailID'] as num?)?.toInt(),
       assignStatusId: (json['AssignStatusID'] as num?)?.toInt(),
       userId: (json['UserID'] as num?)?.toInt(),
       orderId:
-      json['OMSOrderID'] as String? ?? json['OrderID'] as String? ?? '',
+       json['OrderID'] as String? ?? '',
+      omsOrderId: json['OMSOrderID'] as String?,
+      userRosterId: json['UserRosterID'] ?? 0,
       title: json['Title'] as String?,
       firstName: json['FirstName'] as String? ?? '',
       middleName: json['MiddleName'] as String?,

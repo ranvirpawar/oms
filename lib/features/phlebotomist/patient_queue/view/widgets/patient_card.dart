@@ -128,7 +128,7 @@ class PatientCard extends StatelessWidget {
               const SizedBox(height: 3),
               Text(
                 _identitySubtitle(),
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 12,
@@ -199,7 +199,7 @@ class PatientCard extends StatelessWidget {
 
   Widget _buildAvatar() {
     return CircleAvatar(
-      radius: 24,
+      radius: 18,
       backgroundColor: AppColors.primary100,
       backgroundImage:
       patient.avatarUrl != null ? NetworkImage(patient.avatarUrl!) : null,
@@ -209,7 +209,7 @@ class PatientCard extends StatelessWidget {
         style: const TextStyle(
           color: AppColors.primary800,
           fontWeight: FontWeight.w700,
-          fontSize: 15,
+          fontSize: 14,
         ),
       )
           : null,
@@ -330,14 +330,14 @@ class PatientCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          QueueInfoChip(
+          patient.distanceKm != null ?QueueInfoChip(
             icon: Icons.social_distance_outlined,
             iconColor: AppColors.blue,
             label: 'Distance',
             value: patient.distanceKm != null
                 ? '${patient.distanceKm!.toStringAsFixed(1)} km away'
                 : '—',
-          ),
+          ):const SizedBox.shrink(),
           QueueInfoChip(
             icon: Icons.event_outlined,
             iconColor: AppColors.purple,
@@ -450,10 +450,13 @@ class PatientCard extends StatelessWidget {
   }
 
   String _identitySubtitle() {
-    final parts = <String>[];
-    if (patient.age != null) parts.add('Age: ${patient.age} Years');
-    parts.add('ID: ${patient.orderId}');
-    return parts.join('  |  ');
+    final ageLine = patient.age != null ? 'Age: ${patient.age} Years' : null;
+    final idLine = '${patient.orderId}';
+
+    if (ageLine != null) {
+      return '$ageLine\n$idLine';
+    }
+    return idLine;
   }
 
   String _maskedPhone(String phone) {

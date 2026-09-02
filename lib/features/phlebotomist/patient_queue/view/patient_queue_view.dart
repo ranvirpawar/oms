@@ -148,7 +148,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
                         ),
                         onTapDetails: () => _openPatientDetails(patient),
                         onReject: () => _confirmReject(context, patient),
-                        onReschedule: () => controller.reschedule(patient.id),
+                        onReschedule: (){LiquidSnack.error("comming soon");} /*=> controller.reschedule(patient)*/,
                         onPrimaryAction: () => _handlePrimaryAction(patient),
                       ),
                     ),
@@ -202,7 +202,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
           TextButton(
             onPressed: () {
               Get.back();
-              controller.reject(patient.id);
+              controller.reject(patient);
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.redText),
             child: const Text('Reject'),
