@@ -50,20 +50,20 @@ class QueueActionButton extends StatelessWidget {
         : Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (icon != null) ...[
+             /* if (icon != null) ...[
                 Icon(icon,
-                    size: 16,
+                    size: 14,
                     color: style == QueueActionStyle.outlined
                         ? color
                         : Colors.white),
                 const SizedBox(width: 6),
-              ],
+              ],*/
               Flexible(
                 child: Text(
                   label,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: style == QueueActionStyle.outlined
                         ? color
@@ -92,7 +92,7 @@ class QueueActionButton extends StatelessWidget {
                       : color.withOpacity(0.5)),
               foregroundColor: color,
               disabledForegroundColor: AppColors.textDisabled,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 0),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
             ),

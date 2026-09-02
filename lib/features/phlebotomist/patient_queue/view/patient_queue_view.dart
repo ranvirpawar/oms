@@ -1,28 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/patient_card.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/queue_empty_state.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/queue_error_state.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/queue_loading_skeleton.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/queue_search_bar.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/queue_summary_bar.dart';
+import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 
 import '../../../../theme/app_colors.dart';
 
+import '../../../../utils/ui_designs/liquid_snackbar.dart';
 import '../controller/patient_queue_controller.dart';
 
 import '../model/patient_queue_model.dart';
 
-
-/// Entry point of the phlebotomist's operational workflow.
-///
-/// Assigned Patients → Patient Details → Visit/Arrival → Sample
-/// Collection → Verification → Submission → Completed.
-///
-/// This screen's only job is to make it effortless to identify the right
-/// patient and move them into that workflow — so it stays a thin
-/// presentation layer over [PatientQueueController]; there is no business
-/// logic here.
 class PatientQueueView extends GetView<PatientQueueController> {
   const PatientQueueView({super.key});
 
@@ -30,14 +22,31 @@ class PatientQueueView extends GetView<PatientQueueController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgPage,
+      appBar: CustomAppBar(
+        title: "Patient Queue",
+        actions: [
+          Obx(
+                () => IconButton(
+              onPressed: controller.isRefreshing.value
+                  ? null
+                  : controller.refreshPatients,
+              icon: controller.isRefreshing.value
+                  ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+                  : const Icon(Icons.refresh_rounded, color: Colors.white),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         bottom: false,
-        child: Column(
-          children: [
-            _buildAppBar(context),
-            Expanded(child: _buildBody(context)),
-          ],
-        ),
+        child: Column(children: [Expanded(child: _buildBody(context))]),
       ),
     );
   }
@@ -45,51 +54,6 @@ class PatientQueueView extends GetView<PatientQueueController> {
   // -----------------------------------------------------------------
   // App bar
   // -----------------------------------------------------------------
-  Widget _buildAppBar(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: AppColors.primaryGradient,
-      ),
-      padding: const EdgeInsets.fromLTRB(8, 8, 16, 20),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Get.back(),
-            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-          ),
-          const SizedBox(width: 4),
-          const Expanded(
-            child: Text(
-              'Patient Queue',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 19,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          Obx(
-            () => IconButton(
-              onPressed: controller.isRefreshing.value
-                  ? null
-                  : controller.refreshPatients,
-              icon: controller.isRefreshing.value
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Icon(Icons.refresh_rounded, color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   // -----------------------------------------------------------------
   // Body — switches on load state
@@ -99,9 +63,9 @@ class PatientQueueView extends GetView<PatientQueueController> {
       switch (controller.loadState.value) {
         case QueueLoadState.initial:
         case QueueLoadState.loading:
-          return Padding(
-            padding: const EdgeInsets.only(top: 16),
-            child: const QueueLoadingSkeleton(),
+          return const Padding(
+            padding: EdgeInsets.only(top: 16),
+            child: QueueLoadingSkeleton(),
           );
 
         case QueueLoadState.error:
@@ -125,7 +89,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
         children: [
           const SizedBox(height: 14),
           Obx(
-            () => QueueSummaryBar(
+                () => QueueSummaryBar(
               activeFilter: controller.activeFilter.value,
               allCount: controller.totalCount,
               rescheduledCount: controller.rescheduledCount,
@@ -135,7 +99,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
             ),
           ),
           Obx(
-            () => QueueSearchBar(
+                () => QueueSearchBar(
               controller: controller.searchController,
               showClear: controller.isSearching,
               onClear: controller.clearSearch,
@@ -146,8 +110,9 @@ class PatientQueueView extends GetView<PatientQueueController> {
               final patients = controller.filteredPatients;
 
               if (patients.isEmpty) {
-                final isFiltered = controller.isSearching ||
-                    controller.activeFilter.value != QueueFilter.all;
+                final isFiltered =
+                    controller.isSearching ||
+                        controller.activeFilter.value != QueueFilter.all;
                 return ListView(
                   // Wrapped in a scrollable so pull-to-refresh still works
                   // even when the filtered result is empty.
@@ -157,9 +122,9 @@ class PatientQueueView extends GetView<PatientQueueController> {
                       isFiltered: isFiltered,
                       onClearFilter: isFiltered
                           ? () {
-                              controller.setFilter(QueueFilter.all);
-                              controller.clearSearch();
-                            }
+                        controller.setFilter(QueueFilter.all);
+                        controller.clearSearch();
+                      }
                           : null,
                     ),
                   ],
@@ -173,17 +138,18 @@ class PatientQueueView extends GetView<PatientQueueController> {
                 itemBuilder: (context, index) {
                   final patient = patients[index];
                   return _AnimatedListEntry(
-                    
+                    key: ValueKey(patient.id),
                     index: index,
                     child: Obx(
-                      () => PatientCard(
+                          () => PatientCard(
+                        key: ValueKey('card_${patient.id}'),
                         patient: patient,
-                        isProcessing:
-                            controller.processingIds.contains(patient.id),
+                        isProcessing: controller.processingIds.contains(
+                          patient.id,
+                        ),
                         onTapDetails: () => _openPatientDetails(patient),
                         onReject: () => _confirmReject(context, patient),
-                        onReschedule: () =>
-                            controller.reschedule(patient.id),
+                        onReschedule: () => controller.reschedule(patient.id),
                         onPrimaryAction: () => _handlePrimaryAction(patient),
                       ),
                     ),
@@ -209,10 +175,16 @@ class PatientQueueView extends GetView<PatientQueueController> {
     // Placeholder navigation hook — wire up to the real Patient Details
     // route once it exists, e.g. `Get.toNamed(Routes.PATIENT_DETAILS,
     // arguments: patient.id)`.
-    Get.snackbar(
-      patient.name,
-      'Open patient details for ${patient.orderId}',
-      snackPosition: SnackPosition.BOTTOM,
+    // Get.snackbar(
+    //   patient.name,
+    //   'Open patient details for ${patient.orderId}',
+    //   snackPosition: SnackPosition.BOTTOM,
+    // );
+    LiquidSnack.show(
+      message: 'Open patient details for ${patient.orderId}',
+      variant: SnackVariant.info,
+      position: SnackPosition.top,
+      duration: const Duration(seconds: 2),
     );
   }
 
@@ -221,24 +193,19 @@ class PatientQueueView extends GetView<PatientQueueController> {
     // triggered by an accidental tap while walking/traveling.
     Get.dialog(
       AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Reject this assignment?'),
         content: Text(
           'You are about to reject the assignment for ${patient.name} (${patient.orderId}). This cannot be undone.',
         ),
         actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Cancel'),
-          ),
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
           TextButton(
             onPressed: () {
               Get.back();
               controller.reject(patient.id);
             },
-            style:
-                TextButton.styleFrom(foregroundColor: AppColors.redText),
+            style: TextButton.styleFrom(foregroundColor: AppColors.redText),
             child: const Text('Reject'),
           ),
         ],
@@ -247,15 +214,16 @@ class PatientQueueView extends GetView<PatientQueueController> {
   }
 }
 
-/// Lightweight staggered fade + slide-in for list entrance — subtle,
-/// fast, and only plays once per card build rather than on every rebuild
-/// triggered by Obx (each card's own AnimatedBuilder-free wrapper keys off
-/// the list index so it only fires when the item first appears in the tree).
 class _AnimatedListEntry extends StatefulWidget {
   final int index;
   final Widget child;
+  final Key? key;
 
-  const _AnimatedListEntry({required this.index, required this.child});
+  const _AnimatedListEntry({
+    required this.index,
+    required this.child,
+    this.key,
+  });
 
   @override
   State<_AnimatedListEntry> createState() => _AnimatedListEntryState();
@@ -295,6 +263,7 @@ class _AnimatedListEntryState extends State<_AnimatedListEntry>
   @override
   Widget build(BuildContext context) {
     return FadeTransition(
+      key: widget.key,
       opacity: _fade,
       child: SlideTransition(position: _slide, child: widget.child),
     );

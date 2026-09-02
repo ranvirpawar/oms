@@ -201,16 +201,16 @@ class PatientCard extends StatelessWidget {
       radius: 24,
       backgroundColor: AppColors.primary100,
       backgroundImage:
-          patient.avatarUrl != null ? NetworkImage(patient.avatarUrl!) : null,
+      patient.avatarUrl != null ? NetworkImage(patient.avatarUrl!) : null,
       child: patient.avatarUrl == null
           ? Text(
-              _initials(patient.name),
-              style: const TextStyle(
-                color: AppColors.primary800,
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-              ),
-            )
+        _initials(patient.name),
+        style: const TextStyle(
+          color: AppColors.primary800,
+          fontWeight: FontWeight.w700,
+          fontSize: 15,
+        ),
+      )
           : null,
     );
   }
@@ -358,6 +358,7 @@ class PatientCard extends StatelessWidget {
     );
   }
 
+
   Widget _buildActionsRow() {
     if (_isTerminal) {
       // No actions for completed/cancelled/failed items — keep the
@@ -373,16 +374,20 @@ class PatientCard extends StatelessWidget {
     if (isRescheduled) {
       return Row(
         children: [
-          QueueActionButton(
-            label: 'Reject',
-            icon: Icons.close_rounded,
-            color: AppColors.redText,
-            style: QueueActionStyle.outlined,
-            isDisabled: isProcessing,
-            onPressed: onReject,
+          Expanded(
+            flex: 2,
+            child: QueueActionButton(
+              label: 'Reject',
+              icon: Icons.close_rounded,
+              color: AppColors.redText,
+              style: QueueActionStyle.outlined,
+              isDisabled: isProcessing,
+              onPressed: onReject,
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
+            flex: 3,
             child: QueueActionButton(
               label: 'Rescheduled',
               icon: Icons.event_repeat_rounded,
@@ -398,13 +403,16 @@ class PatientCard extends StatelessWidget {
 
     return Row(
       children: [
-        QueueActionButton(
-          label: 'Reject',
-          icon: Icons.close_rounded,
-          color: AppColors.redText,
-          style: QueueActionStyle.outlined,
-          isDisabled: isProcessing,
-          onPressed: onReject,
+        Expanded(
+          flex: 1,
+          child: QueueActionButton(
+            label: 'Reject',
+            icon: Icons.close_rounded,
+            color: AppColors.redText,
+            style: QueueActionStyle.outlined,
+            isDisabled: isProcessing,
+            onPressed: onReject,
+          ),
         ),
         const SizedBox(width: 8),
         Expanded(
