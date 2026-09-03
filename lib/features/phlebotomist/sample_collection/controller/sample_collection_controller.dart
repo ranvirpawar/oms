@@ -1,9 +1,3 @@
-// sample_collection_controller.dart
-//
-// GetX Controller for the Sample Collection module (Order Confirmation ->
-// OTP Verification -> Sample Collection -> Submit). Talks only to
-// SampleCollectionService; screens talk only to this controller.
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -12,10 +6,11 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../services/auth_manager.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
-// Adjust this import to wherever your auth/session manager actually lives.
+
 
 import '../model/sample_collection_models.dart';
 import '../service/sample_collection_service.dart';
+import '../view/widgets/barcode_scanner_sheet.dart';
 
 /// Per-sample-type UI state: one of these exists for every entry in
 /// `orderDetails.sampleRequirements`.
@@ -341,57 +336,11 @@ class SampleCollectionController extends GetxController {
     final scannerController = _ensureScannerController();
 
     Get.bottomSheet(
-      Container(
-        height: Get.height * 0.6,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Scan ${entry.sampleType} barcode',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => _closeScanner(entry),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: MobileScanner(
-                controller: scannerController,
-                onDetect: (capture) {
-                  final List<Barcode> barcodes = capture.barcodes;
-                  for (final barcode in barcodes) {
-                    if (barcode.rawValue != null) {
-                      _processScanResult(entry, barcode.rawValue!);
-                      break;
-                    }
-                  }
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                'Position the barcode within the frame to scan',
-                style: TextStyle(color: Colors.grey[600]),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
-        ),
+      BarcodeScannerSheet(
+        sampleType: entry.sampleType,
+        scannerController: scannerController,
+        onCodeDetected: (code) => _processScanResult(entry, code),
+        onClose: () => _closeScanner(entry),
       ),
       isDismissible: false,
     );

@@ -18,7 +18,8 @@ class ComplicationSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      if (controller.complicationOptions.isEmpty) return const SizedBox.shrink();
+      if (controller.complicationOptions.isEmpty)
+        return const SizedBox.shrink();
 
       return Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -33,15 +34,23 @@ class ComplicationSection extends StatelessWidget {
           children: [
             const Row(
               children: [
-                Icon(Icons.health_and_safety_outlined,
-                    size: 18, color: AppColors.blue),
+                Icon(
+                  Icons.health_and_safety_outlined,
+                  size: 18,
+                  color: AppColors.blue,
+                ),
                 SizedBox(width: 8),
-                Text(
-                  'Record any complications during collection?',
-                  style: TextStyle(
+                Expanded(
+                  child: Text(
+                    'Record any complications during collection?',
+                    style: const TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary),
+                      color: AppColors.textPrimary,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.visible,
+                  ),
                 ),
               ],
             ),
@@ -55,7 +64,9 @@ class ComplicationSection extends StatelessWidget {
                       child: Text(
                         option.name,
                         style: const TextStyle(
-                            fontSize: 12.5, color: AppColors.textSecondary),
+                          fontSize: 12.5,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
                     _yesNoToggle(option.complicationId),
