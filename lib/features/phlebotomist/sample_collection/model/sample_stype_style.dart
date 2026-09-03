@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lifenity_connect/constants/app_assets.dart';
 
+import '../../../../theme/app_colors.dart';
+
 // NOTE: once your sample-type SVGs are ready, wire them in via
 // SvgPicture.asset(style.iconAsset, colorFilter: ColorFilter.mode(style.color, BlendMode.srcIn))
 // inside `sampleTypeIcon()` below. The lookup keys/API won't need to change —
@@ -24,7 +26,7 @@ class SampleTypeStyles {
   static const _default = SampleTypeStyle(
     iconAsset: AppAssets.testTube,
     fallbackIcon: Icons.science_rounded,
-    color: Color(0xFF6B7280),
+    color: AppColors.primary,
   );
 
   // Add / rename keys here as your real sample-type names come in from the API.

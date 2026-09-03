@@ -11,6 +11,7 @@ import 'package:get/get.dart';
 
 import '../../../../../theme/app_colors.dart';
 
+import '../../../../../utils/ui_designs/tap_menu.dart';
 import '../../controller/sample_collection_controller.dart';
 
 import '../../model/sample_stype_style.dart';
@@ -36,7 +37,11 @@ class SampleItemCard extends StatelessWidget {
         SampleCollectionStatus.collected => AppColors.greenBorder,
         SampleCollectionStatus.incomplete => AppColors.redText,
         SampleCollectionStatus.pending => AppColors.border,
-      };
+      };/*final borderColor = switch (status) {
+        SampleCollectionStatus.collected => AppColors.greenBorder,
+        SampleCollectionStatus.incomplete => AppColors.redText,
+        SampleCollectionStatus.pending => AppColors.border,
+      };*/
 
       return AnimatedContainer(
         duration: const Duration(milliseconds: 180),
@@ -49,7 +54,7 @@ class SampleItemCard extends StatelessWidget {
             color: borderColor,
             width: status == SampleCollectionStatus.pending ? 1 : 1.4,
           ),
-          boxShadow: AppColors.shadowSm,
+          // boxShadow: AppColors.shadowSm,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,7 +79,7 @@ class SampleItemCard extends StatelessWidget {
                       Text(
                         entry.sampleType,
                         style: const TextStyle(
-                          fontSize: 14.5,
+                          fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
                         ),
@@ -83,7 +88,7 @@ class SampleItemCard extends StatelessWidget {
                         Text(
                           '${entry.volumeRequiredMl.trim()} required',
                           style: const TextStyle(
-                            fontSize: 11,
+                            fontSize: 10,
                             color: AppColors.textTertiary,
                             fontWeight: FontWeight.w500,
                           ),
@@ -92,20 +97,22 @@ class SampleItemCard extends StatelessWidget {
                   ),
                 ),
                 _StatusChip(status: status),
+                /// three dots icon
+
               ],
             ),
             const SizedBox(height: 12),
             if (status == SampleCollectionStatus.incomplete)
               _buildIncompleteBanner(context)
             else
-              _buildBarcodeRow(),
+              _buildBarcodeRow(context),
           ],
         ),
       );
     });
   }
 
-  Widget _buildBarcodeRow() {
+  Widget _buildBarcodeRow(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -117,7 +124,23 @@ class SampleItemCard extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        _NotCollectedButton(onTap: () => controller.markAsNotCollected(entry)),
+        _MoreActionsButton(
+          onTapDown: (globalPosition) {
+            TapPositionMenu.show(
+              context: context, // pass BuildContext from build() into this widget, see note below
+              tapPosition: globalPosition,
+              items: [
+                TapMenuItem(
+                  icon: Icons.remove_circle_outline_rounded,
+                  label: 'Sample cannot be collected',
+                  isDestructive: true,
+                  onTap: () => controller.markAsNotCollected(entry),
+                ),
+              ],
+            );
+          },
+        ),
+        // _NotCollectedButton(onTap: () => controller.markAsNotCollected(entry)),
       ],
     );
   }
@@ -250,6 +273,33 @@ class _StatusChip extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+/// 44x44 "..." action trigger — opens the reusable TapPositionMenu
+/// anchored right where the user tapped.
+class _MoreActionsButton extends StatelessWidget {
+  final void Function(Offset globalPosition) onTapDown;
+
+  const _MoreActionsButton({required this.onTapDown});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (details) => onTapDown(details.globalPosition),
+      child: Material(
+        color: AppColors.grayLight,
+        borderRadius: BorderRadius.circular(12),
+        child: const SizedBox(
+          width: 44,
+          height: 44,
+          child: Icon(
+            Icons.more_vert_rounded,
+            size: 19,
+            color: AppColors.textMuted,
+          ),
+        ),
       ),
     );
   }

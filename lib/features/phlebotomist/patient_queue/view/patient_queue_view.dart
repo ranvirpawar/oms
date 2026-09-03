@@ -6,6 +6,9 @@ import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widget
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/queue_loading_skeleton.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/queue_search_bar.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/queue_summary_bar.dart';
+import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/rejected_assignment_sheet.dart';
+import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/rescheduled_slot.dart';
+import 'package:lifenity_connect/features/phlebotomist/sample_collection/service/sample_collection_service.dart';
 import 'package:lifenity_connect/routes/route_manager.dart';
 import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 
@@ -149,7 +152,16 @@ class PatientQueueView extends GetView<PatientQueueController> {
                         ),
                         onTapDetails: () => _openPatientDetails(patient),
                         onReject: () => _confirmReject(context, patient),
-                        onReschedule: (){LiquidSnack.error("comming soon");} /*=> controller.reschedule(patient)*/,
+                            onReschedule: () => RescheduleSheet.show(
+                              context,
+                              patient: patient,
+                              onConfirm: (date, start, end) => controller.reschedule(
+                                patient,
+                                newDate: date,
+                                startTime: start,
+                                endTime: end,
+                              ),
+                            ),
                         onPrimaryAction: () => _handlePrimaryAction(patient),
                       ),
                     ),
@@ -176,28 +188,15 @@ class PatientQueueView extends GetView<PatientQueueController> {
 
   }
 
-  void _confirmReject(BuildContext context, AssignedPatient patient) {
-    // A destructive action gets a confirmation step so it can't be
-    // triggered by an accidental tap while walking/traveling.
-    Get.dialog(
-      AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Reject this assignment?'),
-        content: Text(
-          'You are about to reject the assignment for ${patient.name} (${patient.orderId}). This cannot be undone.',
-        ),
-        actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () {
-              Get.back();
-              controller.reject(patient);
-            },
-            style: TextButton.styleFrom(foregroundColor: AppColors.redText),
-            child: const Text('Reject'),
-          ),
-        ],
-      ),
+  void _confirmReject(
+      BuildContext context,
+      AssignedPatient patient,
+      ) {
+    RejectAssignmentSheet.show(
+      context,
+      patient: patient,
+      controller: controller,
+      service: SampleCollectionService(),
     );
   }
 }

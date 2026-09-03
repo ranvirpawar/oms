@@ -218,7 +218,9 @@ class SampleCollectionController extends GetxController {
     isSendingOtp.value = true;
     otpError.value = '';
     try {
-      await _service.sendCollectionOtp(orderId: orderId, userId: empId.value);
+      // passed the mobile number of patient form the order we have
+      await _service.sendCollectionOtp(mobileNumber
+          : orderId, userId: empId.value);
       _startResendTimer();
     } catch (e) {
       otpError.value = 'Unable to send OTP. Please try again.';
@@ -259,6 +261,11 @@ class SampleCollectionController extends GetxController {
     isVerifyingOtp.value = true;
     otpError.value = '';
     try {
+      /*final success = await _service.verifyCollectionOtp(
+        mobileNumber: orderDetails.value!.patient.mobileNumber,
+        otp: otp,
+        userId: empId.value,
+      );*/
       final success =
           await _service.verifyCollectionOtp(orderId: orderId, otp: otp);
       if (success) {
@@ -442,7 +449,7 @@ class SampleCollectionController extends GetxController {
       orderId: orderId,
       userId: _userId,
       orderStatusCode: incomplete.isEmpty ? 'COLLECTED' : 'PARTIALLY_COLLECTED',
-      bagId: bagIdController.text.trim(),
+      bagId: "1004",
       notes: notesController.text.trim(),
       collectedAt: DateTime.now(),
       sampleCollectionDetails: collected

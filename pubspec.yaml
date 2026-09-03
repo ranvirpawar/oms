@@ -59,7 +59,7 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/lifenity-logo.png"
+  image_path: "assets/images/lifenity-healthcare.png"
 
   flavors:
     beta:

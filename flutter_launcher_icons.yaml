@@ -1,5 +1,5 @@
 flutter_launcher_icons:
-  image_path: "assets/images/lifenity-logo.png"
+  image_path: "assets/images/lifeniy-healthcare.png"
   android: "launcher_icon"
   min_sdk_android: 21
   ios: true

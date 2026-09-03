@@ -161,7 +161,7 @@ class IncompleteReasonOption {
       reasonId: json['IncompleteReasonID'] is int
           ? json['IncompleteReasonID'] as int
           : int.tryParse('${json['IncompleteReasonID']}') ?? 0,
-      reason: json['Reason'] as String? ?? '',
+      reason: json['IncompleteReason'] as String? ?? '',
     );
   }
 }

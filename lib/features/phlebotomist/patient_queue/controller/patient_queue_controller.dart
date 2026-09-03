@@ -255,7 +255,7 @@ class PatientQueueController extends GetxController {
   Future<void> startRoute(String patientId) => _runAction(
     patientId,
     () => _service.startRoute(patientId),
-    PatientStatus.inProgress,
+
     successMessage: 'Route started',
   );
 
@@ -266,7 +266,6 @@ class PatientQueueController extends GetxController {
       updatedBy: int.tryParse(empId.value) ?? 0,
       reasonId: reasonId,
     ),
-    PatientStatus.cancelled,
     successMessage: 'Assignment rejected',
   );
 
@@ -284,31 +283,31 @@ class PatientQueueController extends GetxController {
       startTime: startTime,
       endTime: endTime,
     ),
-    PatientStatus.rescheduled,
+
     successMessage: 'Visit rescheduled',
   );
 
   Future<void> _runAction(
     String patientId,
-    Future<bool> Function() action,
-    PatientStatus nextStatus, {
+    Future<bool> Function() action, {
     required String successMessage,
   }) async {
     if (processingIds.contains(patientId)) return;
+
     processingIds.add(patientId);
+
     try {
       final success = await action();
+
       if (success) {
-        final index = _patients.indexWhere((p) => p.id == patientId);
-        if (index != -1) {
-          _patients[index] = _patients[index].copyWith(status: nextStatus);
-        }
         Get.snackbar(
           successMessage,
           '',
           snackPosition: SnackPosition.BOTTOM,
           duration: const Duration(seconds: 2),
         );
+
+        await fetchPatients();
       } else {
         Get.snackbar(
           'Action failed',

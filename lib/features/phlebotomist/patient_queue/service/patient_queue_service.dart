@@ -47,6 +47,7 @@ class PatientQueueService {
       }
 
       final output = body['output'];
+
       final List<dynamic> list = output is List ? output : [output];
 
       return list
@@ -88,9 +89,9 @@ class PatientQueueService {
         },
       ],
       'AssignStatusID': assignStatusId,
-      'RescheduleDate': rescheduleDate?.toIso8601String() ?? '',
-      'RescheduleStartTime': rescheduleStartTime ?? '',
-      'RescheduleEndTime': rescheduleEndTime ?? '',
+      'RescheduleDate': rescheduleDate?.toIso8601String() ?? null,
+      'RescheduleStartTime': rescheduleStartTime ?? null,
+      'RescheduleEndTime': rescheduleEndTime ?? null,
       'AssignRejectReasonID': rejectReasonId ?? 0,
       'UpdatedBy': updatedBy,
     };
@@ -156,3 +157,62 @@ class PatientQueueService {
     return true;
   }
 }
+// final dummyData = {
+//   "status": "Success",
+//   "message": "Order details",
+//   "output": {
+//     "SampleCollectionOrderID": 33,
+//     "OMSOrderID": "CL26090100000033",
+//     "OrderID": "TEST-ORD-20260901-005",
+//     "PatientID": "PAT-1004",
+//     "OrderAssignDetailID": 16,
+//     "AssignStatusID": 1,
+//     "UserID": 17,
+//     "UserRosterID": 1,
+//     "Status": "Assigned",
+//     "Priority": "High",
+//     "VisitType": "Clinic",
+//     "Title": "Mr",
+//     "FirstName": "Rakul",
+//     "MiddleName": null,
+//     "LastName": "Patil",
+//     "PatientName": "Mr Rakul  Patil",
+//     "Age": "34 Years",
+//     "Gender": "Male",
+//     "photoUrl": null,
+//     "MobileNumber": "9876501234",
+//     "AddressLine": "CIDCO",
+//     "City": "Aurangabad",
+//     "Pincode": "431001",
+//     "Latitude": 19.8762,
+//     "Longitude": 75.3433,
+//     "Address": "CIDCO, Aurangabad, 431001",
+//     "Clinic": "Chhatrapati Sambhajinagar GP 1",
+//     "SlotDate": "2026-09-02T10:54:01.74",
+//     "SlotStartTime": "09:00:00",
+//     "SlotEndTime": "09:30:00",
+//     "DistanceInKM": null,
+//     "FastingRequired": "Fasting Required",
+//     "Tests": [
+//       {
+//         "OrderID": "TEST-ORD-20260901-005",
+//         "TestID": 1,
+//         "TestName": "Free T4",
+//         "SampleTypeName": "Serum",
+//         "TubeId": 3,
+//         "TubeContent": "Plain Tube",
+//         "FastingRequired": "Fasting Not Required"
+//       },
+//       {
+//         "OrderID": "TEST-ORD-20260901-005",
+//         "TestID": 2,
+//         "TestName": "T3",
+//         "SampleTypeName": "Serum",
+//         "TubeId": 3,
+//         "TubeContent": "Plain Tube",
+//         "FastingRequired": "Fasting Not Required"
+//       }
+//     ]
+//   }
+// };
+// final output = dummyData['output'];

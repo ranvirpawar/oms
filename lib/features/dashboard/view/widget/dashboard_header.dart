@@ -306,7 +306,7 @@ class _DashboardHeaderContentState extends State<_DashboardHeaderContent>
 
   @override
   void dispose() {
-    _removeDropdown();
+    _removeDropdown(notify: false);
     _entrance.dispose();
     _pulse.dispose();
     super.dispose();
@@ -361,11 +361,14 @@ class _DashboardHeaderContentState extends State<_DashboardHeaderContent>
     setState(() => _pillExpanded = true);
   }
 
-  void _removeDropdown() {
+  void _removeDropdown({bool notify = true}) {
     _dropdownEntry?.remove();
     _dropdownEntry = null;
-    if (mounted) {
-      setState(() => _pillExpanded = false);
+
+    if (notify && mounted) {
+      setState(() {
+        _pillExpanded = false;
+      });
     } else {
       _pillExpanded = false;
     }

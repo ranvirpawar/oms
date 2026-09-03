@@ -358,13 +358,9 @@ class AppUrls {
   static String submitSampleCollection =
       '$_asmxBase/orders/{orderId}/collect_InsertSampleCollectionOrder_API';
 
+  static String sendOTPToPatient = '$_asmxBase/send-otp';
 
-
-
-
-
-
-
+  static String verifyPatientOTP = '$_asmxBase/verify-otp';
 
   // -------------------------
   // API Endpoints (.ashx)
