@@ -346,8 +346,20 @@ class AppUrls {
   static String getOrdersList = '$_asmxBase/orders/details';
   static String updateOrder = '$_asmxBase/UpdateSampleOrderStatus';
 
-  static String getSampleComplicationsList =
+  static String getComplicationsList =
       '$_asmxBase/GetSampleCollectionComplicationDetails';
+
+  static String getIncompleteReasons =
+      '$_asmxBase/GetSampleCollectionIncompleteReasonDetails';
+
+  static String getSampleRequirements =
+      '$_asmxBase/orders/{orderId}/sample-requirements';
+
+  static String submitSampleCollection =
+      '$_asmxBase/orders/{orderId}/collect_InsertSampleCollectionOrder_API';
+
+
+
 
 
 

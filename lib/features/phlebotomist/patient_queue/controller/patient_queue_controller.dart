@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:lifenity_connect/services/auth_manager.dart';
 
+import '../../../../utils/helper_functions/helper_methods.dart';
 import '../model/patient_queue_model.dart';
 import '../service/patient_queue_service.dart';
 
@@ -12,13 +13,12 @@ enum QueueFilter { all, homeVisit, clinicVisit, rescheduled }
 /// isLoading/hasError booleans) so the view can switch on a single value.
 enum QueueLoadState { initial, loading, loaded, empty, error }
 
-
 class PatientQueueController extends GetxController {
   final PatientQueueService _service;
   AuthManager authManager = Get.find<AuthManager>();
 
   PatientQueueController({PatientQueueService? service})
-      : _service = service ?? PatientQueueService();
+    : _service = service ?? PatientQueueService();
 
   // ---------------------------------------------------------------------
   // State
@@ -40,20 +40,14 @@ class PatientQueueController extends GetxController {
   /// fire duplicate requests.
   final RxSet<String> processingIds = <String>{}.obs;
 
-  final TextEditingController searchController = TextEditingController();
-
   @override
   void onInit() {
     super.onInit();
     getUserdata().then((_) => fetchPatients());
-    searchController.addListener(() {
-      searchQuery.value = searchController.text.trim();
-    });
   }
 
   @override
   void onClose() {
-    searchController.dispose();
     super.onClose();
   }
 
@@ -82,10 +76,12 @@ class PatientQueueController extends GetxController {
 
     final query = searchQuery.value.toLowerCase();
     if (query.isNotEmpty) {
-      result = result.where((p) =>
-          p.name.toLowerCase().contains(query) ||
-          p.orderId.toLowerCase().contains(query) ||
-          p.tests.any((t) => t.toLowerCase().contains(query)));
+      result = result.where(
+        (p) =>
+            p.name.toLowerCase().contains(query) ||
+            p.orderId.toLowerCase().contains(query) ||
+            p.tests.any((t) => t.toLowerCase().contains(query)),
+      );
     }
 
     final list = result.toList()
@@ -101,8 +97,9 @@ class PatientQueueController extends GetxController {
           PriorityLevel.high: 1,
           PriorityLevel.normal: 2,
         };
-        final pCompare =
-            priorityRank[a.priority]!.compareTo(priorityRank[b.priority]!);
+        final pCompare = priorityRank[a.priority]!.compareTo(
+          priorityRank[b.priority]!,
+        );
         if (pCompare != 0) return pCompare;
 
         // Then by slot time — patients without a slot go last.
@@ -116,25 +113,33 @@ class PatientQueueController extends GetxController {
   }
 
   int get totalCount => _patients.length;
+
   int get homeVisitCount =>
       _patients.where((p) => p.visitType == VisitType.home).length;
+
   int get clinicVisitCount =>
       _patients.where((p) => p.visitType == VisitType.clinic).length;
+
   int get rescheduledCount =>
       _patients.where((p) => p.status == PatientStatus.rescheduled).length;
 
   bool get isSearching => searchQuery.value.isNotEmpty;
-/// user loading
-  Future<void> getUserdata() async{
-    authManager.getUserData().then((data) {
-      if (data != null) {
-        final user = data['user'];
-        if (user != null && user.containsKey('EmpCode')) {
-          empId.value = user['EmpCode'].toString();
-        }
-      }
-    }).catchError((_) {});
+
+  /// user loading
+  Future<void> getUserdata() async {
+    authManager
+        .getUserData()
+        .then((data) {
+          if (data != null) {
+            final user = data['user'];
+            if (user != null && user.containsKey('EmpCode')) {
+              empId.value = user['EmpCode'].toString();
+            }
+          }
+        })
+        .catchError((_) {});
   }
+
   // ---------------------------------------------------------------------
   // Data loading
   // ---------------------------------------------------------------------
@@ -143,14 +148,18 @@ class PatientQueueController extends GetxController {
     loadState.value = QueueLoadState.loading;
     errorMessage.value = '';
     try {
-      final result =
-      await _service.fetchAssignedPatients(userId: empId.value);
+      final result = await _service.fetchAssignedPatients(userId: empId.value);
       _patients.assignAll(result);
-      loadState.value =
-      result.isEmpty ? QueueLoadState.empty : QueueLoadState.loaded;
+      loadState.value = result.isEmpty
+          ? QueueLoadState.empty
+          : QueueLoadState.loaded;
     } on PatientQueueException catch (e) {
-      errorMessage.value = e.message;
-      loadState.value = QueueLoadState.error;
+      kPrint(errorMessage.value);
+      if (errorMessage.value.trim().toLowerCase() == 'no record found') {
+        loadState.value = QueueLoadState.empty;
+      } else {
+        loadState.value = QueueLoadState.error;
+      }
     } catch (_) {
       errorMessage.value = 'Something went wrong. Please try again.';
       loadState.value = QueueLoadState.error;
@@ -164,30 +173,39 @@ class PatientQueueController extends GetxController {
     if (isRefreshing.value) return;
     isRefreshing.value = true;
     try {
-      final result =
-      await _service.fetchAssignedPatients(userId: empId.value);
+      final result = await _service.fetchAssignedPatients(userId: empId.value);
       _patients.assignAll(result);
-      loadState.value =
-      result.isEmpty ? QueueLoadState.empty : QueueLoadState.loaded;
+      loadState.value = result.isEmpty
+          ? QueueLoadState.empty
+          : QueueLoadState.loaded;
       errorMessage.value = '';
     } on PatientQueueException catch (e) {
-      Get.snackbar('Refresh failed', e.message,
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Refresh failed',
+        e.message,
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } catch (_) {
-      Get.snackbar('Refresh failed',
-          'Please check your connection and try again.',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Refresh failed',
+        'Please check your connection and try again.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       isRefreshing.value = false;
     }
   }
 
-
   void retry() => fetchPatients();
+
   void setFilter(QueueFilter filter) => activeFilter.value = filter;
+
   void clearSearch() {
-    searchController.clear();
     searchQuery.value = '';
+  }
+
+  void updateSearch(String value) {
+    searchQuery.value = value.trim();
   }
 
   // ---------------------------------------------------------------------
@@ -203,21 +221,32 @@ class PatientQueueController extends GetxController {
         updatedBy: int.tryParse(empId.value) ?? 0,
       );
       if (success) {
-        Get.snackbar('Visit accepted', '',
-            snackPosition: SnackPosition.BOTTOM,
-            duration: const Duration(seconds: 2));
+        Get.snackbar(
+          'Visit accepted',
+          '',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+        );
         await fetchPatients(); // refresh from server
       } else {
-        Get.snackbar('Action failed', 'Please try again.',
-            snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar(
+          'Action failed',
+          'Please try again.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
       }
     } on PatientQueueException catch (e) {
-      Get.snackbar('Action failed', e.message,
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Action failed',
+        e.message,
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } catch (_) {
-      Get.snackbar('Action failed',
-          'Please check your connection and try again.',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Action failed',
+        'Please check your connection and try again.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       processingIds.remove(patient.id);
     }
@@ -225,14 +254,14 @@ class PatientQueueController extends GetxController {
 
   Future<void> startRoute(String patientId) => _runAction(
     patientId,
-        () => _service.startRoute(patientId),
+    () => _service.startRoute(patientId),
     PatientStatus.inProgress,
     successMessage: 'Route started',
   );
 
   Future<void> reject(AssignedPatient patient, {int? reasonId}) => _runAction(
     patient.id,
-        () => _service.reject(
+    () => _service.reject(
       patient,
       updatedBy: int.tryParse(empId.value) ?? 0,
       reasonId: reasonId,
@@ -242,30 +271,29 @@ class PatientQueueController extends GetxController {
   );
 
   Future<void> reschedule(
-      AssignedPatient patient, {
-        required DateTime newDate,
-        required String startTime,
-        required String endTime,
-      }) =>
-      _runAction(
-        patient.id,
-            () => _service.reschedule(
-          patient,
-          updatedBy: int.tryParse(empId.value) ?? 0,
-          newDate: newDate,
-          startTime: startTime,
-          endTime: endTime,
-        ),
-        PatientStatus.rescheduled,
-        successMessage: 'Visit rescheduled',
-      );
+    AssignedPatient patient, {
+    required DateTime newDate,
+    required String startTime,
+    required String endTime,
+  }) => _runAction(
+    patient.id,
+    () => _service.reschedule(
+      patient,
+      updatedBy: int.tryParse(empId.value) ?? 0,
+      newDate: newDate,
+      startTime: startTime,
+      endTime: endTime,
+    ),
+    PatientStatus.rescheduled,
+    successMessage: 'Visit rescheduled',
+  );
 
   Future<void> _runAction(
-      String patientId,
-      Future<bool> Function() action,
-      PatientStatus nextStatus, {
-        required String successMessage,
-      }) async {
+    String patientId,
+    Future<bool> Function() action,
+    PatientStatus nextStatus, {
+    required String successMessage,
+  }) async {
     if (processingIds.contains(patientId)) return;
     processingIds.add(patientId);
     try {
@@ -275,17 +303,25 @@ class PatientQueueController extends GetxController {
         if (index != -1) {
           _patients[index] = _patients[index].copyWith(status: nextStatus);
         }
-        Get.snackbar(successMessage, '',
-            snackPosition: SnackPosition.BOTTOM,
-            duration: const Duration(seconds: 2));
+        Get.snackbar(
+          successMessage,
+          '',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+        );
       } else {
-        Get.snackbar('Action failed', 'Please try again.',
-            snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar(
+          'Action failed',
+          'Please try again.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
       }
     } catch (_) {
-      Get.snackbar('Action failed',
-          'Please check your connection and try again.',
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Action failed',
+        'Please check your connection and try again.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       processingIds.remove(patientId);
     }

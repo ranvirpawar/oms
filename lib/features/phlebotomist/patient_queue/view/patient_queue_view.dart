@@ -6,6 +6,7 @@ import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widget
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/queue_loading_skeleton.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/queue_search_bar.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/queue_summary_bar.dart';
+import 'package:lifenity_connect/routes/route_manager.dart';
 import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 
 import '../../../../theme/app_colors.dart';
@@ -26,7 +27,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
         title: 'Patient Queue',
         enableSearch: true,
         searchHint: 'Search by name, ID, or test',
-        searchController: controller.searchController,
+        onSearchChanged: controller.updateSearch,
         onSearchClosed: controller.clearSearch,
         onSearchCleared: controller.clearSearch,
         actions: [
@@ -171,20 +172,8 @@ class PatientQueueView extends GetView<PatientQueueController> {
   }
 
   void _openPatientDetails(AssignedPatient patient) {
-    // Placeholder navigation hook — wire up to the real Patient Details
-    // route once it exists, e.g. `Get.toNamed(Routes.PATIENT_DETAILS,
-    // arguments: patient.id)`.
-    // Get.snackbar(
-    //   patient.name,
-    //   'Open patient details for ${patient.orderId}',
-    //   snackPosition: SnackPosition.BOTTOM,
-    // );
-    LiquidSnack.show(
-      message: 'Open patient details for ${patient.orderId}',
-      variant: SnackVariant.info,
-      position: SnackPosition.top,
-      duration: const Duration(seconds: 2),
-    );
+    RouteManager.navigateToSampleCollection(patient.orderId);
+
   }
 
   void _confirmReject(BuildContext context, AssignedPatient patient) {

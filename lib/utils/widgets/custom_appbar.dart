@@ -4,8 +4,6 @@ import 'package:get/get.dart';
 import '../../theme/app_colors.dart';
 
 import 'dart:ui';
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   final Object title;
@@ -24,7 +22,7 @@ class CustomAppBar extends StatefulWidget implements PreferredSizeWidget {
   // ── Search API ──────────────────────────────────────────────────
   final bool enableSearch;
   final String searchHint;
-  final TextEditingController? searchController;
+  final TextEditingController? searchController; // avoid passing this — see note below
   final ValueChanged<String>? onSearchChanged;
   final ValueChanged<String>? onSearchSubmitted;
   final VoidCallback? onSearchOpened;
@@ -68,6 +66,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
   bool _isSearchMode = false;
   bool _ownsController = false;
   bool _hasText = false;
+  bool _disposed = false; // guards against use-after-dispose during route teardown
 
   @override
   void initState() {
@@ -84,6 +83,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
 
   @override
   void dispose() {
+    _disposed = true;
     _controller.removeListener(_onTextChanged);
     _focusNode.dispose();
     if (_ownsController) {
@@ -93,22 +93,26 @@ class _CustomAppBarState extends State<CustomAppBar> {
   }
 
   void _onTextChanged() {
+    if (!mounted || _disposed) return;
     widget.onSearchChanged?.call(_controller.text);
     final hasText = _controller.text.isNotEmpty;
     if (hasText != _hasText) {
-      setState(() => _hasText = hasText); // only rebuild when it flips
+      setState(() => _hasText = hasText);
     }
   }
 
   void _openSearch() {
+    if (_disposed) return;
     setState(() => _isSearchMode = true);
     widget.onSearchOpened?.call();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _disposed) return;
       _focusNode.requestFocus();
     });
   }
 
   void _closeSearch() {
+    if (_disposed) return;
     _controller.clear();
     widget.onSearchCleared?.call();
     setState(() {
@@ -120,9 +124,10 @@ class _CustomAppBarState extends State<CustomAppBar> {
   }
 
   void _clearSearch() {
+    if (_disposed) return;
     _controller.clear();
     widget.onSearchCleared?.call();
-    _focusNode.requestFocus(); // keep editing, don't collapse the field
+    _focusNode.requestFocus();
   }
 
   @override
@@ -179,8 +184,9 @@ class _CustomAppBarState extends State<CustomAppBar> {
   }
 
   Widget _buildTitle(BuildContext context, {Key? key}) {
-    if (widget.title is Widget)
+    if (widget.title is Widget) {
       return KeyedSubtree(key: key, child: widget.title as Widget);
+    }
     return Text(
       key: key,
       widget.title as String,
@@ -200,12 +206,11 @@ class _CustomAppBarState extends State<CustomAppBar> {
       margin: const EdgeInsets.only(right: 4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.12),
             blurRadius: 8,
-            offset: const Offset(0, 0),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -252,8 +257,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
                       fontWeight: FontWeight.w500,
                     ),
                     decoration: InputDecoration(
-                      // Explicitly kill any inherited theme fill —
-                      // this is what was causing white-on-white.
                       filled: false,
                       fillColor: Colors.transparent,
                       isCollapsed: true,
@@ -281,21 +284,21 @@ class _CustomAppBarState extends State<CustomAppBar> {
                   ),
                   child: _hasText
                       ? IconButton(
-                          key: const ValueKey('clear'),
-                          icon: Icon(
-                            Icons.clear_rounded,
-                            size: 18,
-                            color: Colors.white.withOpacity(0.85),
-                          ),
-                          splashRadius: 16,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 32,
-                            minHeight: 32,
-                          ),
-                          onPressed: _clearSearch,
-                          tooltip: 'Clear',
-                        )
+                    key: const ValueKey('clear'),
+                    icon: Icon(
+                      Icons.clear_rounded,
+                      size: 18,
+                      color: Colors.white.withOpacity(0.85),
+                    ),
+                    splashRadius: 16,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    onPressed: _clearSearch,
+                    tooltip: 'Clear',
+                  )
                       : const SizedBox(width: 4, key: ValueKey('empty')),
                 ),
               ],
@@ -329,10 +332,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
     }
 
     if (widget.leading != null) {
-      return KeyedSubtree(
-        key: const ValueKey('custom'),
-        child: widget.leading!,
-      );
+      return KeyedSubtree(key: const ValueKey('custom'), child: widget.leading!);
     }
 
     if (widget.showBackButton) {
@@ -353,8 +353,7 @@ class _CustomAppBarState extends State<CustomAppBar> {
           Icons.menu,
           color: widget.titleColor ?? theme.colorScheme.onPrimary,
         ),
-        onPressed:
-            widget.onDrawerPressed ?? () => Scaffold.of(context).openDrawer(),
+        onPressed: widget.onDrawerPressed ?? () => Scaffold.of(context).openDrawer(),
       );
     }
 
@@ -362,9 +361,6 @@ class _CustomAppBarState extends State<CustomAppBar> {
   }
 
   // ── Actions ─────────────────────────────────────────────────────
-  // Clear icon now lives inside the glass field itself, so in search
-  // mode we just show whatever extra actions were passed in (if any);
-  // the search toggle icon only appears when not searching.
   List<Widget> _buildActions() {
     return [
       if (widget.actions != null) ...widget.actions!,
