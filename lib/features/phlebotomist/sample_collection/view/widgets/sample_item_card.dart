@@ -103,9 +103,14 @@ class SampleItemCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             if (status == SampleCollectionStatus.incomplete)
-              _buildIncompleteBanner(context)
-            else
+              _buildFullyUnusableBanner(context)
+            else ...[
               _buildBarcodeRow(context),
+              if (entry.hasPartialIncomplete) ...[
+                const SizedBox(height: 10),
+                _buildPartialBanner(context),
+              ],
+            ],
           ],
         ),
       );
@@ -127,25 +132,23 @@ class SampleItemCard extends StatelessWidget {
         _MoreActionsButton(
           onTapDown: (globalPosition) {
             TapPositionMenu.show(
-              context: context, // pass BuildContext from build() into this widget, see note below
+              context: context,
               tapPosition: globalPosition,
               items: [
                 TapMenuItem(
-                  icon: Icons.remove_circle_outline_rounded,
-                  label: 'Sample cannot be collected',
+                  icon: Icons.report_problem_outlined,
+                  label: 'Report unsuitable test(s)',
                   isDestructive: true,
-                  onTap: () => controller.markAsNotCollected(entry),
+                  onTap: () => controller.openIncompleteTestsSheet(entry),
                 ),
               ],
             );
           },
         ),
-        // _NotCollectedButton(onTap: () => controller.markAsNotCollected(entry)),
       ],
     );
   }
-
-  Widget _buildIncompleteBanner(BuildContext context) {
+  Widget _buildFullyUnusableBanner(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -154,72 +157,104 @@ class SampleItemCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.error_outline_rounded,
-            size: 16,
-            color: AppColors.redText,
-          ),
+          const Icon(Icons.error_outline_rounded, size: 16, color: AppColors.redText),
           const SizedBox(width: 8),
           const Expanded(
             child: Text(
-              'Not collected — choose a reason below.',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
+              "Couldn't collect — every test flagged.",
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
             ),
           ),
           TextButton(
-            onPressed: () => controller.undoNotCollected(entry),
+            onPressed: () => controller.undoAllIncomplete(entry),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               minimumSize: const Size(0, 32),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: const Text(
-              'Undo',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-            ),
+            child: const Text('Undo', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
     );
   }
-}
 
-/// Compact 44x44 icon action — replaces the old two-line "Not\nCollected"
-/// text button. Apple-style: soft tinted background, single glyph, tooltip
-/// for discoverability instead of a wordy label.
-class _NotCollectedButton extends StatelessWidget {
-  final VoidCallback onTap;
-
-  const _NotCollectedButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: 'Mark as not collected',
-      child: Material(
-        color: AppColors.redLight,
+  Widget _buildPartialBanner(BuildContext context) {
+    final total = entry.tests.length;
+    final flagged = entry.testIncompleteMap.length;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.amberLight.withOpacity(0.4),
         borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
-          child: const SizedBox(
-            width: 44,
-            height: 44,
-            child: Icon(
-              Icons.remove_circle_outline_rounded,
-              size: 19,
-              color: AppColors.redText,
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded, size: 16, color: AppColors.amberText),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '$flagged of $total test${total == 1 ? '' : 's'} marked unsuitable',
+              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
             ),
           ),
-        ),
+          TextButton(
+            onPressed: () => controller.openIncompleteTestsSheet(entry),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: const Size(0, 32),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text('Review', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+          ),
+        ],
       ),
     );
   }
+  // Widget _buildIncompleteBanner(BuildContext context) {
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+  //     decoration: BoxDecoration(
+  //       color: AppColors.redLight.withOpacity(0.4),
+  //       borderRadius: BorderRadius.circular(12),
+  //     ),
+  //     child: Row(
+  //       children: [
+  //         const Icon(
+  //           Icons.error_outline_rounded,
+  //           size: 16,
+  //           color: AppColors.redText,
+  //         ),
+  //         const SizedBox(width: 8),
+  //         const Expanded(
+  //           child: Text(
+  //             'Not collected — choose a reason below.',
+  //             style: TextStyle(
+  //               fontSize: 12,
+  //               color: AppColors.textSecondary,
+  //               fontWeight: FontWeight.w600,
+  //             ),
+  //           ),
+  //         ),
+  //         TextButton(
+  //           onPressed: () => controller.undoNotCollected(entry),
+  //           style: TextButton.styleFrom(
+  //             padding: const EdgeInsets.symmetric(horizontal: 8),
+  //             minimumSize: const Size(0, 32),
+  //             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  //           ),
+  //           child: const Text(
+  //             'Undo',
+  //             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 }
+
+
 
 class _StatusChip extends StatelessWidget {
   final SampleCollectionStatus status;

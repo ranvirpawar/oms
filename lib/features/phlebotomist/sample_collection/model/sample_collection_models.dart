@@ -1,4 +1,53 @@
+// ---------------------------------------------------------------------------
+// Tests / special instructions
+// ---------------------------------------------------------------------------
 
+class TestInfo {
+  final int testId;
+  final String testCode;
+  final String testName;
+
+  TestInfo({
+    required this.testId,
+    required this.testCode,
+    required this.testName,
+  });
+
+  factory TestInfo.fromJson(Map<String, dynamic> json) {
+    return TestInfo(
+      testId: json['testId'] is int
+          ? json['testId'] as int
+          : int.tryParse('${json['testId']}') ?? 0,
+      testCode: json['testCode'] as String? ?? '',
+      testName: json['testName'] as String? ?? '',
+    );
+  }
+}
+
+/// `specialInstructions[]` now comes back as objects, not plain strings.
+class SpecialInstruction {
+  final int testId;
+  final int testSpecialInstId;
+  final String instruction;
+
+  SpecialInstruction({
+    required this.testId,
+    required this.testSpecialInstId,
+    required this.instruction,
+  });
+
+  factory SpecialInstruction.fromJson(Map<String, dynamic> json) {
+    return SpecialInstruction(
+      testId: json['testId'] is int
+          ? json['testId'] as int
+          : int.tryParse('${json['testId']}') ?? 0,
+      testSpecialInstId: json['testSpecialInstId'] is int
+          ? json['testSpecialInstId'] as int
+          : int.tryParse('${json['testSpecialInstId']}') ?? 0,
+      instruction: json['specialInstruction'] as String? ?? '',
+    );
+  }
+}
 
 class PatientHeader {
   final String patientId;
@@ -28,26 +77,36 @@ class PatientHeader {
   }
 }
 
-/// A required sample type for the order, as returned by the API
-/// (`sampleRequirements[]` inside `output`).
+/// A required sample type for the order, now carrying the full list of
+/// tests it feeds — needed so the phlebotomist can flag individual tests
+/// as unsuitable rather than the whole sample.
 class SampleTypeRequirement {
   final int sampleTypeId;
   final String sampleType;
   final String volumeRequiredMl;
+  final List<TestInfo> tests;
 
   SampleTypeRequirement({
     required this.sampleTypeId,
     required this.sampleType,
     required this.volumeRequiredMl,
+    required this.tests,
   });
 
   factory SampleTypeRequirement.fromJson(Map<String, dynamic> json) {
+    final testsList = json['tests'];
     return SampleTypeRequirement(
       sampleTypeId: json['sampleTypeId'] is int
           ? json['sampleTypeId'] as int
           : int.tryParse('${json['sampleTypeId']}') ?? 0,
       sampleType: json['sampleType'] as String? ?? '',
       volumeRequiredMl: json['volumeRequiredMl']?.toString() ?? '',
+      tests: testsList is List
+          ? testsList
+          .whereType<Map<String, dynamic>>()
+          .map(TestInfo.fromJson)
+          .toList()
+          : <TestInfo>[],
     );
   }
 }
@@ -62,9 +121,10 @@ class OrderConfirmationDetails {
   final String slotEndTime;
   final String slotDateTime;
   final PatientHeader patient;
+  final String mobileNumber;
   final bool fastingRequired;
   final String? fastingNote;
-  final List<String> specialInstructions;
+  final List<SpecialInstruction> specialInstructions;
   final List<SampleTypeRequirement> sampleRequirements;
   final int totalSampleTypes;
   final int totalTestCountReceived;
@@ -77,6 +137,7 @@ class OrderConfirmationDetails {
     required this.slotEndTime,
     required this.slotDateTime,
     required this.patient,
+    required this.mobileNumber,
     required this.fastingRequired,
     this.fastingNote,
     required this.specialInstructions,
@@ -100,16 +161,23 @@ class OrderConfirmationDetails {
       patient: patientJson is Map<String, dynamic>
           ? PatientHeader.fromJson(patientJson)
           : PatientHeader(patientId: '', name: '', age: '', gender: ''),
+      // Note: this comes back as `MobileNumber` (PascalCase), a sibling of
+      // `patient`, not a field inside it — matches the sample-requirements
+      // response as logged.
+      mobileNumber: json['MobileNumber']?.toString() ?? '',
       fastingRequired: json['fastingRequired'] == true,
       fastingNote: json['fastingNote'] as String?,
       specialInstructions: specialList is List
-          ? specialList.map((e) => e.toString()).toList()
-          : <String>[],
+          ? specialList
+          .whereType<Map<String, dynamic>>()
+          .map(SpecialInstruction.fromJson)
+          .toList()
+          : <SpecialInstruction>[],
       sampleRequirements: requirementsList is List
           ? requirementsList
-              .whereType<Map<String, dynamic>>()
-              .map(SampleTypeRequirement.fromJson)
-              .toList()
+          .whereType<Map<String, dynamic>>()
+          .map(SampleTypeRequirement.fromJson)
+          .toList()
           : <SampleTypeRequirement>[],
       totalSampleTypes: json['totalSampleTypes'] is int
           ? json['totalSampleTypes'] as int
@@ -137,12 +205,11 @@ class ComplicationOption {
           ? json['ComplicationID'] as int
           : int.tryParse('${json['ComplicationID']}') ?? 0,
       name:
-          json['ComplicationName'] as String? ?? json['Name'] as String? ?? '',
+      json['ComplicationName'] as String? ?? json['Name'] as String? ?? '',
     );
   }
 }
 
-/// A reason a sample could not be collected.
 class IncompleteReasonOption {
   final int reasonId;
   final String reason;
@@ -160,7 +227,7 @@ class IncompleteReasonOption {
 }
 
 // ---------------------------------------------------------------------------
-// Insert-collection payload (request body for submitSampleCollection)
+// Insert-collection payload
 // ---------------------------------------------------------------------------
 
 class SampleCollectionDetailEntry {
@@ -173,9 +240,9 @@ class SampleCollectionDetailEntry {
   });
 
   Map<String, dynamic> toJson() => {
-        'SampleTypeID': sampleTypeId,
-        'BarcodeNo': barcodeNo,
-      };
+    'SampleTypeID': sampleTypeId,
+    'BarcodeNo': barcodeNo,
+  };
 }
 
 class SampleCollectionComplicationEntry {
@@ -188,28 +255,34 @@ class SampleCollectionComplicationEntry {
   });
 
   Map<String, dynamic> toJson() => {
-        'ComplicationID': complicationId,
-        'Status': status,
-      };
+    'ComplicationID': complicationId,
+    'Status': status,
+  };
 }
 
-
+/// Now test-level: a single sample type can feed several tests, and only
+/// some of them may be unsuitable, so we send both IDs.
+/// ⚠️ Confirm the backend accepts `TestID` here — the old code's comment
+/// said this endpoint only tracked SampleTypeID.
 class IncompleteTestEntry {
   final int sampleTypeId;
+  final int testId;
   final int incompleteReasonId;
   final String incompleteReason;
 
   IncompleteTestEntry({
     required this.sampleTypeId,
+    required this.testId,
     required this.incompleteReasonId,
     required this.incompleteReason,
   });
 
   Map<String, dynamic> toJson() => {
-        'SampleTypeID': sampleTypeId,
-        'IncompleteReasonID': incompleteReasonId,
-        'IncompleteReason': incompleteReason,
-      };
+    'SampleTypeID': sampleTypeId,
+    'TestID': testId,
+    'IncompleteReasonID': incompleteReasonId,
+    'IncompleteReason': incompleteReason,
+  };
 }
 
 class SampleCollectionPayload {
@@ -236,16 +309,16 @@ class SampleCollectionPayload {
   });
 
   Map<String, dynamic> toJson() => {
-        'OrderID': orderId,
-        'UserID': userId,
-        'OrderStatusCode': orderStatusCode,
-        'bagId': bagId,
-        'Notes': notes,
-        'CollectedAt': collectedAt.toUtc().toIso8601String(),
-        'SampleCollectionDetails':
-            sampleCollectionDetails.map((e) => e.toJson()).toList(),
-        'SampleCollectionComplications':
-            sampleCollectionComplications.map((e) => e.toJson()).toList(),
-        'IncompleteTests': incompleteTests.map((e) => e.toJson()).toList(),
-      };
+    'OrderID': orderId,
+    'UserID': userId,
+    'OrderStatusCode': orderStatusCode,
+    'bagId': bagId,
+    'Notes': notes,
+    'CollectedAt': collectedAt.toUtc().toIso8601String(),
+    'SampleCollectionDetails':
+    sampleCollectionDetails.map((e) => e.toJson()).toList(),
+    'SampleCollectionComplications':
+    sampleCollectionComplications.map((e) => e.toJson()).toList(),
+    'IncompleteTests': incompleteTests.map((e) => e.toJson()).toList(),
+  };
 }

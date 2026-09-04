@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -12,22 +13,33 @@ import '../../patient_queue/model/patient_queue_model.dart';
 import '../model/sample_collection_models.dart';
 import '../service/sample_collection_service.dart';
 import '../view/widgets/barcode_scanner_sheet.dart';
+import '../view/widgets/incomplete_bottom_sheet.dart';
 
 /// Per-sample-type UI state: one of these exists for every entry in
 /// `orderDetails.sampleRequirements`.
+/// One row of a sample-type's incomplete state: which reason, optional note.
+class TestIncompleteInfo {
+  final IncompleteReasonOption reason;
+  final String remarks;
+
+  TestIncompleteInfo({required this.reason, this.remarks = ''});
+}
+
 class SampleBarcodeEntry {
   final int sampleTypeId;
   final String sampleType;
   final String volumeRequiredMl;
+  final List<TestInfo> tests;
 
   final TextEditingController barcodeController = TextEditingController();
   final Rx<SampleCollectionStatus> status =
       SampleCollectionStatus.pending.obs;
 
-  // Incomplete-collection fields (only relevant when status == incomplete).
-  final Rxn<IncompleteReasonOption> selectedReason =
-      Rxn<IncompleteReasonOption>();
-  final TextEditingController remarksController = TextEditingController();
+  /// testId -> why it's unsuitable. A test landing here doesn't require the
+  /// whole sample to be unusable — e.g. the tube was drawn fine but is
+  /// hemolysed, which only kills a couple of the analytes it feeds.
+  final RxMap<int, TestIncompleteInfo> testIncompleteMap =
+      <int, TestIncompleteInfo>{}.obs;
 
   final RxBool isScanning = false.obs;
 
@@ -35,15 +47,26 @@ class SampleBarcodeEntry {
     required this.sampleTypeId,
     required this.sampleType,
     required this.volumeRequiredMl,
+    required this.tests,
   });
 
   bool get isCollected => status.value == SampleCollectionStatus.collected;
-  bool get isIncomplete => status.value == SampleCollectionStatus.incomplete;
   bool get isPending => status.value == SampleCollectionStatus.pending;
+
+  /// Every test this sample feeds has been flagged — the draw itself
+  /// failed, nothing here is usable.
+  bool get isFullyUnusable =>
+      tests.isNotEmpty && testIncompleteMap.length == tests.length;
+
+  /// Sample is fine but only some of its tests are usable.
+  bool get hasPartialIncomplete =>
+      testIncompleteMap.isNotEmpty && !isFullyUnusable;
+
+  /// What `validate()` should treat as "handled".
+  bool get isResolved => isCollected || isFullyUnusable;
 
   void dispose() {
     barcodeController.dispose();
-    remarksController.dispose();
   }
 }
 
@@ -105,11 +128,12 @@ class SampleCollectionController extends GetxController {
   final RxBool isSubmitting = false.obs;
 
   int get collectedCount =>
-      sampleEntries.where((e) => e.isCollected).length;
+      sampleEntries.where((e) => e.isCollected && !e.hasPartialIncomplete).length;
   int get incompleteCount =>
-      sampleEntries.where((e) => e.isIncomplete).length;
+      sampleEntries.where((e) => e.isFullyUnusable).length;
   int get pendingCount => sampleEntries.where((e) => e.isPending).length;
-  bool get allSamplesResolved => pendingCount == 0 && sampleEntries.isNotEmpty;
+  bool get allSamplesResolved =>
+      sampleEntries.isNotEmpty && sampleEntries.every((e) => e.isResolved);
 
   @override
   void onInit() {
@@ -206,10 +230,11 @@ class SampleCollectionController extends GetxController {
     }
     sampleEntries.assignAll(requirements
         .map((r) => SampleBarcodeEntry(
-              sampleTypeId: r.sampleTypeId,
-              sampleType: r.sampleType,
-              volumeRequiredMl: r.volumeRequiredMl,
-            ))
+      sampleTypeId: r.sampleTypeId,
+      sampleType: r.sampleType,
+      volumeRequiredMl: r.volumeRequiredMl,
+      tests: r.tests,
+    ))
         .toList());
   }
 
@@ -226,9 +251,11 @@ class SampleCollectionController extends GetxController {
     isSendingOtp.value = true;
     otpError.value = '';
     try {
-      // passed the mobile number of patient form the order we have
-      await _service.sendCollectionOtp(mobileNumber
-          : orderId, userId: empId.value);
+      final mobileNumber = orderDetails.value?.mobileNumber ?? '';
+      await _service.sendCollectionOtp(
+        mobileNumber: mobileNumber,
+        userId: empId.value,
+      );
       _startResendTimer();
     } catch (e) {
       otpError.value = 'Unable to send OTP. Please try again.';
@@ -269,13 +296,11 @@ class SampleCollectionController extends GetxController {
     isVerifyingOtp.value = true;
     otpError.value = '';
     try {
-      /*final success = await _service.verifyCollectionOtp(
-        mobileNumber: orderDetails.value!.patient.mobileNumber,
-        otp: otp,
+      final success = await _service.verifyCollectionOtp(
         userId: empId.value,
-      );*/
-      final success =
-          await _service.verifyCollectionOtp(orderId: orderId, otp: otp);
+        otp: otp,
+        mobileNumber: orderDetails.value?.mobileNumber ?? '',
+      );
       if (success) {
         step.value = SampleCollectionStep.collection;
       } else {
@@ -311,15 +336,6 @@ class SampleCollectionController extends GetxController {
   /// Manual text entry. Value is stored exactly as typed — no prefix added.
   void onBarcodeChanged(SampleBarcodeEntry entry, String value) {
     final trimmed = value.trim();
-    if (trimmed.isEmpty) {
-      // Only fall back to pending if the row wasn't explicitly marked
-      // incomplete; clearing text shouldn't silently undo an
-      // incomplete-reason selection.
-      if (entry.status.value == SampleCollectionStatus.collected) {
-        entry.status.value = SampleCollectionStatus.pending;
-      }
-      return;
-    }
     if (_isDuplicateBarcode(entry, trimmed)) {
       Get.snackbar(
         'Duplicate barcode',
@@ -327,7 +343,32 @@ class SampleCollectionController extends GetxController {
         snackPosition: SnackPosition.TOP,
       );
     }
-    entry.status.value = SampleCollectionStatus.collected;
+    _recomputeStatus(entry);
+  }
+
+  void _processScanResult(SampleBarcodeEntry entry, String scannedCode) {
+    final value = scannedCode.trim();
+    entry.barcodeController.text = value;
+    _closeScanner(entry);
+
+    if (_isDuplicateBarcode(entry, value)) {
+      Get.snackbar(
+        'Duplicate barcode',
+        'This barcode is already used for another sample.',
+        snackPosition: SnackPosition.TOP,
+      );
+    }
+    _recomputeStatus(entry);
+  }
+
+  void _recomputeStatus(SampleBarcodeEntry entry) {
+    if (entry.isFullyUnusable) {
+      entry.status.value = SampleCollectionStatus.incomplete;
+    } else if (entry.barcodeController.text.trim().isNotEmpty) {
+      entry.status.value = SampleCollectionStatus.collected;
+    } else {
+      entry.status.value = SampleCollectionStatus.pending;
+    }
   }
 
   bool _isDuplicateBarcode(SampleBarcodeEntry entry, String value) {
@@ -370,30 +411,51 @@ class SampleCollectionController extends GetxController {
     }
   }
 
-  /// Handles a scan result. Per requirement: no "AC" prefix is added — the
-  /// raw scanned value is stored as-is (only whitespace is trimmed).
-  void _processScanResult(SampleBarcodeEntry entry, String scannedCode) {
-    final value = scannedCode.trim();
-    entry.barcodeController.text = value;
-    _closeScanner(entry);
 
-    if (_isDuplicateBarcode(entry, value)) {
-      Get.snackbar(
-        'Duplicate barcode',
-        'This barcode is already used for another sample.',
-        snackPosition: SnackPosition.TOP,
-      );
-      entry.status.value = SampleCollectionStatus.pending;
-      return;
-    }
-    entry.status.value = SampleCollectionStatus.collected;
-  }
 
   // ---------------------------------------------------------------------
   // Partial / incomplete collection
   // ---------------------------------------------------------------------
+  void openIncompleteTestsSheet(SampleBarcodeEntry entry) {
+    Get.bottomSheet(
+      IncompleteTestsBottomSheet(
+        entry: entry,
+        reasonOptions: incompleteReasonOptions,
+        onConfirm: (testIds, reason, remarks) =>
+            _applyIncompleteSelection(entry, testIds, reason, remarks),
+      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+    );
+  }
+  void removeIncompleteTest(SampleBarcodeEntry entry, int testId) {
+    entry.testIncompleteMap.remove(testId);
+    _recomputeStatus(entry);
+  }
+  void _applyIncompleteSelection(
+      SampleBarcodeEntry entry,
+      Set<int> testIds,
+      IncompleteReasonOption reason,
+      String remarks,
+      ) {
+    for (final id in testIds) {
+      entry.testIncompleteMap[id] = TestIncompleteInfo(
+        reason: reason,
+        remarks: remarks,
+      );
+    }
+    // Anything unchecked in this pass should go back to "usable" — the
+    // sheet always reflects the full current intent, not an incremental add.
+    entry.testIncompleteMap.removeWhere((id, _) => !testIds.contains(id));
+    entry.testIncompleteMap.refresh();
+    _recomputeStatus(entry);
+  }
 
-  void markAsNotCollected(SampleBarcodeEntry entry) {
+  void undoAllIncomplete(SampleBarcodeEntry entry) {
+    entry.testIncompleteMap.clear();
+    _recomputeStatus(entry);
+  }
+ /* void markAsNotCollected(SampleBarcodeEntry entry) {
     entry.barcodeController.clear();
     entry.status.value = SampleCollectionStatus.incomplete;
   }
@@ -412,7 +474,7 @@ class SampleCollectionController extends GetxController {
   }
 
   List<SampleBarcodeEntry> get incompleteEntries =>
-      sampleEntries.where((e) => e.isIncomplete).toList();
+      sampleEntries.where((e) => e.isIncomplete).toList();*/
 
   // ---------------------------------------------------------------------
   // Complications
@@ -422,6 +484,7 @@ class SampleCollectionController extends GetxController {
     complicationSelections[complicationId] = value;
   }
 
+
   // ---------------------------------------------------------------------
   // Validation + submission
   // ---------------------------------------------------------------------
@@ -430,18 +493,15 @@ class SampleCollectionController extends GetxController {
     if (sampleEntries.isEmpty) {
       return 'No sample types found for this order.';
     }
-    if (pendingCount > 0) {
-      return 'Please collect or mark every sample as not collected.';
-    }
-    for (final entry in incompleteEntries) {
-      if (entry.selectedReason.value == null) {
-        return 'Select a reason for ${entry.sampleType}.';
+    for (final entry in sampleEntries) {
+      if (!entry.isResolved) {
+        return 'Please collect or resolve every sample.';
       }
     }
-    // Barcode duplicate check across collected entries.
     final seen = <String>{};
-    for (final entry in sampleEntries.where((e) => e.isCollected)) {
+    for (final entry in sampleEntries) {
       final value = entry.barcodeController.text.trim();
+      if (value.isEmpty) continue;
       if (!seen.add(value)) {
         return 'Duplicate barcode detected for ${entry.sampleType}.';
       }
@@ -450,38 +510,44 @@ class SampleCollectionController extends GetxController {
   }
 
   SampleCollectionPayload _buildPayload() {
-    final collected = sampleEntries.where((e) => e.isCollected);
-    final incomplete = sampleEntries.where((e) => e.isIncomplete);
+    final collected =
+    sampleEntries.where((e) => e.barcodeController.text.trim().isNotEmpty);
+
+    final incompleteTests = <IncompleteTestEntry>[];
+    for (final entry in sampleEntries) {
+      entry.testIncompleteMap.forEach((testId, info) {
+        incompleteTests.add(IncompleteTestEntry(
+          sampleTypeId: entry.sampleTypeId,
+          testId: testId,
+          incompleteReasonId: info.reason.reasonId,
+          incompleteReason:
+          info.remarks.isNotEmpty ? info.remarks : info.reason.reason,
+        ));
+      });
+    }
 
     return SampleCollectionPayload(
       orderId: orderId,
       userId: _userId,
-      orderStatusCode: incomplete.isEmpty ? 'COLLECTED' : 'PARTIALLY_COLLECTED',
-      bagId: "1004",
+      orderStatusCode:
+      incompleteTests.isEmpty ? 'COLLECTED' : 'PARTIALLY_COLLECTED',
+      bagId: "37",
       notes: notesController.text.trim(),
       collectedAt: DateTime.now(),
       sampleCollectionDetails: collected
           .map((e) => SampleCollectionDetailEntry(
-                sampleTypeId: e.sampleTypeId,
-                barcodeNo: e.barcodeController.text.trim(),
-              ))
+        sampleTypeId: e.sampleTypeId,
+        barcodeNo: e.barcodeController.text.trim(),
+      ))
           .toList(),
       sampleCollectionComplications: complicationSelections.entries
           .where((e) => e.value != null)
           .map((e) => SampleCollectionComplicationEntry(
-                complicationId: e.key,
-                status: e.value!,
-              ))
+        complicationId: e.key,
+        status: e.value!,
+      ))
           .toList(),
-      incompleteTests: incomplete
-          .map((e) => IncompleteTestEntry(
-                sampleTypeId: e.sampleTypeId,
-                incompleteReasonId: e.selectedReason.value!.reasonId,
-                incompleteReason: e.remarksController.text.trim().isNotEmpty
-                    ? e.remarksController.text.trim()
-                    : e.selectedReason.value!.reason,
-              ))
-          .toList(),
+      incompleteTests: incompleteTests,
     );
   }
 
@@ -491,6 +557,7 @@ class SampleCollectionController extends GetxController {
       Get.snackbar('Incomplete', error, snackPosition: SnackPosition.TOP);
       return false;
     }
+
 
     isSubmitting.value = true;
     try {
@@ -513,4 +580,51 @@ class SampleCollectionController extends GetxController {
       isSubmitting.value = false;
     }
   }
+//   Future<bool> submitCollection() async {
+//     final error = validate();
+//     if (error != null) {
+//       Get.snackbar(
+//         'Incomplete',
+//         error,
+//         snackPosition: SnackPosition.TOP,
+//       );
+//       return false;
+//     }
+//
+//     isSubmitting.value = true;
+//
+//     try {
+//       final payload = _buildPayload();
+//
+//       // API call commented out for testing
+//       // final success = await _service.submitSampleCollection(payload);
+//       // return success;
+//
+//       kPrint('========== SAMPLE COLLECTION PAYLOAD ==========');
+//       kPrint(
+//         '========== SAMPLE COLLECTION PAYLOAD ==========\n'
+//             '${jsonEncode(payload.toJson())}',
+//       );
+//       kPrint('================================================');
+// await Future.delayed(const Duration(seconds: 2));
+//       return true;
+//     } on SampleCollectionException catch (e) {
+//       Get.snackbar(
+//         'Submission failed',
+//         e.message,
+//         snackPosition: SnackPosition.TOP,
+//       );
+//       return false;
+//     } catch (e) {
+//       kPrint(e.toString());
+//       Get.snackbar(
+//         'Submission failed',
+//         'Something went wrong. Please try again.',
+//         snackPosition: SnackPosition.TOP,
+//       );
+//       return false;
+//     } finally {
+//       isSubmitting.value = false;
+//     }
+//   }
 }

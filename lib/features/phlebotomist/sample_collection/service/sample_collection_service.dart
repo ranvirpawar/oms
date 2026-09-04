@@ -120,7 +120,7 @@ class SampleCollectionService {
   // (and add the corresponding entries to AppUrls) once they exist.
   // Nothing else in this service is mocked.
   // ---------------------------------------------------------------------
-  Future<bool> sendCollectionOtp({
+  /*Future<bool> sendCollectionOtp({
     required String mobileNumber,
     required String userId,
   }) async {
@@ -145,8 +145,8 @@ class SampleCollectionService {
     kPrint('[MOCK] OTP verify attempted for order $orderId, otp=$otp');
 
     return otp.trim().length == 4;
-  }
- /* // actual working once mobile no get in the response Future<bool> sendCollectionOtp({
+  }*/
+  Future<bool> sendCollectionOtp({
     required String mobileNumber,
     required String userId,
   }) async {
@@ -224,7 +224,7 @@ class SampleCollectionService {
         isNetworkError: true,
       );
     }
-  }*/
+  }
 
   Future<bool> submitSampleCollection(SampleCollectionPayload payload) async {
     try {

@@ -194,7 +194,9 @@ class DashboardController extends GetxController {
 
   List<DashboardTileCard> _phlebotomistCards() => [
     const DashboardTileCard(
-      title: AppStrings.collectSample,
+
+      title: AppStrings.patientRegistration,
+      icon: AppAssets.registrationIcon,
       backgroundImage: AppAssets.collectSampleCard,
       borderColor: Colors.blue,
       onTap: RouteManager.navigateToBagStatusDashboard,
