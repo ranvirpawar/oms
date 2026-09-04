@@ -381,7 +381,7 @@ class PatientCard extends StatelessWidget {
             Expanded(
               flex: 3,
               child: QueueActionButton(
-                label: 'Rescheduled',
+                label: 'Collect',
                 color: AppColors.blue,
                 style: QueueActionStyle.outlined,
                 isDisabled: true,
@@ -407,12 +407,12 @@ class PatientCard extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: QueueActionButton(
-                label: 'Start Route',
+                label: 'Collect',
                 color: AppColors.accent700,
                 gradient: AppColors.accentGradient,
                 style: QueueActionStyle.gradient,
                 isLoading: isProcessing,
-                onPressed: onPrimaryAction,
+                onPressed: null,
               ),
             ),
           ],

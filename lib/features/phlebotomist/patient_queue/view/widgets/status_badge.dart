@@ -17,41 +17,96 @@ class StatusBadge extends StatelessWidget {
   _StatusStyle get _style {
     switch (status) {
       case PatientStatus.assigned:
-        return _StatusStyle('Assigned', AppColors.blueText, AppColors.blueLight,
-            Icons.assignment_outlined);
+        return const _StatusStyle(
+          'Assigned',
+          AppColors.blueText,
+          AppColors.blueLight,
+          Icons.assignment_outlined,
+        );
       case PatientStatus.pending:
-        return _StatusStyle('Pending', AppColors.amberText,
-            AppColors.amberLight, Icons.hourglass_top_rounded);
+        return const _StatusStyle(
+          'Pending',
+          AppColors.amberText,
+          AppColors.amberLight,
+          Icons.hourglass_top_rounded,
+        );
       case PatientStatus.accepted:
-        return _StatusStyle('Accepted', AppColors.tealText,
-            AppColors.tealLight, Icons.check_circle_outline);
+        return const _StatusStyle(
+          'Accepted',
+          AppColors.tealText,
+          AppColors.tealLight,
+          Icons.check_circle_outline,
+        );
       case PatientStatus.inProgress:
-        return _StatusStyle('In Progress', AppColors.purpleText,
-            AppColors.purpleLight, Icons.directions_run_rounded);
+        return const _StatusStyle(
+          'In Progress',
+          AppColors.purpleText,
+          AppColors.purpleLight,
+          Icons.directions_run_rounded,
+        );
       case PatientStatus.arrived:
-        return _StatusStyle('Arrived', AppColors.blueText, AppColors.blueLight,
-            Icons.location_on_outlined);
+        return const _StatusStyle(
+          'Arrived',
+          AppColors.blueText,
+          AppColors.blueLight,
+          Icons.location_on_outlined,
+        );
       case PatientStatus.sampleCollectionStarted:
-        return _StatusStyle('Collecting', AppColors.purpleText,
-            AppColors.purpleLight, Icons.colorize_outlined);
+        return const _StatusStyle(
+          'Collecting',
+          AppColors.purpleText,
+          AppColors.purpleLight,
+          Icons.colorize_outlined,
+        );
       case PatientStatus.sampleCollected:
-        return _StatusStyle('Sample Collected', AppColors.tealText,
-            AppColors.tealLight, Icons.check_circle_outline);
+        return const _StatusStyle(
+          'Sample Collected',
+          AppColors.tealText,
+          AppColors.tealLight,
+          Icons.check_circle_outline,
+        );
       case PatientStatus.completed:
-        return _StatusStyle('Completed', AppColors.greenText,
-            AppColors.greenLight, Icons.task_alt_rounded);
+        return const _StatusStyle(
+          'Completed',
+          AppColors.greenText,
+          AppColors.greenLight,
+          Icons.task_alt_rounded,
+        );
       case PatientStatus.cancelled:
-        return _StatusStyle('Cancelled', AppColors.redText, AppColors.redLight,
-            Icons.cancel_outlined);
+        return const _StatusStyle(
+          'Cancelled',
+          AppColors.redText,
+          AppColors.redLight,
+          Icons.cancel_outlined,
+        );
       case PatientStatus.failed:
-        return _StatusStyle('Failed', AppColors.redText, AppColors.redLight,
-            Icons.error_outline);
+        return const _StatusStyle(
+          'Failed',
+          AppColors.redText,
+          AppColors.redLight,
+          Icons.error_outline,
+        );
+      case PatientStatus.rejected:
+        return const _StatusStyle(
+          'Rejected',
+          AppColors.redText,
+          AppColors.redLight,
+          Icons.error_outline,
+        );
       case PatientStatus.rescheduled:
-        return _StatusStyle('Rescheduled', AppColors.blueText,
-            AppColors.blueLight, Icons.event_repeat_rounded);
+        return const _StatusStyle(
+          'Rescheduled',
+          AppColors.blueText,
+          AppColors.blueLight,
+          Icons.event_repeat_rounded,
+        );
       case PatientStatus.unableToCollect:
-        return _StatusStyle('Unable to Collect', AppColors.redText,
-            AppColors.redLight, Icons.block_rounded);
+        return const _StatusStyle(
+          'Unable to Collect',
+          AppColors.redText,
+          AppColors.redLight,
+          Icons.block_rounded,
+        );
     }
   }
 

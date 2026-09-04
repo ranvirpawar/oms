@@ -184,7 +184,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
   }
 
   void _openPatientDetails(AssignedPatient patient) {
-    RouteManager.navigateToSampleCollection(patient.orderId);
+    RouteManager.navigateToSampleCollection(patient);
 
   }
 

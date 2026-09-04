@@ -30,6 +30,7 @@ import '../features/dashboard/dashboard_controller/dashboard_controller.dart';
 import '../features/lab_technician/accept_handover_bag/view/accept_bag_in_lab_view.dart';
 import '../features/lab_technician/accept_handover_bag/view/handover_bag_view.dart';
 import '../features/phlebotomist/facility_count_dashboard/view/facility_count_dashboard.dart';
+import '../features/phlebotomist/patient_queue/model/patient_queue_model.dart';
 import '../features/phlebotomist/patient_registration/view/patient_detail_page.dart';
 import '../features/phlebotomist/patient_registration/view/patient_registration_view.dart';
 import '../features/phlebotomist/patient_report/view/patient_report_view.dart';
@@ -333,11 +334,11 @@ class RouteManager {
     );
   }
 
-  static void navigateToSampleCollection(String orderId) {
+  static void navigateToSampleCollection(AssignedPatient patient) {
     Get.to(
-      () => const OrderConfirmationScreen(),
+          () => const OrderConfirmationScreen(),
       binding: SampleCollectionBinding(),
-      arguments: {'orderId': orderId},
+      arguments: {'assignedPatient': patient},
       transition: Transition.circularReveal,
       duration: const Duration(milliseconds: 200),
     );

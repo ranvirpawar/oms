@@ -44,7 +44,9 @@ enum PatientStatus {
   failed,
   rescheduled,
   unableToCollect,
+  rejected
 }
+
 
 enum PriorityLevel { normal, high, urgent }
 
@@ -52,12 +54,14 @@ extension PatientStatusX on PatientStatus {
   bool get isActionable =>
       this == PatientStatus.assigned ||
           this == PatientStatus.pending ||
-          this == PatientStatus.accepted;
+          this == PatientStatus.accepted ||this == PatientStatus.rescheduled;
+
 
   bool get isTerminal =>
       this == PatientStatus.completed ||
           this == PatientStatus.cancelled ||
           this == PatientStatus.failed ||
+          this == PatientStatus.rejected ||
           this == PatientStatus.unableToCollect;
 }
 
@@ -204,6 +208,9 @@ class AssignedPatient {
         return PatientStatus.failed;
       case 'rescheduled':
         return PatientStatus.rescheduled;
+      case 'rejected':
+      case 'Rejected':
+        return PatientStatus.rejected;
       case 'unabletocollect':
         return PatientStatus.unableToCollect;
       default:

@@ -28,7 +28,7 @@ android {
         beta {
             dimension "environment"
             applicationId "com.lifenity_health.oms"
-            versionName "1.41.0"
+            versionName "1.0.0"
         }
     }
 

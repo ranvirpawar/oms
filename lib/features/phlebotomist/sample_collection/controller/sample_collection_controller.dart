@@ -8,6 +8,7 @@ import '../../../../services/auth_manager.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
 
 
+import '../../patient_queue/model/patient_queue_model.dart';
 import '../model/sample_collection_models.dart';
 import '../service/sample_collection_service.dart';
 import '../view/widgets/barcode_scanner_sheet.dart';
@@ -53,12 +54,15 @@ enum SampleCollectionStatus { pending, collected, incomplete }
 enum SampleCollectionStep { orderConfirmation, otpVerification, collection }
 
 class SampleCollectionController extends GetxController {
-  SampleCollectionController({required this.orderId});
+  SampleCollectionController({required this.assignedPatient})
+      : orderId = assignedPatient.orderId.toString();
 
   final SampleCollectionService _service = SampleCollectionService();
   final AuthManager _authManager = AuthManager();
 
+  final AssignedPatient assignedPatient;
   final String orderId;
+  bool get isOrderAccepted => assignedPatient.status == PatientStatus.accepted|| assignedPatient.status == PatientStatus.rescheduled;
   final RxString empId = ''.obs;
   int get _userId => int.tryParse(empId.value) ?? 0;
 
@@ -132,6 +136,11 @@ class SampleCollectionController extends GetxController {
   }
   Future<void> _init() async {
     await _loadEmpId();
+    if (!isOrderAccepted) {
+      // Not accepted yet: don't call any order-related APIs. The
+      // confirmation screen renders straight off `assignedPatient`.
+      return;
+    }
     await Future.wait([
       fetchOrderDetails(),
       _fetchSupportingLists(),

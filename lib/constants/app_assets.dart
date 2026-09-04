@@ -1,7 +1,7 @@
 class AppAssets {
   AppAssets._();
 
-  static const String lifenityLogo = 'assets/images/lifenity.png';
+  static const String lifenityLogo = 'assets/images/lifenity-logo.png';
 
   // icons
   static const String userIcon = 'assets/icons/user-square-rounded.svg';

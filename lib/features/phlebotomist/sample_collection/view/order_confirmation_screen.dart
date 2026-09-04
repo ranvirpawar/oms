@@ -2,10 +2,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:lifenity_connect/constants/app_strings.dart';
 import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 
 import '../../../../theme/app_colors.dart';
+import '../../patient_queue/model/patient_queue_model.dart';
 import '../controller/sample_collection_controller.dart';
 import '../model/sample_collection_models.dart';
 import 'widgets/otp_verification_screen.dart';
@@ -21,6 +23,10 @@ class OrderConfirmationScreen extends GetView<SampleCollectionController> {
         title: 'Order Details',
       ),
       body: Obx(() {
+        if (!controller.isOrderAccepted) {
+          return _NotAcceptedView(patient: controller.assignedPatient);
+        }
+
         if (controller.isLoadingOrder.value) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -321,6 +327,125 @@ class _ErrorState extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+class _NotAcceptedView extends StatelessWidget {
+  final AssignedPatient patient;
+  const _NotAcceptedView({required this.patient});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.bgCard,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.border),
+            boxShadow: AppColors.shadowSm,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: AppColors.primary100,
+                    backgroundImage: (patient.avatarUrl?.isNotEmpty ?? false)
+                        ? NetworkImage(patient.avatarUrl!)
+                        : null,
+                    child: (patient.avatarUrl?.isNotEmpty ?? false)
+                        ? null
+                        : Text(
+                      patient.name.isNotEmpty
+                          ? patient.name.trim()[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                          color: AppColors.primary800,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(patient.name,
+                            style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary)),
+                        const SizedBox(height: 2),
+                        Text('Order #${patient.orderId}',
+                            style: const TextStyle(
+                                fontSize: 12, color: AppColors.textTertiary)),
+                      ],
+                    ),
+                  ),
+                  // Shows the current status once, as requested.
+                  // StatusBadge(status: patient.status, compact: true),
+                ],
+              ),
+              const Divider(height: 24),
+              if (patient.slotDateTime != null)
+                Row(
+                  children: [
+                    const Icon(Icons.access_time_rounded,
+                        size: 15, color: AppColors.blueText),
+                    const SizedBox(width: 6),
+                    Text(
+                      DateFormat('dd MMM yyyy, hh:mm a')
+                          .format(patient.slotDateTime!),
+                      style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.blueText),
+                    ),
+                  ],
+                ),
+              if (patient.tests.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  patient.tests.join(', '),
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary,
+                      height: 1.3),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.amberLight.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.amberBorder),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Icon(Icons.lock_clock_outlined, size: 18, color: AppColors.amberText),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'You need to accept this order first in order to start the collection.',
+                  style: TextStyle(
+                      fontSize: 12.5, color: AppColors.textSecondary, height: 1.4),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
