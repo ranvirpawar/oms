@@ -1,11 +1,4 @@
-// sample_collection_models.dart
-//
-// Models for the Sample Collection module. Mirrors the app's existing
-// pattern (simple fromJson factories, defensive parsing, no codegen).
 
-// ---------------------------------------------------------------------------
-// Order Confirmation / header
-// ---------------------------------------------------------------------------
 
 class PatientHeader {
   final String patientId;
@@ -200,9 +193,7 @@ class SampleCollectionComplicationEntry {
       };
 }
 
-/// Note: partial collection is tracked by SampleTypeID (not TestID) per the
-/// backend contract, since a single test can map to multiple sample types
-/// and collection happens at the sample-type level.
+
 class IncompleteTestEntry {
   final int sampleTypeId;
   final int incompleteReasonId;

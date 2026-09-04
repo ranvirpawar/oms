@@ -48,7 +48,8 @@ class AppUrls {
   // -------------------------
   static String get getFacilityList => '$_asmxBase/getFacilityList';
 
-  static String get login => '$_asmxBase/UserLoginApp';
+  static String get login => '$_asmxBase/Login';
+  static String get verifyLoginOtp => '$_asmxBase/VerifyLoginOtp';
 
   static String get logout => '$_asmxBase/LogINLogoutUser';
 

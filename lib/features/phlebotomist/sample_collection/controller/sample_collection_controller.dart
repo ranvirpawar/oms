@@ -137,8 +137,7 @@ class SampleCollectionController extends GetxController {
   Future<void> _init() async {
     await _loadEmpId();
     if (!isOrderAccepted) {
-      // Not accepted yet: don't call any order-related APIs. The
-      // confirmation screen renders straight off `assignedPatient`.
+
       return;
     }
     await Future.wait([

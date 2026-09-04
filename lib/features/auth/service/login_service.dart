@@ -44,6 +44,44 @@ class LoginService {
     }
   }
 
+  /// Step 2 of the two-factor login flow. Verifies the 4-digit OTP
+  /// against the userId returned by [login], and — on success —
+  /// completes the login (same response shape as [login]'s success
+  /// case: token/session + user profile).
+  Future<LoginResponseModel> verifyLoginOtp({
+    required int userId,
+    required String otp,
+  }) async {
+    try {
+      final url = AppUrls.verifyLoginOtp; // TODO: add this to AppUrls
+      final params = {
+        'UserId': userId,
+        'Otp': otp,
+      };
+
+      kPrint('Verifying OTP for userId: $userId');
+
+      final response = await apiClient.post(url, data: params);
+      final data = response.body;
+
+      HelperMethods.printLongString(data.toString());
+
+      if (data['status'] == 'Success') {
+        return LoginResponseModel.fromJson(data);
+      } else {
+        return LoginResponseModel(
+          status: 'Fail',
+          message: data['message'] ?? 'Incorrect OTP. Please try again.',
+        );
+      }
+    } catch (e) {
+      kPrint('Error verifying OTP: $e');
+      SnackBarService.to
+          .showMessage(message: 'Something went wrong please try later');
+      rethrow;
+    }
+  }
+
   Future<ProfileData?> fetchUserProfile(String userId) async {
     try {
       kPrint('🥸🥸🥸🥸🥸🥸🥸🥸🥸: $userId');
@@ -197,7 +235,7 @@ class LoginService {
       return serverVersion.compareTo(currentVersion) > 0;
     }
   }
-  /*Future<bool> checkNewVersion(String versionCode) async {
+/*Future<bool> checkNewVersion(String versionCode) async {
     try {
       if (kDebugMode) {
         kPrint('checking update for version : $versionCode');
