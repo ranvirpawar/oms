@@ -4,18 +4,12 @@ import '../../../../../theme/app_colors.dart';
 import '../../controller/sample_collection_controller.dart';
 import '../../model/sample_collection_models.dart';
 
-/// Lets the phlebotomist pick exactly which tests under a sample can't be
-/// run, and log one reason for the batch. Built for speed at the bedside:
-/// tap the affected tests (or the "couldn't draw at all" shortcut), tap a
-/// reason chip, confirm. Free text is optional, never required.
 class IncompleteTestsBottomSheet extends StatefulWidget {
   final SampleBarcodeEntry entry;
   final List<IncompleteReasonOption> reasonOptions;
-  final void Function(
-      Set<int> testIds,
-      IncompleteReasonOption reason,
-      String remarks,
-      ) onConfirm;
+  /// Full reconciliation: whatever map you pass back IS the new state for
+  /// this entry — empty map means "clear everything, nothing incomplete".
+  final void Function(Map<int, TestIncompleteInfo> testInfos) onConfirm;
 
   const IncompleteTestsBottomSheet({
     super.key,
@@ -25,48 +19,109 @@ class IncompleteTestsBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<IncompleteTestsBottomSheet> createState() =>
-      _IncompleteTestsBottomSheetState();
+  State<IncompleteTestsBottomSheet> createState() => _IncompleteTestsBottomSheetState();
 }
 
-class _IncompleteTestsBottomSheetState
-    extends State<IncompleteTestsBottomSheet> {
+class _IncompleteTestsBottomSheetState extends State<IncompleteTestsBottomSheet> {
   late final Set<int> _selectedTestIds;
-  IncompleteReasonOption? _reason;
-  final TextEditingController _remarksController = TextEditingController();
+  final Map<int, IncompleteReasonOption?> _testReasons = {};
+  final Map<int, TextEditingController> _testRemarksControllers = {};
 
   @override
   void initState() {
     super.initState();
-    // Re-opening to edit should show what's already flagged.
+    // Re-opening to edit should show exactly what's already flagged,
+    // per-test reason and remarks included.
     _selectedTestIds = widget.entry.testIncompleteMap.keys.toSet();
-    final existing = widget.entry.testIncompleteMap.values;
-    if (existing.isNotEmpty) {
-      _reason = existing.first.reason;
-      _remarksController.text = existing.first.remarks;
-    }
+    widget.entry.testIncompleteMap.forEach((testId, info) {
+      _testReasons[testId] = info.reason;
+      _testRemarksControllers[testId] = TextEditingController(text: info.remarks);
+    });
   }
 
   @override
   void dispose() {
-    _remarksController.dispose();
+    for (final c in _testRemarksControllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
   bool get _allSelected =>
-      widget.entry.tests.isNotEmpty &&
-          _selectedTestIds.length == widget.entry.tests.length;
+      widget.entry.tests.isNotEmpty && _selectedTestIds.length == widget.entry.tests.length;
+
+  // Confirm is always allowed: an empty selection is a valid state
+  // (means "clear everything"), a non-empty one just needs every
+  // selected test to have a reason picked.
+  bool get _canConfirm =>
+      _selectedTestIds.isEmpty || _selectedTestIds.every((id) => _testReasons[id] != null);
+
+  void _toggleTest(int testId) {
+    setState(() {
+      if (_selectedTestIds.contains(testId)) {
+        _selectedTestIds.remove(testId);
+        _testReasons.remove(testId);
+        _testRemarksControllers.remove(testId)?.dispose();
+      } else {
+        _selectedTestIds.add(testId);
+        _testRemarksControllers[testId] = TextEditingController();
+      }
+    });
+  }
 
   void _toggleAll(bool selectAll) {
     setState(() {
       if (selectAll) {
-        _selectedTestIds
-          ..clear()
-          ..addAll(widget.entry.tests.map((t) => t.testId));
+        for (final t in widget.entry.tests) {
+          _selectedTestIds.add(t.testId);
+          _testRemarksControllers.putIfAbsent(t.testId, () => TextEditingController());
+        }
       } else {
         _selectedTestIds.clear();
+        _testReasons.clear();
+        for (final c in _testRemarksControllers.values) {
+          c.dispose();
+        }
+        _testRemarksControllers.clear();
       }
     });
+  }
+
+  Future<void> _pickReason(int testId) async {
+    final picked = await showModalBottomSheet<IncompleteReasonOption>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => _ReasonPickerSheet(
+        options: widget.reasonOptions,
+        selected: _testReasons[testId],
+      ),
+    );
+    if (picked != null) {
+      setState(() => _testReasons[testId] = picked);
+    }
+  }
+
+  void _applyReasonToAllSelected(int sourceId) {
+    final reason = _testReasons[sourceId];
+    if (reason == null) return;
+    setState(() {
+      for (final id in _selectedTestIds) {
+        _testReasons[id] = reason;
+      }
+    });
+  }
+
+  void _confirm() {
+    final result = <int, TestIncompleteInfo>{
+      for (final id in _selectedTestIds)
+        id: TestIncompleteInfo(
+          reason: _testReasons[id]!,
+          remarks: _testRemarksControllers[id]?.text.trim() ?? '',
+        ),
+    };
+    widget.onConfirm(result);
+    Navigator.of(context).pop();
   }
 
   @override
@@ -74,196 +129,333 @@ class _IncompleteTestsBottomSheetState
     final entry = widget.entry;
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
-        decoration: const BoxDecoration(
-          color: AppColors.bgCard,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 14),
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const Text(
-                'Which tests are affected?',
-                style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${entry.sampleType} • select every test this sample can\'t cover',
-                style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
-              ),
-              const SizedBox(height: 14),
-              InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: () => _toggleAll(!_allSelected),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: _allSelected
-                        ? AppColors.redLight.withOpacity(0.4)
-                        : AppColors.grayLight,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) {
+          return Container(
+            decoration: const BoxDecoration(
+              color: AppColors.bgCard,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                // ---- Fixed header ----
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        _allSelected
-                            ? Icons.check_box_rounded
-                            : Icons.check_box_outline_blank_rounded,
-                        size: 20,
-                        color: _allSelected ? AppColors.redText : AppColors.textMuted,
-                      ),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Text(
-                          "Couldn't collect this sample at all",
-                          style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary),
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 14),
+                          decoration: BoxDecoration(
+                            color: AppColors.border,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
+                      ),
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Which tests are affected?',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                            ),
+                          ),
+                          if (_selectedTestIds.isNotEmpty)
+                            TextButton(
+                              onPressed: () => _toggleAll(false),
+                              style: TextButton.styleFrom(foregroundColor: AppColors.redText),
+                              child: const Text('Clear all', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                            ),
+                        ],
+                      ),
+                      Text(
+                        '${entry.sampleType} • select every test this sample can\'t cover',
+                        style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
                       ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              const Divider(height: 1),
-              const SizedBox(height: 6),
-              for (final test in entry.tests)
-                InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => setState(() {
-                    _selectedTestIds.contains(test.testId)
-                        ? _selectedTestIds.remove(test.testId)
-                        : _selectedTestIds.add(test.testId);
-                  }),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
+                const Divider(height: 1),
+
+                // ---- Scrollable body ----
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          _selectedTestIds.contains(test.testId)
-                              ? Icons.check_box_rounded
-                              : Icons.check_box_outline_blank_rounded,
-                          size: 20,
-                          color: _selectedTestIds.contains(test.testId)
-                              ? AppColors.redText
-                              : AppColors.textMuted,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                test.testName,
-                                style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary),
-                              ),
-                              if (test.testCode.isNotEmpty)
-                                Text(
-                                  test.testCode,
-                                  style: const TextStyle(
-                                      fontSize: 10.5, color: AppColors.textTertiary),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => _toggleAll(!_allSelected),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: _allSelected ? AppColors.redLight.withOpacity(0.4) : AppColors.grayLight,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _allSelected ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                                  size: 20,
+                                  color: _allSelected ? AppColors.redText : AppColors.textMuted,
                                 ),
-                            ],
+                                const SizedBox(width: 10),
+                                const Expanded(
+                                  child: Text(
+                                    "Couldn't collect this sample at all",
+                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
+                        const SizedBox(height: 10),
+                        const Divider(height: 1),
+                        const SizedBox(height: 6),
+
+                        for (final test in entry.tests) ...[
+                          _TestRow(
+                            test: test,
+                            isSelected: _selectedTestIds.contains(test.testId),
+                            reason: _testReasons[test.testId],
+                            remarksController: _testRemarksControllers[test.testId],
+                            showApplyToAll: _selectedTestIds.length > 1,
+                            onToggle: () => _toggleTest(test.testId),
+                            onPickReason: () => _pickReason(test.testId),
+                            onApplyToAll: () => _applyReasonToAllSelected(test.testId),
+                          ),
+                          const SizedBox(height: 4),
+                        ],
                       ],
                     ),
                   ),
                 ),
-              const SizedBox(height: 14),
-              const Text('Reason',
-                  style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: widget.reasonOptions.map((r) {
-                  final selected = _reason?.reasonId == r.reasonId;
-                  return ChoiceChip(
-                    label: Text(r.reason, style: const TextStyle(fontSize: 12)),
-                    selected: selected,
-                    onSelected: (_) => setState(() => _reason = r),
-                    selectedColor: AppColors.primary100,
-                    backgroundColor: AppColors.grayLight,
-                    labelStyle: TextStyle(
-                        color: selected
-                            ? AppColors.primary800
-                            : AppColors.textSecondary),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _remarksController,
-                maxLines: 2,
-                style: const TextStyle(fontSize: 12.5),
-                decoration: InputDecoration(
-                  hintText: 'Add a note (optional)',
-                  filled: true,
-                  fillColor: AppColors.grayLight,
-                  contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accent700,
-                    shape:
-                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                    elevation: 0,
+
+                // ---- Fixed footer — never scrolls away ----
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                  decoration: const BoxDecoration(
+                    color: AppColors.bgCard,
+                    border: Border(top: BorderSide(color: AppColors.border)),
                   ),
-                  onPressed: (_selectedTestIds.isEmpty || _reason == null)
-                      ? null
-                      : () {
-                    widget.onConfirm(
-                      _selectedTestIds,
-                      _reason!,
-                      _remarksController.text.trim(),
-                    );
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('Confirm',
-                      style: TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accent700,
+                        disabledBackgroundColor: AppColors.accent700.withOpacity(0.4),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        elevation: 0,
+                      ),
+                      onPressed: _canConfirm ? _confirm : null,
+                      child: Text(
+                        _selectedTestIds.isEmpty ? 'Confirm (no flags)' : 'Confirm',
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// One test row: checkbox + name, and — only when checked — its own
+/// reason dropdown and an optional note, right underneath.
+class _TestRow extends StatelessWidget {
+  final TestInfo test;
+  final bool isSelected;
+  final IncompleteReasonOption? reason;
+  final TextEditingController? remarksController;
+  final bool showApplyToAll;
+  final VoidCallback onToggle;
+  final VoidCallback onPickReason;
+  final VoidCallback onApplyToAll;
+
+  const _TestRow({
+    required this.test,
+    required this.isSelected,
+    required this.reason,
+    required this.remarksController,
+    required this.showApplyToAll,
+    required this.onToggle,
+    required this.onPickReason,
+    required this.onApplyToAll,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onToggle,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                Icon(
+                  isSelected ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                  size: 20,
+                  color: isSelected ? AppColors.redText : AppColors.textMuted,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        test.testName,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                      ),
+                      if (test.testCode.isNotEmpty)
+                        Text(
+                          test.testCode,
+                          style: const TextStyle(fontSize: 10.5, color: AppColors.textTertiary),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
+        if (isSelected)
+          Padding(
+            padding: const EdgeInsets.only(left: 30, bottom: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: onPickReason,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.grayLight,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: reason == null ? AppColors.border : AppColors.primary800),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            reason?.reason ?? 'Select a reason',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: reason == null ? AppColors.textMuted : AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        const Icon(Icons.keyboard_arrow_down_rounded, size: 18, color: AppColors.textMuted),
+                      ],
+                    ),
+                  ),
+                ),
+                if (reason != null && showApplyToAll)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: TextButton(
+                      onPressed: onApplyToAll,
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        minimumSize: const Size(0, 28),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text('Use this reason for all selected', style: TextStyle(fontSize: 11.5)),
+                    ),
+                  ),
+                const SizedBox(height: 6),
+                if (remarksController != null)
+                  TextField(
+                    controller: remarksController,
+                    maxLines: 2,
+                    style: const TextStyle(fontSize: 12),
+                    decoration: InputDecoration(
+                      hintText: 'Add a note (optional)',
+                      filled: true,
+                      fillColor: AppColors.grayLight,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// Nested picker sheet for a single test's reason — same shape as the old
+/// _ReasonPicker sheet, checkmark on the selected item.
+class _ReasonPickerSheet extends StatelessWidget {
+  final List<IncompleteReasonOption> options;
+  final IncompleteReasonOption? selected;
+
+  const _ReasonPickerSheet({required this.options, required this.selected});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 10),
+          Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Select reason', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+            ),
+          ),
+          Flexible(
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: options.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final option = options[index];
+                final isSelected = selected?.reasonId == option.reasonId;
+                return ListTile(
+                  title: Text(option.reason, style: const TextStyle(fontSize: 13.5)),
+                  trailing: isSelected ? const Icon(Icons.check_rounded, color: AppColors.primary800) : null,
+                  onTap: () => Navigator.of(context).pop(option),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -421,35 +421,27 @@ class SampleCollectionController extends GetxController {
       IncompleteTestsBottomSheet(
         entry: entry,
         reasonOptions: incompleteReasonOptions,
-        onConfirm: (testIds, reason, remarks) =>
-            _applyIncompleteSelection(entry, testIds, reason, remarks),
+        onConfirm: (testInfos) => _applyIncompleteSelection(entry, testInfos),
       ),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
     );
   }
-  void removeIncompleteTest(SampleBarcodeEntry entry, int testId) {
-    entry.testIncompleteMap.remove(testId);
-    _recomputeStatus(entry);
-  }
+
   void _applyIncompleteSelection(
       SampleBarcodeEntry entry,
-      Set<int> testIds,
-      IncompleteReasonOption reason,
-      String remarks,
+      Map<int, TestIncompleteInfo> testInfos,
       ) {
-    for (final id in testIds) {
-      entry.testIncompleteMap[id] = TestIncompleteInfo(
-        reason: reason,
-        remarks: remarks,
-      );
-    }
-    // Anything unchecked in this pass should go back to "usable" — the
-    // sheet always reflects the full current intent, not an incremental add.
-    entry.testIncompleteMap.removeWhere((id, _) => !testIds.contains(id));
+    // Full reconciliation — the sheet always returns the complete current
+    // intent, empty map included, so a straight replace is correct and
+    // handles "unmark everything" for free.
+    entry.testIncompleteMap
+      ..clear()
+      ..addAll(testInfos);
     entry.testIncompleteMap.refresh();
     _recomputeStatus(entry);
   }
+
 
   void undoAllIncomplete(SampleBarcodeEntry entry) {
     entry.testIncompleteMap.clear();

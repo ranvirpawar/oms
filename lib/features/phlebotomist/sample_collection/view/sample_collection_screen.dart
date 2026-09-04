@@ -37,7 +37,7 @@ class SampleCollectionScreen extends GetView<SampleCollectionController> {
                   ],
                 ),
               ),
-              IncompleteCollectionSection(controller: controller),
+              // IncompleteCollectionSection(controller: controller),
               ComplicationSection(controller: controller),
               _NotesCard(controller: controller),
             ],
