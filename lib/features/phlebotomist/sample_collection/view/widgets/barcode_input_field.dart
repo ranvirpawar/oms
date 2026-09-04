@@ -3,12 +3,8 @@ import 'package:flutter/services.dart';
 
 import '../../../../../theme/app_colors.dart';
 
-// Adjust this import to wherever AppColors actually lives in your project.
-// import '../../../../core/theme/app_colors.dart';
 
-/// Compact, Apple-styled barcode field: type manually OR tap the scan icon
-/// to open the barcode scanner sheet. Purpose-built for this screen instead
-/// of the generic CFormTextField.
+
 class BarcodeInputField extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onScanTap;
