@@ -752,7 +752,7 @@ class _WelcomeBackBanner extends StatelessWidget {
                 Icon(Icons.lock_open_rounded, color: Colors.white, size: 13),
                 SizedBox(width: 8),
                 Text(
-                  'Session expired \nYou just need to solve problem to continue',
+                  'Session expired \n Continue and enter otp to login',
                   style: TextStyle(
                     fontSize: 11,
                     color: Colors.white,
