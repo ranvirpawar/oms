@@ -195,34 +195,38 @@ class DashboardController extends GetxController {
   List<DashboardTileCard> _phlebotomistCards() => [
     const DashboardTileCard(
 
-      title: AppStrings.patientRegistration,
-      icon: AppAssets.registrationIcon,
-      backgroundImage: AppAssets.collectSampleCard,
+      title: AppStrings.collectSample,
+      icon: AppAssets.sampleCollection,
+      // backgroundImage: AppAssets.collectSampleCard,
       borderColor: Colors.blue,
       onTap: RouteManager.navigateToBagStatusDashboard,
     ),
     const DashboardTileCard(
-      title: AppStrings.assignedPatient,
-      backgroundImage: AppAssets.assignedPatients,
+      title: AppStrings.orderManagement,
+      icon: AppAssets.orderManagement,
+      // backgroundImage: AppAssets.assignedPatients,
       borderColor: Colors.orange,
       onTap: RouteManager.navigateToPatientQueue,
     ),
     const DashboardTileCard(
       title: AppStrings.collectedSampleBags,
-      backgroundImage: AppAssets.collectedBagsCard,
+      // backgroundImage: AppAssets.collectedBagsCard,
+      icon: AppAssets.bagsCollected,
       borderColor: Colors.green,
       onTap: RouteManager.navigateToCollectedBags,
     ),
 
     const DashboardTileCard(
       title: AppStrings.sampleRecollection,
-      backgroundImage: AppAssets.sampleRecollectionCard,
+      icon: AppAssets.sampleRecollectionIcon,
+      // backgroundImage: AppAssets.sampleRecollectionCard,
       borderColor: Colors.purple,
       onTap: RouteManager.navigateToSampleRecollection,
     ),
     const DashboardTileCard(
       title: AppStrings.bagStatus,
-      backgroundImage: AppAssets.bagHistoryCard,
+      icon: AppAssets.bagStatus,
+      // backgroundImage: AppAssets.bagHistoryCard,
       borderColor: Colors.cyan,
       onTap: RouteManager.navigateToBagStatus,
     ),

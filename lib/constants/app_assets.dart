@@ -93,6 +93,9 @@ class AppAssets {
   static const String performanceDashboard = 'assets/images/performance.png';
   static const String hospitalFacilityIcon = 'assets/icons/hospital-facility.png';
   static const String mergeBarcode = 'assets/images/scan.png';
+  static const String orderManagement = 'assets/images/order-management.png';
+  static const String sampleCollection = 'assets/images/sample-collection.png';
+  static const String sampleRecollectionIcon = 'assets/images/sample-recollection.png';
 
 
   /// Dashboard cards

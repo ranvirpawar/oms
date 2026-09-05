@@ -210,110 +210,7 @@ class _GraphicBody extends StatelessWidget {
   }
 }
 
-// _GridBody, _NeuIconBox, _MarqueeBanner unchanged.
 
-/*class DashboardTileCard extends StatelessWidget {
-  final String title;
-  final String icon;
-  final VoidCallback onTap;
-  final bool isGridMode;
-  final String? bannerText;
-
-  const DashboardTileCard({
-    super.key,
-    required this.title,
-    required this.icon,
-    required this.onTap,
-    this.isGridMode = false,
-    this.bannerText,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final radius = isGridMode ? 20.0 : 18.0;
-    final hasBanner = bannerText != null && bannerText!.isNotEmpty;
-
-    // ── Neumorphic palette ──────────────────────────────────────────────────
-    final neuBase  = isDark ? const Color(0xFF1E1E2C) : const Color(0xFFECEFF4);
-    final neuLight = isDark ? const Color(0xFF2C2C40) : Colors.white;
-    final neuDark  = isDark ? const Color(0xFF0F0F1A) : const Color(0xFFC8CBD6);
-
-    return AnimatedTapScale(
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onTap();
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            color: neuBase,
-            borderRadius: BorderRadius.circular(radius),
-            boxShadow: [
-              // Top-left highlight
-              BoxShadow(
-                color: neuLight.withOpacity(isDark ? 0.12 : 1.0),
-                offset: const Offset(-5, -5),
-                blurRadius: 10,
-              ),
-              // Bottom-right shadow
-              BoxShadow(
-                color: neuDark.withOpacity(isDark ? 0.75 : 0.55),
-                offset: const Offset(5, 5),
-                blurRadius: 10,
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(radius),
-            child: Column(
-              mainAxisSize: isGridMode ? MainAxisSize.max : MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // ── Banner ────────────────────────────────────────────
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 350),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  transitionBuilder: (child, anim) => SizeTransition(
-                    sizeFactor: anim,
-                    axisAlignment: -1,
-                    child: FadeTransition(opacity: anim, child: child),
-                  ),
-                  child: hasBanner
-                      ? _MarqueeBanner(
-                    key: ValueKey(bannerText),
-                    text: bannerText!,
-                    isDark: isDark,
-                    neuBase: neuBase,
-                    neuDark: neuDark,
-                  )
-                      : const SizedBox.shrink(key: ValueKey('__empty__')),
-                ),
-
-                // ── Body ──────────────────────────────────────────────
-                Flexible(
-                  fit: isGridMode ? FlexFit.tight : FlexFit.loose,
-                  child:  _GridBody(
-                    title: title,
-                    icon: icon,
-                    cs: cs,
-                    isDark: isDark,
-                    neuBase: neuBase,
-                    neuLight: neuLight,
-                    neuDark: neuDark,
-                  )
-
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}*/
 class _GridBody extends StatelessWidget {
   final String title;
   final String icon;
@@ -344,7 +241,7 @@ class _GridBody extends StatelessWidget {
             _NeuIconBox(
               icon: icon,
               size: 54,
-              iconSize: 28,
+              // iconSize: 28,
               isDark: isDark,
               neuBase: neuBase,
               neuLight: neuLight,
@@ -372,12 +269,9 @@ class _GridBody extends StatelessWidget {
   }
 }
 
-
-
 class _NeuIconBox extends StatelessWidget {
   final String icon;
   final double size;
-  final double iconSize;
   final bool isDark;
   final Color neuBase;
   final Color neuLight;
@@ -386,7 +280,6 @@ class _NeuIconBox extends StatelessWidget {
   const _NeuIconBox({
     required this.icon,
     required this.size,
-    required this.iconSize,
     required this.isDark,
     required this.neuBase,
     required this.neuLight,
@@ -398,35 +291,94 @@ class _NeuIconBox extends StatelessWidget {
     return Container(
       width: size,
       height: size,
+      padding: EdgeInsets.all(size * 0.035), // very small breathing room
       decoration: BoxDecoration(
         color: neuBase,
         borderRadius: BorderRadius.circular(size * 0.28),
         boxShadow: [
-          // Highlight — top-left
+          // Top-left highlight
           BoxShadow(
-            color: neuLight.withOpacity(isDark ? 0.12 : 1.0),
-            offset: const Offset(-3, -3),
-            blurRadius: 6,
+            color: neuLight.withOpacity(isDark ? 0.12 : 0.9),
+            offset: const Offset(-4, -4),
+            blurRadius: 8,
+            spreadRadius: 0,
           ),
-          // Shadow — bottom-right
+
+          // Bottom-right depth
           BoxShadow(
-            color: neuDark.withOpacity(isDark ? 0.7 : 0.5),
-            offset: const Offset(3, 3),
-            blurRadius: 6,
+            color: neuDark.withOpacity(isDark ? 0.65 : 0.45),
+            offset: const Offset(4, 4),
+            blurRadius: 8,
+            spreadRadius: 0,
           ),
         ],
       ),
-      child: Center(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(size * 0.23),
         child: Image.asset(
           icon,
-          width: iconSize,
-          height: iconSize,
+          width: double.infinity,
+          height: double.infinity,
           fit: BoxFit.contain,
         ),
       ),
     );
   }
 }
+
+// class _NeuIconBox extends StatelessWidget {
+//   final String icon;
+//   final double size;
+//   final double iconSize;
+//   final bool isDark;
+//   final Color neuBase;
+//   final Color neuLight;
+//   final Color neuDark;
+//
+//   const _NeuIconBox({
+//     required this.icon,
+//     required this.size,
+//     required this.iconSize,
+//     required this.isDark,
+//     required this.neuBase,
+//     required this.neuLight,
+//     required this.neuDark,
+//   });
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       width: size,
+//       height: size,
+//       decoration: BoxDecoration(
+//         color: neuBase,
+//         borderRadius: BorderRadius.circular(size * 0.28),
+//         boxShadow: [
+//           // Highlight — top-left
+//           BoxShadow(
+//             color: neuLight.withOpacity(isDark ? 0.12 : 1.0),
+//             offset: const Offset(-3, -3),
+//             blurRadius: 6,
+//           ),
+//           // Shadow — bottom-right
+//           BoxShadow(
+//             color: neuDark.withOpacity(isDark ? 0.7 : 0.5),
+//             offset: const Offset(3, 3),
+//             blurRadius: 6,
+//           ),
+//         ],
+//       ),
+//       child: Center(
+//         child: Image.asset(
+//           icon,
+//           width: iconSize,
+//           height: iconSize,
+//           fit: BoxFit.contain,
+//         ),
+//       ),
+//     );
+//   }
+// }
 
 
 class _MarqueeBanner extends StatefulWidget {

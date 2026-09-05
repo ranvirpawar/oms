@@ -25,6 +25,7 @@ class AppStrings {
   static const String performanceDashboard = 'Performance Dashboard';
   static const String patientRegistration = 'Patient Registration';
   static const String collectSample = 'Collect Sample';
+  static const String orderManagement = 'Order Management';
   static const String patientRegistrationDashboard = 'Patient Registration Dashboard';
   static const String bagStatusDashboard = 'Bag Status Dashboard';
   static const String samplePickup = 'Sample Pickup';
