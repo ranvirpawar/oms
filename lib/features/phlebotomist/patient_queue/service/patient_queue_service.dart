@@ -28,6 +28,13 @@ class AssignStatus {
 class PatientQueueService {
   final APIClient _apiClient = Get.find<APIClient>();
 
+  /// True when the backend's failure message represents "no data" (e.g.
+  /// "No record found") rather than a genuine error.
+  static bool _isNoDataMessage(String message) {
+    final lower = message.toLowerCase();
+    return lower.contains('no record') || lower.contains('no data');
+  }
+
   Future<List<AssignedPatient>> fetchAssignedPatients({
     required String userId,
   }) async {
@@ -40,9 +47,24 @@ class PatientQueueService {
           ? jsonDecode(response.data as String) as Map<String, dynamic>
           : response.data as Map<String, dynamic>;
 
-      if ((body['status'] as String?)?.toLowerCase() != 'success') {
+      final isSuccess =
+          (body['status'] as String?)?.toLowerCase() == 'success';
+
+      if (!isSuccess) {
+        final message = (body['message'] as String?)?.trim() ?? '';
+        final output = body['output'];
+
+        // The backend reports "no orders for this user" as `status: Fail`
+        // with a "No record found" message and a `null` output (e.g.
+        // `{status: Fail, message: No record found, output: null}`). That is
+        // an *empty* queue, not an error — return an empty list so callers
+        // fall through to the empty state instead of the error state.
+        if (output == null && _isNoDataMessage(message)) {
+          return const <AssignedPatient>[];
+        }
+
         throw PatientQueueException(
-          body['message'] as String? ?? 'Unable to load your patient queue.',
+          message.isEmpty ? 'Unable to load your patient queue.' : message,
         );
       }
 

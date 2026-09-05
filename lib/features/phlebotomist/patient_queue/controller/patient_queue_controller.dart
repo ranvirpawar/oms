@@ -154,10 +154,16 @@ class PatientQueueController extends GetxController {
           ? QueueLoadState.empty
           : QueueLoadState.loaded;
     } on PatientQueueException catch (e) {
-      kPrint(errorMessage.value);
-      if (errorMessage.value.trim().toLowerCase() == 'no record found') {
+      kPrint(e.message);
+      // Defensive: the service already normalises the backend's
+      // "No record found" failure into an empty list, but if a variant slips
+      // through, treat any "no record" failure as an empty queue — not an
+      // error — and surface the real message in the error state otherwise.
+      if (_isNoData(e)) {
+        _patients.assignAll(const <AssignedPatient>[]);
         loadState.value = QueueLoadState.empty;
       } else {
+        errorMessage.value = e.message;
         loadState.value = QueueLoadState.error;
       }
     } catch (_) {
@@ -180,11 +186,17 @@ class PatientQueueController extends GetxController {
           : QueueLoadState.loaded;
       errorMessage.value = '';
     } on PatientQueueException catch (e) {
-      Get.snackbar(
-        'Refresh failed',
-        e.message,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      if (_isNoData(e)) {
+        _patients.assignAll(const <AssignedPatient>[]);
+        loadState.value = QueueLoadState.empty;
+        errorMessage.value = '';
+      } else {
+        Get.snackbar(
+          'Refresh failed',
+          e.message,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
     } catch (_) {
       Get.snackbar(
         'Refresh failed',
@@ -197,6 +209,12 @@ class PatientQueueController extends GetxController {
   }
 
   void retry() => fetchPatients();
+
+  /// Whether a service exception represents an empty queue (the backend's
+  /// "No record found") rather than a genuine failure — used as a defensive
+  /// fallback to the service-level normalisation.
+  bool _isNoData(PatientQueueException e) =>
+      e.message.trim().toLowerCase().contains('no record');
 
   void setFilter(QueueFilter filter) => activeFilter.value = filter;
 
