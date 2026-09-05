@@ -3,21 +3,24 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart'
+    hide SnackPosition;
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../services/auth_manager.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
-
 
 import '../../patient_queue/model/patient_queue_model.dart';
 import '../model/sample_collection_models.dart';
 import '../service/sample_collection_service.dart';
 import '../view/widgets/barcode_scanner_sheet.dart';
 import '../view/widgets/incomplete_bottom_sheet.dart';
+import '../view/widgets/sample_collection_success_page.dart';
 
 /// Per-sample-type UI state: one of these exists for every entry in
 /// `orderDetails.sampleRequirements`.
 /// One row of a sample-type's incomplete state: which reason, optional note.
+
 class TestIncompleteInfo {
   final IncompleteReasonOption reason;
   final String remarks;
@@ -32,12 +35,8 @@ class SampleBarcodeEntry {
   final List<TestInfo> tests;
 
   final TextEditingController barcodeController = TextEditingController();
-  final Rx<SampleCollectionStatus> status =
-      SampleCollectionStatus.pending.obs;
+  final Rx<SampleCollectionStatus> status = SampleCollectionStatus.pending.obs;
 
-  /// testId -> why it's unsuitable. A test landing here doesn't require the
-  /// whole sample to be unusable — e.g. the tube was drawn fine but is
-  /// hemolysed, which only kills a couple of the analytes it feeds.
   final RxMap<int, TestIncompleteInfo> testIncompleteMap =
       <int, TestIncompleteInfo>{}.obs;
 
@@ -51,18 +50,15 @@ class SampleBarcodeEntry {
   });
 
   bool get isCollected => status.value == SampleCollectionStatus.collected;
+
   bool get isPending => status.value == SampleCollectionStatus.pending;
 
-  /// Every test this sample feeds has been flagged — the draw itself
-  /// failed, nothing here is usable.
   bool get isFullyUnusable =>
       tests.isNotEmpty && testIncompleteMap.length == tests.length;
 
-  /// Sample is fine but only some of its tests are usable.
   bool get hasPartialIncomplete =>
       testIncompleteMap.isNotEmpty && !isFullyUnusable;
 
-  /// What `validate()` should treat as "handled".
   bool get isResolved => isCollected || isFullyUnusable;
 
   void dispose() {
@@ -72,21 +68,23 @@ class SampleBarcodeEntry {
 
 enum SampleCollectionStatus { pending, collected, incomplete }
 
-/// Steps within the module, driven by a single controller so state
-/// (order id, user id, empId) survives navigation between the three screens.
 enum SampleCollectionStep { orderConfirmation, otpVerification, collection }
 
 class SampleCollectionController extends GetxController {
   SampleCollectionController({required this.assignedPatient})
-      : orderId = assignedPatient.orderId.toString();
+    : orderId = assignedPatient.orderId.toString();
 
   final SampleCollectionService _service = SampleCollectionService();
   final AuthManager _authManager = AuthManager();
 
   final AssignedPatient assignedPatient;
   final String orderId;
-  bool get isOrderAccepted => assignedPatient.status == PatientStatus.accepted|| assignedPatient.status == PatientStatus.rescheduled;
+
+  bool get isOrderAccepted =>
+      assignedPatient.status == PatientStatus.accepted ||
+      assignedPatient.status == PatientStatus.rescheduled;
   final RxString empId = ''.obs;
+
   int get _userId => int.tryParse(empId.value) ?? 0;
 
   final Rx<SampleCollectionStep> step =
@@ -99,8 +97,10 @@ class SampleCollectionController extends GetxController {
   final RxString orderLoadError = ''.obs;
 
   // ---- OTP -----------------------------------------------------------------
-  final List<TextEditingController> otpControllers =
-      List.generate(4, (_) => TextEditingController());
+  final List<TextEditingController> otpControllers = List.generate(
+    4,
+    (_) => TextEditingController(),
+  );
   final List<FocusNode> otpFocusNodes = List.generate(4, (_) => FocusNode());
   final RxBool isSendingOtp = false.obs;
   final RxBool isVerifyingOtp = false.obs;
@@ -111,7 +111,6 @@ class SampleCollectionController extends GetxController {
   // ---- Complications ---------------------------------------------------
   final RxList<ComplicationOption> complicationOptions =
       <ComplicationOption>[].obs;
-  // complicationId -> true (yes) / false (no) / null (unanswered)
   final RxMap<int, bool?> complicationSelections = <int, bool?>{}.obs;
 
   // ---- Incomplete reasons ------------------------------------------------
@@ -127,11 +126,22 @@ class SampleCollectionController extends GetxController {
   final RxBool isScannerOpen = false.obs;
   final RxBool isSubmitting = false.obs;
 
-  int get collectedCount =>
-      sampleEntries.where((e) => e.isCollected && !e.hasPartialIncomplete).length;
+  // ---- Submission result / Disha sync -------------------------------------
+  final Rxn<SampleSubmissionResult> submissionResult =
+      Rxn<SampleSubmissionResult>();
+  final RxBool isRetryingDisha = false.obs;
+  final RxString dishaRetryMessage = ''.obs;
+  final RxBool dishaSyncResolved = false.obs;
+
+  int get collectedCount => sampleEntries
+      .where((e) => e.isCollected && !e.hasPartialIncomplete)
+      .length;
+
   int get incompleteCount =>
       sampleEntries.where((e) => e.isFullyUnusable).length;
+
   int get pendingCount => sampleEntries.where((e) => e.isPending).length;
+
   bool get allSamplesResolved =>
       sampleEntries.isNotEmpty && sampleEntries.every((e) => e.isResolved);
 
@@ -158,17 +168,15 @@ class SampleCollectionController extends GetxController {
     _scannerController?.dispose();
     super.onClose();
   }
+
   Future<void> _init() async {
     await _loadEmpId();
     if (!isOrderAccepted) {
-
       return;
     }
-    await Future.wait([
-      fetchOrderDetails(),
-      _fetchSupportingLists(),
-    ]);
+    await Future.wait([fetchOrderDetails(), _fetchSupportingLists()]);
   }
+
   // ---------------------------------------------------------------------
   // Session
   // ---------------------------------------------------------------------
@@ -228,18 +236,22 @@ class SampleCollectionController extends GetxController {
     for (final e in sampleEntries) {
       e.dispose();
     }
-    sampleEntries.assignAll(requirements
-        .map((r) => SampleBarcodeEntry(
-      sampleTypeId: r.sampleTypeId,
-      sampleType: r.sampleType,
-      volumeRequiredMl: r.volumeRequiredMl,
-      tests: r.tests,
-    ))
-        .toList());
+    sampleEntries.assignAll(
+      requirements
+          .map(
+            (r) => SampleBarcodeEntry(
+              sampleTypeId: r.sampleTypeId,
+              sampleType: r.sampleType,
+              volumeRequiredMl: r.volumeRequiredMl,
+              tests: r.tests,
+            ),
+          )
+          .toList(),
+    );
   }
 
   // ---------------------------------------------------------------------
-  // OTP — send/verify are PLACEHOLDERS (see SampleCollectionService).
+  // OTP
   // ---------------------------------------------------------------------
 
   Future<void> confirmAndCollect() async {
@@ -325,7 +337,7 @@ class SampleCollectionController extends GetxController {
   }
 
   // ---------------------------------------------------------------------
-  // Barcode entry — manual input + MobileScanner
+  // Barcode entry
   // ---------------------------------------------------------------------
 
   String getBarcodeLabel(SampleBarcodeEntry entry) {
@@ -333,7 +345,6 @@ class SampleCollectionController extends GetxController {
     return vol.isEmpty ? entry.sampleType : '${entry.sampleType} ($vol)';
   }
 
-  /// Manual text entry. Value is stored exactly as typed — no prefix added.
   void onBarcodeChanged(SampleBarcodeEntry entry, String value) {
     final trimmed = value.trim();
     if (_isDuplicateBarcode(entry, trimmed)) {
@@ -372,10 +383,12 @@ class SampleCollectionController extends GetxController {
   }
 
   bool _isDuplicateBarcode(SampleBarcodeEntry entry, String value) {
-    return sampleEntries.any((other) =>
-        other.sampleTypeId != entry.sampleTypeId &&
-        other.barcodeController.text.trim().isNotEmpty &&
-        other.barcodeController.text.trim() == value);
+    return sampleEntries.any(
+      (other) =>
+          other.sampleTypeId != entry.sampleTypeId &&
+          other.barcodeController.text.trim().isNotEmpty &&
+          other.barcodeController.text.trim() == value,
+    );
   }
 
   MobileScannerController _ensureScannerController() {
@@ -411,11 +424,10 @@ class SampleCollectionController extends GetxController {
     }
   }
 
-
-
   // ---------------------------------------------------------------------
   // Partial / incomplete collection
   // ---------------------------------------------------------------------
+
   void openIncompleteTestsSheet(SampleBarcodeEntry entry) {
     Get.bottomSheet(
       IncompleteTestsBottomSheet(
@@ -429,12 +441,9 @@ class SampleCollectionController extends GetxController {
   }
 
   void _applyIncompleteSelection(
-      SampleBarcodeEntry entry,
-      Map<int, TestIncompleteInfo> testInfos,
-      ) {
-    // Full reconciliation — the sheet always returns the complete current
-    // intent, empty map included, so a straight replace is correct and
-    // handles "unmark everything" for free.
+    SampleBarcodeEntry entry,
+    Map<int, TestIncompleteInfo> testInfos,
+  ) {
     entry.testIncompleteMap
       ..clear()
       ..addAll(testInfos);
@@ -442,31 +451,10 @@ class SampleCollectionController extends GetxController {
     _recomputeStatus(entry);
   }
 
-
   void undoAllIncomplete(SampleBarcodeEntry entry) {
     entry.testIncompleteMap.clear();
     _recomputeStatus(entry);
   }
- /* void markAsNotCollected(SampleBarcodeEntry entry) {
-    entry.barcodeController.clear();
-    entry.status.value = SampleCollectionStatus.incomplete;
-  }
-
-  void undoNotCollected(SampleBarcodeEntry entry) {
-    entry.status.value = SampleCollectionStatus.pending;
-    entry.selectedReason.value = null;
-    entry.remarksController.clear();
-  }
-
-  void selectIncompleteReason(
-    SampleBarcodeEntry entry,
-    IncompleteReasonOption reason,
-  ) {
-    entry.selectedReason.value = reason;
-  }
-
-  List<SampleBarcodeEntry> get incompleteEntries =>
-      sampleEntries.where((e) => e.isIncomplete).toList();*/
 
   // ---------------------------------------------------------------------
   // Complications
@@ -475,7 +463,6 @@ class SampleCollectionController extends GetxController {
   void setComplication(int complicationId, bool value) {
     complicationSelections[complicationId] = value;
   }
-
 
   // ---------------------------------------------------------------------
   // Validation + submission
@@ -502,64 +489,94 @@ class SampleCollectionController extends GetxController {
   }
 
   SampleCollectionPayload _buildPayload() {
-    final collected =
-    sampleEntries.where((e) => e.barcodeController.text.trim().isNotEmpty);
+    final collected = sampleEntries.where(
+      (e) => e.barcodeController.text.trim().isNotEmpty,
+    );
 
     final incompleteTests = <IncompleteTestEntry>[];
     for (final entry in sampleEntries) {
       entry.testIncompleteMap.forEach((testId, info) {
-        incompleteTests.add(IncompleteTestEntry(
-          sampleTypeId: entry.sampleTypeId,
-          testId: testId,
-          incompleteReasonId: info.reason.reasonId,
-          incompleteReason:
-          info.remarks.isNotEmpty ? info.remarks : info.reason.reason,
-        ));
+        incompleteTests.add(
+          IncompleteTestEntry(
+            sampleTypeId: entry.sampleTypeId,
+            testId: testId,
+            incompleteReasonId: info.reason.reasonId,
+            incompleteReason: info.remarks.isNotEmpty
+                ? info.remarks
+                : info.reason.reason,
+          ),
+        );
       });
     }
 
     return SampleCollectionPayload(
       orderId: orderId,
       userId: _userId,
-      orderStatusCode:
-      incompleteTests.isEmpty ? 'COLLECTED' : 'PARTIALLY_COLLECTED',
-      bagId: "37",
+      orderStatusCode: incompleteTests.isEmpty
+          ? 'COLLECTED'
+          : 'PARTIALLY_COLLECTED',
+      // was a hardcoded "37" string — now parses whatever the collector
+      // actually entered, since the field is an int on the backend.
+      bagId: 37,
+
+      sessionId: 9,
+      tubeCount: collected.length,
       notes: notesController.text.trim(),
       collectedAt: DateTime.now(),
       sampleCollectionDetails: collected
-          .map((e) => SampleCollectionDetailEntry(
-        sampleTypeId: e.sampleTypeId,
-        barcodeNo: e.barcodeController.text.trim(),
-      ))
+          .map(
+            (e) => SampleCollectionDetailEntry(
+              sampleTypeId: e.sampleTypeId,
+              barcodeNo: e.barcodeController.text.trim(),
+            ),
+          )
           .toList(),
       sampleCollectionComplications: complicationSelections.entries
           .where((e) => e.value != null)
-          .map((e) => SampleCollectionComplicationEntry(
-        complicationId: e.key,
-        status: e.value!,
-      ))
+          .map(
+            (e) => SampleCollectionComplicationEntry(
+              complicationId: e.key,
+              status: e.value!,
+            ),
+          )
           .toList(),
       incompleteTests: incompleteTests,
     );
   }
 
-  Future<bool> submitCollection() async {
+  /// Submits the collection. Returns the outcome instead of a bare bool
+  /// so the caller can distinguish a full success from "saved, but LIS
+  /// sync failed" — both of which are still routed to the success screen.
+  /// Returns null on a hard failure (nothing was saved).
+  Future<SampleSubmissionResult?> submitCollection() async {
     final error = validate();
     if (error != null) {
       Get.snackbar('Incomplete', error, snackPosition: SnackPosition.TOP);
-      return false;
+      return null;
     }
-
 
     isSubmitting.value = true;
     try {
       final payload = _buildPayload();
-      final success = await _service.submitSampleCollection(payload);
-      return success;
+      await _service.submitSampleCollection(payload);
+      final result = SampleSubmissionResult(
+        outcome: SampleSubmissionOutcome.success,
+        orderId: orderId,
+      );
+      submissionResult.value = result;
+      return result;
     } on SampleCollectionException catch (e) {
-      Get.snackbar('Submission failed', e.message,
-          snackPosition: SnackPosition.TOP);
-      return false;
+      if (e.isLisSyncFailure) {
+        final result = SampleSubmissionResult(
+          outcome: SampleSubmissionOutcome.partialLisFailure,
+          orderId: orderId,
+          message: e.message,
+        );
+        submissionResult.value = result;
+        return result;
+      }
+      LiquidSnack.error(title: 'Submission failed', e.message);
+      return null;
     } catch (e) {
       kPrint(e.toString());
       Get.snackbar(
@@ -567,56 +584,45 @@ class SampleCollectionController extends GetxController {
         'Something went wrong. Please try again.',
         snackPosition: SnackPosition.TOP,
       );
-      return false;
+      return null;
     } finally {
       isSubmitting.value = false;
     }
   }
-//   Future<bool> submitCollection() async {
-//     final error = validate();
-//     if (error != null) {
-//       Get.snackbar(
-//         'Incomplete',
-//         error,
-//         snackPosition: SnackPosition.TOP,
-//       );
-//       return false;
-//     }
-//
-//     isSubmitting.value = true;
-//
-//     try {
-//       final payload = _buildPayload();
-//
-//       // API call commented out for testing
-//       // final success = await _service.submitSampleCollection(payload);
-//       // return success;
-//
-//       kPrint('========== SAMPLE COLLECTION PAYLOAD ==========');
-//       kPrint(
-//         '========== SAMPLE COLLECTION PAYLOAD ==========\n'
-//             '${jsonEncode(payload.toJson())}',
-//       );
-//       kPrint('================================================');
-// await Future.delayed(const Duration(seconds: 2));
-//       return true;
-//     } on SampleCollectionException catch (e) {
-//       Get.snackbar(
-//         'Submission failed',
-//         e.message,
-//         snackPosition: SnackPosition.TOP,
-//       );
-//       return false;
-//     } catch (e) {
-//       kPrint(e.toString());
-//       Get.snackbar(
-//         'Submission failed',
-//         'Something went wrong. Please try again.',
-//         snackPosition: SnackPosition.TOP,
-//       );
-//       return false;
-//     } finally {
-//       isSubmitting.value = false;
-//     }
-//   }
+
+  /// Call this from the submit button instead of the old
+  /// `submitCollection()` + `Get.back(result: true)` pattern. Routes to
+  /// the success screen on either a full success or a partial-LIS-failure
+  /// "soft" success; does nothing on a hard failure (the snackbar above
+  /// already told the user what went wrong, so they stay on the form).
+  Future<void> submitAndShowResult() async {
+    final result = await submitCollection();
+    if (result != null) {
+      Get.off(
+        () => SampleCollectionSuccessPage(controller: this, result: result),
+      );
+    }
+  }
+
+  /// Retries the push to Disha from the success screen. Also doubles as
+  /// a manual "check status" action, since the endpoint's response tells
+  /// you the current sync state either way.
+  Future<void> retryDishaSubmission() async {
+    if (isRetryingDisha.value) return;
+    isRetryingDisha.value = true;
+    dishaRetryMessage.value = '';
+    try {
+      await _service.resubmitToDisha(orderId: orderId);
+      dishaSyncResolved.value = true;
+      dishaRetryMessage.value = 'Synced to Disha successfully.';
+    } on SampleCollectionException catch (e) {
+      dishaRetryMessage.value = e.message;
+    } catch (e) {
+      kPrint(e.toString());
+      dishaRetryMessage.value =
+          'Still unable to sync. Please try again shortly.';
+    } finally {
+      isRetryingDisha.value = false;
+    }
+  }
 }

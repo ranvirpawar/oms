@@ -54,11 +54,7 @@ class PatientQueueService {
         final message = (body['message'] as String?)?.trim() ?? '';
         final output = body['output'];
 
-        // The backend reports "no orders for this user" as `status: Fail`
-        // with a "No record found" message and a `null` output (e.g.
-        // `{status: Fail, message: No record found, output: null}`). That is
-        // an *empty* queue, not an error — return an empty list so callers
-        // fall through to the empty state instead of the error state.
+
         if (output == null && _isNoDataMessage(message)) {
           return const <AssignedPatient>[];
         }
@@ -67,6 +63,7 @@ class PatientQueueService {
           message.isEmpty ? 'Unable to load your patient queue.' : message,
         );
       }
+
 
       final output = body['output'];
 

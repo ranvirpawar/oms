@@ -363,6 +363,9 @@ class AppUrls {
 
   static String verifyPatientOTP = '$_asmxBase/verify-otp';
 
+   static const String dishaSampleCollectionSync =
+       '/api/SampleCollection/Recolled_DishaSampleCollection_API/{orderId}';
+
   // -------------------------
   // API Endpoints (.ashx)
   // -------------------------

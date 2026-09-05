@@ -10,7 +10,18 @@ import '../../model/patient_queue_model.dart';
 class VisitTypeBadge extends StatelessWidget {
   final VisitType visitType;
 
-  const VisitTypeBadge({super.key, required this.visitType});
+  /// How strongly the top-left corner is rounded.
+  ///
+  /// Pass a value >= the enclosing card's border radius so the ribbon hugs
+  /// the card's rounded corner with no background gap (the card's
+  /// [Clip.antiAlias] clip then does the final corner shaping).
+  final double cornerRadius;
+
+  const VisitTypeBadge({
+    super.key,
+    required this.visitType,
+    this.cornerRadius = 16,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,9 +34,9 @@ class VisitTypeBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(16),
-          bottomRight: Radius.circular(12),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(cornerRadius),
+          bottomRight: const Radius.circular(12),
         ),
       ),
       child: Row(

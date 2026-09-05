@@ -181,6 +181,7 @@ class _CredentialsStep extends StatelessWidget {
                       validator: controller.validateUserName,
                       keyboardType: TextInputType.text,
                       cursorColor: Colors.white,
+
                       // autofillHints: const [AutofillHints.username],
                       // textInputAction: TextInputAction.next,
                     ),
@@ -392,22 +393,7 @@ class _OtpStep extends StatelessWidget {
   }
 }
 
-/// Fully custom OTP input: a Row of styled boxes for display,
-/// backed by a single invisible TextField that owns real focus,
-/// keyboard input, paste, and SMS autofill (via AutofillHints.oneTimeCode).
-///
-/// Behavior:
-///  - Typing/backspace/autofill/paste work as in a normal TextField.
-///  - Tapping any box places the caret exactly where you tapped (left/right
-///    half of a filled digit, or the append point past the last digit) —
-///    so you can reposition into the middle of the code and edit a
-///    specific digit, just like a native text field.
-///  - The active-box highlight and blinking caret follow the actual
-///    cursor position, not just "the box after the last digit".
-///  - Cursor is only force-snapped to the end for autofill/paste (a
-///    multi-character jump in one update); single keystrokes keep
-///    whatever caret position Flutter/the user placed.
-///  - Backspace on an empty field is a safe no-op.
+
 class OtpBoxesInput extends StatefulWidget {
   final TextEditingController controller;
   final int length;

@@ -1,8 +1,9 @@
 import 'package:get/get.dart';
-import 'package:flutter/material.dart';
 import 'package:lifenity_connect/services/auth_manager.dart';
 
 import '../../../../utils/helper_functions/helper_methods.dart';
+import '../../sample_collection/model/sample_collection_models.dart';
+import '../../sample_collection/service/sample_collection_service.dart';
 import '../model/patient_queue_model.dart';
 import '../service/patient_queue_service.dart';
 
@@ -15,10 +16,21 @@ enum QueueLoadState { initial, loading, loaded, empty, error }
 
 class PatientQueueController extends GetxController {
   final PatientQueueService _service;
+  final SampleCollectionService _sampleCollectionService;
   AuthManager authManager = Get.find<AuthManager>();
 
-  PatientQueueController({PatientQueueService? service})
-    : _service = service ?? PatientQueueService();
+  PatientQueueController({
+    PatientQueueService? service,
+    SampleCollectionService? sampleCollectionService,
+  }) : _service = service ?? PatientQueueService(),
+       _sampleCollectionService =
+           sampleCollectionService ?? SampleCollectionService();
+
+  /// Shared [SampleCollectionService] instance owned by this controller —
+  /// reused by the queue's "Sync to LIS" action and the reject sheet so
+  /// only one HTTP client/service lives for the whole screen.
+  SampleCollectionService get sampleCollectionService =>
+      _sampleCollectionService;
 
   // ---------------------------------------------------------------------
   // State
@@ -86,6 +98,12 @@ class PatientQueueController extends GetxController {
 
     final list = result.toList()
       ..sort((a, b) {
+        // LIS sync failures ("collect") still need manual action — pin them
+        // to the very top of the queue, above everything else.
+        final aNeedsSync = a.status.isLisSyncFailed;
+        final bNeedsSync = b.status.isLisSyncFailed;
+        if (aNeedsSync != bNeedsSync) return aNeedsSync ? -1 : 1;
+
         // Terminal statuses (completed/cancelled/failed) sink to the bottom.
         final aTerminal = a.status.isTerminal;
         final bTerminal = b.status.isTerminal;
@@ -276,6 +294,43 @@ class PatientQueueController extends GetxController {
 
     successMessage: 'Route started',
   );
+
+  /// Re-pushes a "collect" (LIS sync failed) order to Disha from the queue.
+  ///
+  /// The API call itself lives in [SampleCollectionService.resubmitToDisha]
+  /// (whose instance this controller owns); only the order id is needed.
+  /// On success the queue is refreshed so the resolved order is removed /
+  /// re-sorted by the server's new status.
+  Future<void> syncToLis(AssignedPatient patient) async {
+    if (processingIds.contains(patient.id)) return;
+    processingIds.add(patient.id);
+    try {
+      await _sampleCollectionService.resubmitToDisha(
+        orderId: patient.orderId,
+      );
+      Get.snackbar(
+        'Synced to LIS',
+        'Order ${patient.orderId} was pushed to Disha successfully.',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 3),
+      );
+      await fetchPatients(); // refresh from server
+    } on SampleCollectionException catch (e) {
+      Get.snackbar(
+        'Sync failed',
+        e.message,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (_) {
+      Get.snackbar(
+        'Sync failed',
+        'Please check your connection and try again.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      processingIds.remove(patient.id);
+    }
+  }
 
   Future<void> reject(AssignedPatient patient, {int? reasonId}) => _runAction(
     patient.id,

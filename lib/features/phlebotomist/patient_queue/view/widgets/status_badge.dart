@@ -65,6 +65,15 @@ class StatusBadge extends StatelessWidget {
           AppColors.tealLight,
           Icons.check_circle_outline,
         );
+      case PatientStatus.collect:
+        // "Collect" = sample done, LIS (Disha) push failed — the queue
+        // surfaces it as a manual action the phlebotomist must resolve.
+        return const _StatusStyle(
+          'Action Needed',
+          AppColors.amberText,
+          AppColors.amberLight,
+          Icons.cloud_off_rounded,
+        );
       case PatientStatus.completed:
         return const _StatusStyle(
           'Completed',

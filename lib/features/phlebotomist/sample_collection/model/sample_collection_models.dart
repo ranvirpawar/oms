@@ -285,11 +285,62 @@ class IncompleteTestEntry {
   };
 }
 
+/// Outcome of a submission attempt, as surfaced to the UI layer.
+enum SampleSubmissionOutcome {
+  /// Order row inserted AND pushed to LIS successfully.
+  success,
+
+  /// The order row was inserted, but the push to LIS failed. The
+  /// collector's physical job (drawing + barcoding samples) is done, so
+  /// we still show the success screen — just with an outstanding
+  /// "sync to Disha" action instead of a hard failure.
+  partialLisFailure,
+}
+
+class SampleSubmissionResult {
+  final SampleSubmissionOutcome outcome;
+  final String orderId;
+  final String? message;
+
+  const SampleSubmissionResult({
+    required this.outcome,
+    required this.orderId,
+    this.message,
+  });
+
+  bool get needsDishaSync =>
+      outcome == SampleSubmissionOutcome.partialLisFailure;
+}
+
+class SampleCollectionException implements Exception {
+  final String message;
+  final bool isNetworkError;
+
+  /// True when the backend reports the order was inserted but the push
+  /// to LIS failed (status == "Fail Insert Disha"). Treated as a "soft"
+  /// success by the controller, not a hard failure that should force the
+  /// collector to resubmit the form. Resyncing only needs the orderId —
+  /// no extra identifier comes back on this response.
+  final bool isLisSyncFailure;
+
+  SampleCollectionException(
+      this.message, {
+        this.isNetworkError = false,
+        this.isLisSyncFailure = false,
+      });
+
+  @override
+  String toString() => message;
+}
+
 class SampleCollectionPayload {
   final String orderId;
   final int userId;
   final String orderStatusCode;
-  final String bagId;
+  final int bagId;
+  final int tubeCount;
+
+  final int sessionId;
   final String notes;
   final DateTime collectedAt;
   final List<SampleCollectionDetailEntry> sampleCollectionDetails;
@@ -301,6 +352,8 @@ class SampleCollectionPayload {
     required this.userId,
     required this.orderStatusCode,
     required this.bagId,
+    required this.sessionId,
+    required this.tubeCount,
     required this.notes,
     required this.collectedAt,
     required this.sampleCollectionDetails,
@@ -313,6 +366,8 @@ class SampleCollectionPayload {
     'UserID': userId,
     'OrderStatusCode': orderStatusCode,
     'bagId': bagId,
+    'SessionID': sessionId,
+    'TubeCount' : tubeCount,
     'Notes': notes,
     'CollectedAt': collectedAt.toUtc().toIso8601String(),
     'SampleCollectionDetails':

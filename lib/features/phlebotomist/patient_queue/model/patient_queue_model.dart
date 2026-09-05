@@ -39,6 +39,9 @@ enum PatientStatus {
   arrived,
   sampleCollectionStarted,
   sampleCollected,
+  /// Sample(s) were collected but the push to LIS (Disha) failed — the
+  /// order is stuck in "collect" until it is manually re-synced.
+  collect,
   completed,
   cancelled,
   failed,
@@ -55,6 +58,13 @@ extension PatientStatusX on PatientStatus {
       this == PatientStatus.assigned ||
           this == PatientStatus.pending ||
           this == PatientStatus.accepted ||this == PatientStatus.rescheduled;
+
+  /// A "collect" order means the collection itself is done but the LIS
+  /// (Disha) sync failed — it still requires manual intervention.
+  bool get isLisSyncFailed => this == PatientStatus.collect;
+
+  /// Shortcut for the queue's "needs attention / sync to LIS" state.
+  bool get needsDishaSync => this == PatientStatus.collect;
 
 
   bool get isTerminal =>
@@ -199,6 +209,9 @@ class AssignedPatient {
         return PatientStatus.sampleCollectionStarted;
       case 'samplecollected':
         return PatientStatus.sampleCollected;
+      case 'collected':
+        // Sample collected but LIS sync failed — needs a manual re-sync.
+        return PatientStatus.collect;
       case 'completed':
         return PatientStatus.completed;
       case 'cancelled':

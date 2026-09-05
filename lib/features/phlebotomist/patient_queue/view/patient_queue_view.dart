@@ -8,7 +8,6 @@ import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widget
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/queue_summary_bar.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/rejected_assignment_sheet.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/rescheduled_slot.dart';
-import 'package:lifenity_connect/features/phlebotomist/sample_collection/service/sample_collection_service.dart';
 import 'package:lifenity_connect/routes/route_manager.dart';
 import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 
@@ -163,6 +162,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
                               ),
                             ),
                         onPrimaryAction: () => _handlePrimaryAction(patient),
+                        onSyncToLis: () => controller.syncToLis(patient),
                       ),
                     ),
                   );
@@ -184,6 +184,9 @@ class PatientQueueView extends GetView<PatientQueueController> {
   }
 
   void _openPatientDetails(AssignedPatient patient) {
+    // "Collect" orders are sample-done / LIS-sync-pending reminders — the
+    // collection flow doesn't apply, so there's nothing to open.
+    if (patient.status == PatientStatus.collect) return;
     RouteManager.navigateToSampleCollection(patient);
 
   }
@@ -196,7 +199,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
       context,
       patient: patient,
       controller: controller,
-      service: SampleCollectionService(),
+      service: controller.sampleCollectionService,
     );
   }
 }

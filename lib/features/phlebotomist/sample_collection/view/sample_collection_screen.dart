@@ -10,8 +10,6 @@ import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 import '../../../../theme/app_colors.dart';
 import '../controller/sample_collection_controller.dart';
 
-
-
 class SampleCollectionScreen extends GetView<SampleCollectionController> {
   const SampleCollectionScreen({super.key});
 
@@ -30,7 +28,7 @@ class SampleCollectionScreen extends GetView<SampleCollectionController> {
               _ProgressSummary(controller: controller),
               const SizedBox(height: 14),
               Obx(
-                    () => Column(
+                () => Column(
                   children: [
                     for (final entry in controller.sampleEntries)
                       SampleItemCard(entry: entry, controller: controller),
@@ -74,11 +72,23 @@ class _ProgressSummary extends StatelessWidget {
         final total = controller.sampleEntries.length;
         return Row(
           children: [
-            _summaryChip('Collected', controller.collectedCount, AppColors.greenText),
+            _summaryChip(
+              'Collected',
+              controller.collectedCount,
+              AppColors.greenText,
+            ),
             _divider(),
-            _summaryChip('Not Collected', controller.incompleteCount, AppColors.redText),
+            _summaryChip(
+              'Not Collected',
+              controller.incompleteCount,
+              AppColors.redText,
+            ),
             _divider(),
-            _summaryChip('Pending', controller.pendingCount, AppColors.textMuted),
+            _summaryChip(
+              'Pending',
+              controller.pendingCount,
+              AppColors.textMuted,
+            ),
             _divider(),
             _summaryChip('Total', total, AppColors.textPrimary),
           ],
@@ -192,7 +202,7 @@ class _SubmitBar extends StatelessWidget {
         ],
       ),
       child: Obx(
-            () => SizedBox(
+        () => SizedBox(
           width: double.infinity,
           height: 50,
           child: ElevatedButton(
@@ -206,39 +216,28 @@ class _SubmitBar extends StatelessWidget {
             onPressed: controller.isSubmitting.value
                 ? null
                 : () async {
-              final success = await controller.submitCollection();
-              if (success) {
-                Get.back(result: true);
-                Get.snackbar(
-                  'Success',
-                  'Sample collection submitted successfully.',
-                  snackPosition: SnackPosition.TOP,
-                  backgroundColor: AppColors.greenLight,
-                  colorText: AppColors.greenText,
-                );
-              }
-            },
+                    await controller.submitAndShowResult();
+                  },
             child: controller.isSubmitting.value
                 ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            )
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
                 : const Text(
-              'Submit',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
+                    'Submit',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
           ),
         ),
       ),
     );
   }
 }
-
