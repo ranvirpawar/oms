@@ -21,33 +21,139 @@ class ActiveBagSession {
 }
 
 // Patient registration record
-class PatientRegistrationRecord {
-  final String? facilityName;
-  final String? fType;
-  final String date;
-  final String barcode;
+class RegistrationDetails {
+  final int sampleCollectionOrderID;
+  final int sessionID;
+  final int bagid;
   final String patientName;
-  final String sampleType;
+  final String gender;
+  final String age;
+  final String visitType;
+  final String address;
+  final String mobileNumber;
+  final String clinicName;
+  final DateTime? collectionDateTime;
 
-  PatientRegistrationRecord({
-    this.facilityName,
-    this.fType,
-    required this.date,
-    required this.barcode,
+  RegistrationDetails({
+    required this.sampleCollectionOrderID,
+    required this.sessionID,
+    required this.bagid,
     required this.patientName,
-    required this.sampleType,
+    required this.gender,
+    required this.age,
+    required this.visitType,
+    required this.address,
+    required this.mobileNumber,
+    required this.clinicName,
+    required this.collectionDateTime,
   });
 
-  bool get hasPatientName => patientName.trim().isNotEmpty;
-  bool get hasFacility => facilityName != null && facilityName!.trim().isNotEmpty;
+  factory RegistrationDetails.fromJson(Map<String, dynamic> json) {
+    return RegistrationDetails(
+      sampleCollectionOrderID: json['SampleCollectionOrderID'] ?? 0,
+      sessionID: json['SessionID'] ?? 0,
+      bagid: json['Bagid'] ?? 0,
+      patientName: (json['PatientName'] ?? '').toString(),
+      gender: (json['Gender'] ?? '').toString(),
+      age: (json['Age'] ?? '').toString(),
+      visitType: (json['VisitType'] ?? '').toString(),
+      address: (json['Address'] ?? '').toString(),
+      mobileNumber: (json['MobileNumber'] ?? '').toString(),
+      clinicName: (json['ClinicName'] ?? '').toString(),
+      collectionDateTime: DateTime.tryParse(json['CollectionDateTime'] ?? ''),
+    );
+  }
+}
 
-  factory PatientRegistrationRecord.fromJson(Map<String, dynamic> json) =>
-      PatientRegistrationRecord(
-        facilityName: json['FacilityName'],
-        fType: json['FType'],
-        date: json['date'] ?? '',
-        barcode: json['Barcode'] ?? '',
-        patientName: json['PatientName'] ?? '',
-        sampleType: json['SampleType'] ?? '',
-      );
+class TestDetail {
+  final int sampleCollectionOrderID;
+  final String testName;
+  final String sampleTypeName;
+  final String tubeContent;
+
+  TestDetail({
+    required this.sampleCollectionOrderID,
+    required this.testName,
+    required this.sampleTypeName,
+    required this.tubeContent,
+  });
+
+  factory TestDetail.fromJson(Map<String, dynamic> json) => TestDetail(
+    sampleCollectionOrderID: json['SampleCollectionOrderID'] ?? 0,
+    testName: (json['TestName'] ?? '').toString(),
+    sampleTypeName: (json['SampleTypeName'] ?? '').toString(),
+    tubeContent: (json['TubeContent'] ?? '').toString(),
+  );
+}
+
+class BarcodeDetail {
+  final int sampleCollectionOrderID;
+  final String barcodeNo;
+
+  BarcodeDetail({required this.sampleCollectionOrderID, required this.barcodeNo});
+
+  factory BarcodeDetail.fromJson(Map<String, dynamic> json) => BarcodeDetail(
+    sampleCollectionOrderID: json['SampleCollectionOrderID'] ?? 0,
+    barcodeNo: (json['BarcodeNo'] ?? '').toString(),
+  );
+}
+
+/// One card == one patient's full order: registration info + all its tests + all its barcodes.
+class PatientOrder {
+  final RegistrationDetails registration;
+  final List<TestDetail> tests;
+  final List<BarcodeDetail> barcodes;
+
+  PatientOrder({
+    required this.registration,
+    required this.tests,
+    required this.barcodes,
+  });
+
+  factory PatientOrder.fromJson(Map<String, dynamic> json) {
+    final regJson =
+        (json['registrationDetails'] as Map?)?.cast<String, dynamic>() ?? {};
+    final testsJson = (json['testDetails'] as List?) ?? const [];
+    final barcodesJson = (json['barcodeDetails'] as List?) ?? const [];
+
+    return PatientOrder(
+      registration: RegistrationDetails.fromJson(regJson),
+      tests: testsJson.map((e) => TestDetail.fromJson(e)).toList(),
+      barcodes: barcodesJson.map((e) => BarcodeDetail.fromJson(e)).toList(),
+    );
+  }
+
+  bool get hasPatientName => registration.patientName.trim().isNotEmpty;
+
+  String get testNamesJoined =>
+      tests.map((t) => t.testName).where((n) => n.isNotEmpty).join(', ');
+
+  String get primaryBarcode => barcodes.isNotEmpty ? barcodes.first.barcodeNo : '';
+
+  bool matchesQuery(String lowerQuery) {
+    if (registration.patientName.toLowerCase().contains(lowerQuery)) return true;
+    return barcodes.any((b) => b.barcodeNo.toLowerCase().contains(lowerQuery));
+  }
+
+  /// e.g. "4 SST, 3 EDTA" — grouped from each test's tube content.
+  String get tubesSummary {
+    final counts = <String, int>{};
+    for (final t in tests) {
+      final label = _shortTubeLabel(t.tubeContent);
+      if (label.isEmpty) continue;
+      counts[label] = (counts[label] ?? 0) + 1;
+    }
+    return counts.entries.map((e) => '${e.value} ${e.key}').join(', ');
+  }
+
+  static String _shortTubeLabel(String tubeContent) {
+    final lower = tubeContent.toLowerCase();
+    if (lower.contains('edta')) return 'EDTA';
+    if (lower.contains('serum separat') || lower.contains('sst')) return 'SST';
+    if (lower.contains('sodium fluoride') || lower.contains('naf')) return 'NaF';
+    if (lower.contains('citrate')) return 'Citrate';
+    if (lower.contains('heparin')) return 'Heparin';
+    if (lower.contains('plain')) return 'Plain';
+    return tubeContent;
+  }
 }

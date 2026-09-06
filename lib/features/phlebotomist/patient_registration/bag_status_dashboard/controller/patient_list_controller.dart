@@ -16,8 +16,9 @@ class PatientListController extends GetxController {
   bool isScoped = false;
   final activeBagSessions = <ActiveBagSession>[].obs;
   final selectedSession = Rxn<ActiveBagSession>();
-  final patientList = <PatientRegistrationRecord>[].obs;
-  final filteredPatientList = <PatientRegistrationRecord>[].obs;
+  // change the two Rx lists' generic type
+  final patientList = <PatientOrder>[].obs;
+  final filteredPatientList = <PatientOrder>[].obs;
   final searchQuery = ''.obs;
   final isSubmittingToLab = false.obs;
 
@@ -134,18 +135,15 @@ class PatientListController extends GetxController {
         bagId: selectedSession.value!.bagId,
       );
 
-      final output = response['output'];
+      final output = response['registrationDetails'];
       if (response['status'] == 'Success' &&
           output != null &&
           (output as List).isNotEmpty) {
-        patientList.value = output
-            .map((e) => PatientRegistrationRecord.fromJson(e))
-            .toList();
+        patientList.value = output.map((e) => PatientOrder.fromJson(e)).toList();
         filteredPatientList.value = patientList;
       }
     } catch (e) {
-      Get.snackbar('Error', e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoadingPatients.value = false;
     }
@@ -158,10 +156,7 @@ class PatientListController extends GetxController {
       return;
     }
     final lower = query.toLowerCase();
-    filteredPatientList.value = patientList.where((p) {
-      return p.patientName.toLowerCase().contains(lower) ||
-          p.barcode.toLowerCase().contains(lower);
-    }).toList();
+    filteredPatientList.value = patientList.where((o) => o.matchesQuery(lower)).toList();
   }
 
   void _clearSearch() {
