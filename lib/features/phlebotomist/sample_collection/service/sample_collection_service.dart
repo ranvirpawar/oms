@@ -174,35 +174,41 @@ class SampleCollectionService {
           ? jsonDecode(response.data as String) as Map<String, dynamic>
           : response.data as Map<String, dynamic>;
 
-      final rawStatus = respBody['status'] as String?;
-      final status = rawStatus?.trim().toLowerCase();
+      // The backend now reports the LIS/Disha outcome via a top-level
+      // "Dishstatuss" field (sic) instead of nesting it in dishaResult.status.
+      // dishaResult itself may now be a plain string (e.g.
+      // "Response: Patient registered successfully!") rather than a map, so
+      // we can't rely on dishaResult['status'] anymore. We check both the
+      // new top-level field and the old nested shape for safety.
+      final dishaResultRaw = respBody['dishaResult'];
+      final nestedDishStatus = dishaResultRaw is Map<String, dynamic>
+          ? (dishaResultRaw['status'] as String?)?.trim().toLowerCase()
+          : null;
+      final topLevelDishStatus =
+      (respBody['Dishstatuss'] as String?)?.trim().toLowerCase();
 
-      // Top-level status only reflects whether the order row was saved
-      // (omsResult). It does NOT tell you whether the push to Disha
-      // succeeded — that's reported separately in dishaResult.status.
+      final isLisFailure = topLevelDishStatus == 'fail insert disha' ||
+          nestedDishStatus == 'fail insert disha';
+
+      if (isLisFailure) {
+        throw SampleCollectionException(
+          respBody['message'] as String? ??
+              (dishaResultRaw is Map<String, dynamic>
+                  ? dishaResultRaw['message'] as String?
+                  : null) ??
+              'Sample collection saved, but the LIS sync failed.',
+          isLisSyncFailure: true,
+        );
+      }
+
+      // NOTE: check isLisFailure *before* this, since the backend now sends
+      // status: "Fail" for the soft-failure case too, not just for hard
+      // failures where the order row itself wasn't saved.
+      final status = (respBody['status'] as String?)?.trim().toLowerCase();
       if (status != 'success') {
         throw SampleCollectionException(
           respBody['message'] as String? ??
               'Unable to submit sample collection.',
-        );
-      }
-
-      final dishaResult = respBody['dishaResult'] as Map<String, dynamic>?;
-      final dishaStatus = (dishaResult?['status'] as String?)
-          ?.trim()
-          .toLowerCase();
-
-      // Backend sends this exact string (note the trailing space in the
-      // raw value) when the order row was inserted but the push to LIS
-      // failed. Comparing trimmed + lowercased so a stray space change on
-      // their end doesn't silently break this check again.
-      final isLisFailure = dishaStatus == 'fail insert disha';
-
-      if (isLisFailure) {
-        throw SampleCollectionException(
-          dishaResult?['message'] as String? ??
-              'Sample collection saved, but the LIS sync failed.',
-          isLisSyncFailure: true,
         );
       }
 

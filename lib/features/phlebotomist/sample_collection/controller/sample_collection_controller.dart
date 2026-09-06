@@ -517,9 +517,9 @@ class SampleCollectionController extends GetxController {
           : 'PARTIALLY_COLLECTED',
       // was a hardcoded "37" string — now parses whatever the collector
       // actually entered, since the field is an int on the backend.
-      bagId: 37,
+      bagId: 40,
 
-      sessionId: 9,
+      sessionId: 12,
       tubeCount: collected.length,
       notes: notesController.text.trim(),
       collectedAt: DateTime.now(),
@@ -558,6 +558,8 @@ class SampleCollectionController extends GetxController {
     isSubmitting.value = true;
     try {
       final payload = _buildPayload();
+      kPrint(payload.toJson().toString());
+
       await _service.submitSampleCollection(payload);
       final result = SampleSubmissionResult(
         outcome: SampleSubmissionOutcome.success,
