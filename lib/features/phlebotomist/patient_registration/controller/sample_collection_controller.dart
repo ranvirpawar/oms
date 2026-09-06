@@ -14,7 +14,7 @@ import '../../../../constants/app_assets.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
 import '../bag_status_dashboard/controller/registrarion_bag_controller.dart';
-import '../bag_status_dashboard/view/patient_registration_dashboard.dart';
+import '../bag_status_dashboard/view/bag_registration_dashboard.dart';
 import '../models/doctor_ref_model.dart';
 import '../models/doctor_reference.dart';
 import '../models/tests_model.dart';
@@ -112,7 +112,7 @@ class TestBarcodeController extends GetxController {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Get.until((route) {
           return route.settings.name ==
-              const PatientRegistrationDashboard().runtimeType.toString();
+              const BagRegistrationDashboard().runtimeType.toString();
         });
 
         Get.snackbar(

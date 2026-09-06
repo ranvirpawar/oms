@@ -1,7 +1,7 @@
-// views/patient_registration_dashboard.dart
+// views/bag_registration_dashboard.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:lifenity_connect/features/phlebotomist/patient_registration/bag_status_dashboard/view/patient_list_view.dart';
+import 'package:lifenity_connect/features/phlebotomist/patient_registration/bag_status_dashboard/view/collected_orders_list.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_registration/bag_status_dashboard/view/scan_bag_page.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_registration/bag_status_dashboard/view/widget/bag_detail_view.dart';
 import 'package:lifenity_connect/routes/route_manager.dart';
@@ -13,8 +13,8 @@ import '../controller/registrarion_bag_controller.dart';
 import '../model/qr_bag_details.dart';
 import '../model/qr_bag_session.dart';
 
-class PatientRegistrationDashboard extends StatelessWidget {
-  const PatientRegistrationDashboard({super.key});
+class BagRegistrationDashboard extends StatelessWidget {
+  const BagRegistrationDashboard({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -27,22 +27,24 @@ class PatientRegistrationDashboard extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.list_alt, color: AppColors.surfaceContainer),
-            onPressed: () => Get.to(() => const PatientListPage()),
+            onPressed: () => Get.to(() => const CollectedOrdersList()),
           ),
         ],
       ),
-      floatingActionButton: Obx(() => controller.isLoading.value
-          ? const SizedBox.shrink()
-          : FloatingActionButton.extended(
-              onPressed: () => Get.to(() => const ScanBagPage()),
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              icon: const Icon(Icons.qr_code_scanner),
-              label: const Text(
-                'Open New Bag',
-                style: TextStyle(fontWeight: FontWeight.w600),
+      floatingActionButton: Obx(
+        () => controller.isLoading.value
+            ? const SizedBox.shrink()
+            : FloatingActionButton.extended(
+                onPressed: () => Get.to(() => const ScanBagPage()),
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text(
+                  'Open New Bag',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-            )),
+      ),
       body: Obx(() {
         if (controller.isLoading.value) {
           return const Center(
@@ -79,10 +81,7 @@ class PatientRegistrationDashboard extends StatelessWidget {
                   ...controller.allSessions.map(
                     (session) => Padding(
                       padding: const EdgeInsets.only(bottom: 14),
-                      child: _BagCard(
-                        session: session,
-                        controller: controller,
-                      ),
+                      child: _BagCard(session: session, controller: controller),
                     ),
                   ),
                 ] else
@@ -254,8 +253,9 @@ class _BagCardState extends State<_BagCard>
     final ctrl = widget.controller;
     final isOpen = session.isOpen;
 
-    final Color accent =
-        isOpen ? const Color(0xFF48BB78) : const Color(0xFFED8936);
+    final Color accent = isOpen
+        ? const Color(0xFF48BB78)
+        : const Color(0xFFED8936);
 
     return Obx(() {
       final details = ctrl.bagDetailsMap[session.bagId];
@@ -265,15 +265,19 @@ class _BagCardState extends State<_BagCard>
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
-            // AFTER
-            border: Border.all(
-              color: isOpen
-                  ? (ctrl.isBagFull(session.bagId)
-                  ? const Color(0xFFFC8181).withOpacity(0.5)   // red when full
-                  : const Color(0xFF48BB78).withOpacity(0.4))  // green when open & not full
-                  : Colors.transparent,
-              width: 1.5,
-            ),
+          // AFTER
+          border: Border.all(
+            color: isOpen
+                ? (ctrl.isBagFull(session.bagId)
+                      ? const Color(0xFFFC8181).withOpacity(
+                          0.5,
+                        ) // red when full
+                      : const Color(
+                          0xFF48BB78,
+                        ).withOpacity(0.4)) // green when open & not full
+                : Colors.transparent,
+            width: 1.5,
+          ),
           boxShadow: [
             BoxShadow(
               color: accent.withOpacity(0.07),
@@ -338,7 +342,9 @@ class _BagCardState extends State<_BagCard>
                             const Text(
                               'Tap to view details',
                               style: TextStyle(
-                                  fontSize: 12, color: Color(0xFFB0BAC9)),
+                                fontSize: 12,
+                                color: Color(0xFFB0BAC9),
+                              ),
                             ),
                         ],
                       ),
@@ -434,8 +440,8 @@ class _DetailsBody extends StatelessWidget {
     final Color fillColor = pct >= 0.9
         ? const Color(0xFFFC8181)
         : pct >= 0.6
-            ? const Color(0xFFED8936)
-            : const Color(0xFF48BB78);
+        ? const Color(0xFFED8936)
+        : const Color(0xFF48BB78);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
@@ -625,25 +631,26 @@ class _ActionRow extends StatelessWidget {
       ),
     );
   }
+
   void _showBagFullSheet(BuildContext context) {
     final details = controller.bagDetailsMap[session.bagId];
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => _BagFullSheet(
-        bagcode: session.bagcode,
-        details: details,
-      ),
+      builder: (_) => _BagFullSheet(bagcode: session.bagcode, details: details),
     );
   }
+
   void _confirmClose(BuildContext context) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Close Bag?',
-            style: TextStyle(fontWeight: FontWeight.w700)),
+        title: const Text(
+          'Close Bag?',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         content: Text(
           'Are you sure you want to close bag ${session.bagcode}? '
           'You can reopen it later if needed.',
@@ -659,10 +666,13 @@ class _ActionRow extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.secondary,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-            child:
-                const Text('Close Bag', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Close Bag',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -678,8 +688,10 @@ class _ActionRow extends StatelessWidget {
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Reopen Bag?',
-            style: TextStyle(fontWeight: FontWeight.w700)),
+        title: const Text(
+          'Reopen Bag?',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -699,8 +711,11 @@ class _ActionRow extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.warning_amber_rounded,
-                        color: Color(0xFFED8936), size: 18),
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Color(0xFFED8936),
+                      size: 18,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -728,7 +743,8 @@ class _ActionRow extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFED8936),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: const Text('Reopen', style: TextStyle(color: Colors.white)),
           ),
@@ -876,9 +892,10 @@ class _FullBagIconState extends State<_FullBagIcon>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
-    _pulse = Tween<double>(begin: 1.0, end: 1.18).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
+    _pulse = Tween<double>(
+      begin: 1.0,
+      end: 1.18,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -891,10 +908,7 @@ class _FullBagIconState extends State<_FullBagIcon>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _pulse,
-      builder: (_, child) => Transform.scale(
-        scale: _pulse.value,
-        child: child,
-      ),
+      builder: (_, child) => Transform.scale(scale: _pulse.value, child: child),
       child: Container(
         width: 80,
         height: 80,
@@ -921,6 +935,7 @@ class _FullBagIconState extends State<_FullBagIcon>
 class _CapacityBar extends StatelessWidget {
   final int filled;
   final int capacity;
+
   const _CapacityBar({required this.filled, required this.capacity});
 
   @override
@@ -939,8 +954,11 @@ class _CapacityBar extends StatelessWidget {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.colorize_rounded,
-                      size: 14, color: Color(0xFFE53E3E)),
+                  Icon(
+                    Icons.colorize_rounded,
+                    size: 14,
+                    color: Color(0xFFE53E3E),
+                  ),
                   SizedBox(width: 6),
                   Text(
                     'Tubes registered',
@@ -982,7 +1000,9 @@ class _CapacityBar extends StatelessWidget {
             child: LinearProgressIndicator(
               value: capacity > 0 ? (filled / capacity).clamp(0.0, 1.0) : 1.0,
               backgroundColor: const Color(0xFFFED7D7),
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFE53E3E)),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFFE53E3E),
+              ),
               minHeight: 10,
             ),
           ),
@@ -996,8 +1016,7 @@ class _CapacityBar extends StatelessWidget {
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.block_rounded,
-                    size: 12, color: Color(0xFFE53E3E)),
+                Icon(Icons.block_rounded, size: 12, color: Color(0xFFE53E3E)),
                 SizedBox(width: 5),
                 Text(
                   'No space available — bag is at full capacity',
@@ -1043,15 +1062,22 @@ class _SmallButton extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: color,
                 side: BorderSide(color: color.withOpacity(0.6)),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 0,
+                ),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               icon: Icon(icon, size: 15),
-              label: Text(label,
-                  style: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w600)),
+              label: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             )
           : ElevatedButton.icon(
               onPressed: onTap,
@@ -1059,17 +1085,24 @@ class _SmallButton extends StatelessWidget {
                 backgroundColor: color,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 0,
+                ),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               icon: Icon(icon, size: 15),
               label: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(label,
-                    style: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.w600)),
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
     );

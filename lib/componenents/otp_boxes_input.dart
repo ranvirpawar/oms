@@ -292,33 +292,35 @@ class OtpBoxesInputState extends State<OtpBoxesInput>
     final int targetOffset;
 
     if (index >= code.length) {
-      // Tapped an empty box (or the box right past the last digit) — the
-      // caret can't go further than the end of the entered text.
       targetOffset = code.length;
     } else {
-      // Tapped a box that already holds a digit: land the caret on whichever
-      // side of the digit was actually tapped, same as clicking inside a
-      // normal text field.
       targetOffset = localDx > widget.boxWidth / 2 ? index + 1 : index;
     }
 
-    _focusNode.requestFocus();
+    _ensureKeyboardVisible();               // <-- was _focusNode.requestFocus();
     _setSelectionSafely(TextSelection.collapsed(offset: targetOffset));
-    // Text didn't change, so the listener won't repaint us — do it here so the
-    // highlight/caret moves immediately.
     setState(() {});
   }
 
   void _handleFallbackTap() {
     if (!widget.enabled) return;
-    // Tapped in a gap between boxes / outside all of them — just focus and go
-    // to the append point.
-    _focusNode.requestFocus();
+    _ensureKeyboardVisible();               // <-- was _focusNode.requestFocus();
     _setSelectionSafely(
       TextSelection.collapsed(offset: _controller.text.length),
     );
     setState(() {});
   }
+  void _ensureKeyboardVisible() {
+    if (_focusNode.hasFocus) {
+      // The FocusNode never actually lost focus (e.g. keyboard dismissed via
+      // Android back button), so requestFocus() below would be a no-op and
+      // the keyboard would stay hidden forever. Ask the platform directly.
+      SystemChannels.textInput.invokeMethod('TextInput.show');
+    } else {
+      _focusNode.requestFocus();
+    }
+  }
+
 
   // -------------------------------------------------------------------------
   // Build

@@ -90,14 +90,14 @@ class LoginController extends GetxController with CodeAutoFill {
   final Rx<String?> selectedBetaUser = Rx<String?>(null);
   final Map<String, Map<String, String>> betaUsers = {
     'Phlebotomist': {'user': '7070707070', 'pass': '123456'},
-    'Runnerboy': {'user': '9975020297', 'pass': '123456'},
-    'Team Lead': {'user': '9975020260', 'pass': '123456'},
-    'Lab Accession': {'user': '9975020298', 'pass': '1234567'},
-    'Connector': {'user': '8007758869', 'pass': '123456'},
-    'Medical Officer': {'user': '8788789878', 'pass': '123456'},
-    'BMC Admin': {'user': 'BMCadmin', 'pass': 'Admin2123'},
-    'EHO': {'user': '8806191092', 'pass': '123456'},
-    'CMS': {'user': '8975276087', 'pass': '123456'},
+    'Runnerboy': {'user': '9604249812', 'pass': '123456'},
+    // 'Team Lead': {'user': '9975020260', 'pass': '123456'},
+    // 'Lab Accession': {'user': '9975020298', 'pass': '1234567'},
+    // 'Connector': {'user': '8007758869', 'pass': '123456'},
+    // 'Medical Officer': {'user': '8788789878', 'pass': '123456'},
+    // 'BMC Admin': {'user': 'BMCadmin', 'pass': 'Admin2123'},
+    // 'EHO': {'user': '8806191092', 'pass': '123456'},
+    // 'CMS': {'user': '8975276087', 'pass': '123456'},
   };
 
   @override

@@ -10,12 +10,7 @@ import 'queue_info_chip.dart';
 import 'status_badge.dart';
 import 'visit_type_badge.dart';
 
-/// The card representing a single assignment in the queue.
-///
-/// This is the single most important reusable component in the module —
-/// it renders all "at a glance" information a phlebotomist needs
-/// (who / where / when / what / next action) and exposes callbacks for
-/// each possible action rather than owning any business logic itself.
+
 class PatientCard extends StatelessWidget {
   final AssignedPatient patient;
   final bool isProcessing;

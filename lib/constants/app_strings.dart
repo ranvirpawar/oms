@@ -176,5 +176,7 @@ class AppStrings {
   static const String resetFormTitle = 'Reset Form';
   static const String formResetSuccess = 'Form has been reset successfully.';
 
+  static String  collectedOrders  = 'Collected Orders';
+
 
 }

@@ -122,10 +122,11 @@ class PatientListController extends GetxController {
     _clearSearch();
     await fetchPatients();
   }
-
+  // now it is fetchOrders
   Future<void> fetchPatients() async {
     try {
       if (selectedSession.value == null) return;
+
       isLoadingPatients.value = true;
       patientList.clear();
       filteredPatientList.clear();
@@ -135,15 +136,18 @@ class PatientListController extends GetxController {
         bagId: selectedSession.value!.bagId,
       );
 
-      final output = response['registrationDetails'];
-      if (response['status'] == 'Success' &&
-          output != null &&
-          (output as List).isNotEmpty) {
-        patientList.value = output.map((e) => PatientOrder.fromJson(e)).toList();
-        filteredPatientList.value = patientList;
+      if (response['status'] == 'Success') {
+        final orders = PatientOrder.fromResponse(response);
+
+        patientList.value = orders;
+        filteredPatientList.value = orders;
       }
     } catch (e) {
-      Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'Error',
+        e.toString(),
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       isLoadingPatients.value = false;
     }

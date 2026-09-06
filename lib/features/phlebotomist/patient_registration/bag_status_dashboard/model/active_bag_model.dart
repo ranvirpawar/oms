@@ -110,50 +110,128 @@ class PatientOrder {
     required this.barcodes,
   });
 
-  factory PatientOrder.fromJson(Map<String, dynamic> json) {
-    final regJson =
-        (json['registrationDetails'] as Map?)?.cast<String, dynamic>() ?? {};
-    final testsJson = (json['testDetails'] as List?) ?? const [];
-    final barcodesJson = (json['barcodeDetails'] as List?) ?? const [];
+  /// Creates PatientOrder objects by grouping:
+  /// registrationDetails + testDetails + barcodeDetails
+  /// using SampleCollectionOrderID.
+  static List<PatientOrder> fromResponse(Map<String, dynamic> json) {
+    final registrations =
+        (json['registrationDetails'] as List?)
+            ?.map(
+              (e) => RegistrationDetails.fromJson(
+            Map<String, dynamic>.from(e),
+          ),
+        )
+            .toList() ??
+            [];
 
-    return PatientOrder(
-      registration: RegistrationDetails.fromJson(regJson),
-      tests: testsJson.map((e) => TestDetail.fromJson(e)).toList(),
-      barcodes: barcodesJson.map((e) => BarcodeDetail.fromJson(e)).toList(),
+    final tests =
+        (json['testDetails'] as List?)
+            ?.map(
+              (e) => TestDetail.fromJson(
+            Map<String, dynamic>.from(e),
+          ),
+        )
+            .toList() ??
+            [];
+
+    final barcodes =
+        (json['barcodeDetails'] as List?)
+            ?.map(
+              (e) => BarcodeDetail.fromJson(
+            Map<String, dynamic>.from(e),
+          ),
+        )
+            .toList() ??
+            [];
+
+    // Group tests by SampleCollectionOrderID
+    final testsByOrderId = <int, List<TestDetail>>{};
+
+    for (final test in tests) {
+      testsByOrderId.putIfAbsent(
+        test.sampleCollectionOrderID,
+            () => [],
+      ).add(test);
+    }
+
+    // Group barcodes by SampleCollectionOrderID
+    final barcodesByOrderId = <int, List<BarcodeDetail>>{};
+
+    for (final barcode in barcodes) {
+      barcodesByOrderId.putIfAbsent(
+        barcode.sampleCollectionOrderID,
+            () => [],
+      ).add(barcode);
+    }
+
+    // Create one PatientOrder for each registration/order
+    return registrations.map((registration) {
+      final orderId = registration.sampleCollectionOrderID;
+
+      return PatientOrder(
+        registration: registration,
+        tests: testsByOrderId[orderId] ?? [],
+        barcodes: barcodesByOrderId[orderId] ?? [],
+      );
+    }).toList();
+  }
+
+  bool get hasPatientName =>
+      registration.patientName.trim().isNotEmpty;
+
+  String get testNamesJoined =>
+      tests
+          .map((t) => t.testName)
+          .where((n) => n.isNotEmpty)
+          .join(', ');
+
+  String get primaryBarcode =>
+      barcodes.isNotEmpty ? barcodes.first.barcodeNo : '';
+
+  bool matchesQuery(String lowerQuery) {
+    if (registration.patientName
+        .toLowerCase()
+        .contains(lowerQuery)) {
+      return true;
+    }
+
+    return barcodes.any(
+          (b) => b.barcodeNo.toLowerCase().contains(lowerQuery),
     );
   }
 
-  bool get hasPatientName => registration.patientName.trim().isNotEmpty;
-
-  String get testNamesJoined =>
-      tests.map((t) => t.testName).where((n) => n.isNotEmpty).join(', ');
-
-  String get primaryBarcode => barcodes.isNotEmpty ? barcodes.first.barcodeNo : '';
-
-  bool matchesQuery(String lowerQuery) {
-    if (registration.patientName.toLowerCase().contains(lowerQuery)) return true;
-    return barcodes.any((b) => b.barcodeNo.toLowerCase().contains(lowerQuery));
-  }
-
-  /// e.g. "4 SST, 3 EDTA" — grouped from each test's tube content.
   String get tubesSummary {
     final counts = <String, int>{};
+
     for (final t in tests) {
       final label = _shortTubeLabel(t.tubeContent);
+
       if (label.isEmpty) continue;
+
       counts[label] = (counts[label] ?? 0) + 1;
     }
-    return counts.entries.map((e) => '${e.value} ${e.key}').join(', ');
+
+    return counts.entries
+        .map((e) => '${e.value} ${e.key}')
+        .join(', ');
   }
 
   static String _shortTubeLabel(String tubeContent) {
     final lower = tubeContent.toLowerCase();
+
     if (lower.contains('edta')) return 'EDTA';
-    if (lower.contains('serum separat') || lower.contains('sst')) return 'SST';
-    if (lower.contains('sodium fluoride') || lower.contains('naf')) return 'NaF';
+    if (lower.contains('serum separat') ||
+        lower.contains('sst')) {
+      return 'SST';
+    }
+    if (lower.contains('sodium fluoride') ||
+        lower.contains('naf')) {
+      return 'NaF';
+    }
     if (lower.contains('citrate')) return 'Citrate';
     if (lower.contains('heparin')) return 'Heparin';
     if (lower.contains('plain')) return 'Plain';
+
     return tubeContent;
   }
 }
