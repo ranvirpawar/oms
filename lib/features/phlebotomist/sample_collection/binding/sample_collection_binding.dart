@@ -1,8 +1,8 @@
 
 import 'package:get/get.dart';
 
-import '../../features/phlebotomist/patient_queue/model/patient_queue_model.dart';
-import '../../features/phlebotomist/sample_collection/controller/sample_collection_controller.dart';
+import '../../patient_queue/model/patient_queue_model.dart';
+import '../controller/sample_collection_controller.dart';
 
 class SampleCollectionBinding extends Bindings {
   @override

@@ -9,6 +9,7 @@ import 'package:lifenity_connect/routes/route_manager.dart';
 import 'package:get/get.dart';
 
 
+import '../../../componenents/otp_boxes_input.dart';
 import '../../../network/session_coordinator.dart';
 import '../../../services/auth_manager.dart';
 import '../../../services/snackbar_service.dart';
@@ -40,7 +41,24 @@ class LoginController extends GetxController with CodeAutoFill {
   // STEP 2 — OTP
   // ------------------------------------------------------------------
   final Rx<LoginStep> currentStep = LoginStep.credentials.obs;
-  final otpController = TextEditingController();
+
+  /// Key to the mounted [OtpBoxesInput] (step 2). The widget owns its internal
+  /// TextEditingController, so no external controller exists here to leak or
+  /// be disposed out of order — the "used after being disposed" crash can no
+  /// longer occur.
+  final GlobalKey<OtpBoxesInputState> otpInputKey =
+      GlobalKey<OtpBoxesInputState>();
+
+  /// Currently entered code ('' while the OTP step isn't mounted).
+  String get otpValue => otpInputKey.currentState?.code ?? '';
+
+  /// Clears the entered code (safe no-op when the step isn't mounted).
+  void clearOtpInput() => otpInputKey.currentState?.clear();
+
+  /// Programmatically fills the boxes — used by the SMS autofill listener.
+  /// Fires onChanged/onCompleted exactly like manual typing.
+  void setOtpCode(String code) => otpInputKey.currentState?.setCode(code);
+
   final RxString otpError = ''.obs;
   final RxBool isVerifyingOtp = false.obs;
   final RxBool isResendingOtp = false.obs;
@@ -66,7 +84,7 @@ class LoginController extends GetxController with CodeAutoFill {
   final RxString operator = '+'.obs;
   int correctAnswer = 0;
 
-  final LoginService _loginService = Get.put(LoginService());
+  final LoginService _loginService = Get.find<LoginService>();
   final AuthManager _authManager = Get.find<AuthManager>();
 
   final Rx<String?> selectedBetaUser = Rx<String?>(null);
@@ -104,7 +122,6 @@ class LoginController extends GetxController with CodeAutoFill {
     emailController.dispose();
     passwordController.dispose();
     mathAnswerController.dispose();
-    otpController.dispose();
     super.onClose();
   }
 
@@ -113,8 +130,9 @@ class LoginController extends GetxController with CodeAutoFill {
   void codeUpdated() {
     final incoming = code?.trim() ?? '';
     if (incoming.length == otpLength) {
-      otpController.text = incoming;
-      verifyOtp();
+      // The widget's onCompleted fires verifyOtp() automatically once it sees
+      // the full code — same flow as typing the 4th digit.
+      setOtpCode(incoming);
     }
   }
 
@@ -218,7 +236,7 @@ class LoginController extends GetxController with CodeAutoFill {
   // STEP 2 — verify OTP
   // ------------------------------------------------------------------
   Future<void> verifyOtp() async {
-    final otp = otpController.text.trim();
+    final otp = otpValue.trim();
 
     if (otp.length != otpLength) {
       otpError.value = 'Enter the $otpLength-digit code';
@@ -254,7 +272,7 @@ class LoginController extends GetxController with CodeAutoFill {
         RouteManager.redirectToHomeDashboard();
       } else {
         otpAttemptsLeft.value = (otpAttemptsLeft.value - 1).clamp(0, _maxOtpAttempts);
-        otpController.clear();
+        clearOtpInput();
 
         if (otpAttemptsLeft.value == 0) {
           otpError.value = 'Too many incorrect attempts. Please request a new code.';
@@ -265,7 +283,7 @@ class LoginController extends GetxController with CodeAutoFill {
         }
       }
     } catch (e) {
-      otpController.clear();
+      clearOtpInput();
       otpError.value = _cleanError(e);
     } finally {
       isVerifyingOtp.value = false;
@@ -311,7 +329,7 @@ class LoginController extends GetxController with CodeAutoFill {
   }
 
   void _resetOtpState() {
-    otpController.clear();
+    clearOtpInput();
     otpError.value = '';
     otpAttemptsLeft.value = _maxOtpAttempts;
   }

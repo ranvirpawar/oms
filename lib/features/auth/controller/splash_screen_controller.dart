@@ -8,7 +8,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../services/auth_manager.dart';
 import '../service/login_service.dart';
-import '../view/login_screen.dart';
 import '../view/update_bottom_sheet.dart';
 
 class SplashController extends GetxController {
@@ -82,11 +81,11 @@ class SplashController extends GetxController {
       if (isLoggedIn) {
         RouteManager.redirectToHomeDashboard();
       } else {
-        Get.offAll(() => const LoginScreenView());
+        RouteManager.redirectToLogin();
       }
     } catch (e) {
       if (kDebugMode) print('Navigation error: $e');
-      Get.offAll(() => const LoginScreenView());
+      RouteManager.redirectToLogin();
     }
   }
 }

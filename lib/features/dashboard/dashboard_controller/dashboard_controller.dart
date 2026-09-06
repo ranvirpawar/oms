@@ -195,7 +195,7 @@ class DashboardController extends GetxController {
 
       title: AppStrings.collectSample,
       icon: AppAssets.sampleCollection,
-      // backgroundImage: AppAssets.collectSampleCard,
+      // backgroundImage: AppAssets.sampleRecollectionCard,
       borderColor: Colors.blue,
       onTap: RouteManager.navigateToBagStatusDashboard,
     ),
@@ -206,13 +206,7 @@ class DashboardController extends GetxController {
       borderColor: Colors.orange,
       onTap: RouteManager.navigateToPatientQueue,
     ),
-    const DashboardTileCard(
-      title: AppStrings.collectedSampleBags,
-      // backgroundImage: AppAssets.collectedBagsCard,
-      icon: AppAssets.bagsCollected,
-      borderColor: Colors.green,
-      onTap: RouteManager.navigateToCollectedBags,
-    ),
+
 
     const DashboardTileCard(
       title: AppStrings.sampleRecollection,

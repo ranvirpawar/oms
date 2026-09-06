@@ -4,13 +4,13 @@ import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
-import 'package:lifenity_connect/features/auth/view/login_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../features/auth/model/login_response_model.dart';
 import '../features/auth/model/profile_model.dart';
 import '../features/auth/service/login_service.dart';
 import 'device_info_service.dart';
+import '../routes/route_manager.dart';
 
 enum UserRole {
   phlebotomist('Phlebotomist'),
@@ -358,7 +358,7 @@ class AuthManager extends GetxController {
 
       _userData.value = null;
       _isLoggedIn.value = false;
-      Get.offAll(() => const LoginScreenView());
+      RouteManager.redirectToLogin();
     } catch (e) {
       if (kDebugMode) log('Logout error: $e');
     } finally {

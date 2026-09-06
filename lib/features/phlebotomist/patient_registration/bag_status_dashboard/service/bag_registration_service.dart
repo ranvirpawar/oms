@@ -162,7 +162,147 @@ class BagRegistrationService {
       );
 
       kPrint('📥 Response (${result.statusCode}): ${result.data}');
-
+return {
+  "status": "Success",
+  "registrationDetails": [
+    {
+      "SampleCollectionOrderID": 114,
+      "SessionID": 10,
+      "Bagid": 38,
+      "PatientName": "Mr. Nilesh M. Dhamale",
+      "Gender": "Male",
+      "Age": "53 Years",
+      "VisitType": "Clinic",
+      "Address": "2 Test Lane 2, Chhatrapati Sambhajinagar, 431001",
+      "MobileNumber": "9876550002",
+      "ClinicName": "Chhatrapati Sambhajinagar GP 1",
+      "CollectionDateTime": "2026-09-05T12:07:46.627"
+    },
+    {
+      "SampleCollectionOrderID": 121,
+      "SessionID": 10,
+      "Bagid": 38,
+      "PatientName": "Ms. Sunanda M. Wable",
+      "Gender": "Female",
+      "Age": "45 Years",
+      "VisitType": "Clinic",
+      "Address": "9 Test Lane 2, Chhatrapati Sambhajinagar, 431001",
+      "MobileNumber": "9876550009",
+      "ClinicName": "Chhatrapati Sambhajinagar GP 1",
+      "CollectionDateTime": "2026-09-05T13:57:11.607"
+    },
+    {
+      "SampleCollectionOrderID": 125,
+      "SessionID": 10,
+      "Bagid": 38,
+      "PatientName": "Ms. Nanda M. Jagtap",
+      "Gender": "Female",
+      "Age": "42 Years",
+      "VisitType": "Clinic",
+      "Address": "13 Test Lane 2, Chhatrapati Sambhajinagar, 431001",
+      "MobileNumber": "9876550013",
+      "ClinicName": "Chhatrapati Sambhajinagar GP 1",
+      "CollectionDateTime": "2026-09-05T14:13:49.16"
+    },
+    {
+      "SampleCollectionOrderID": 119,
+      "SessionID": 10,
+      "Bagid": 38,
+      "PatientName": "Ms. Bharti M. Shelar",
+      "Gender": "Female",
+      "Age": "48 Years",
+      "VisitType": "Clinic",
+      "Address": "7 Test Lane 2, Chhatrapati Sambhajinagar, 431001",
+      "MobileNumber": "9876550007",
+      "ClinicName": "Chhatrapati Sambhajinagar GP 1",
+      "CollectionDateTime": "2026-09-05T14:16:28.55"
+    }
+  ],
+  "testDetails": [
+    {
+      "SampleCollectionOrderID": 114,
+      "TestName": "Amylase",
+      "SampleTypeName": "Serum",
+      "TubeContent": "Plain Tube"
+    },
+    {
+      "SampleCollectionOrderID": 114,
+      "TestName": "Glucose (Blood Sugar), Fasting",
+      "SampleTypeName": "Plasma F",
+      "TubeContent": "Sodium fluoride vial"
+    },
+    {
+      "SampleCollectionOrderID": 121,
+      "TestName": "Glucose (Blood Sugar), Fasting",
+      "SampleTypeName": "Plasma F",
+      "TubeContent": "Sodium fluoride vial"
+    },
+    {
+      "SampleCollectionOrderID": 121,
+      "TestName": "HbA1C - Glycated Haemoglobin",
+      "SampleTypeName": "EDTA Whole Blood",
+      "TubeContent": "EDTA"
+    },
+    {
+      "SampleCollectionOrderID": 125,
+      "TestName": "Amylase",
+      "SampleTypeName": "Serum",
+      "TubeContent": "Plain Tube"
+    },
+    {
+      "SampleCollectionOrderID": 125,
+      "TestName": "Glucose (Blood Sugar), PP (Post Prandial)",
+      "SampleTypeName": "Plasma",
+      "TubeContent": "Sodium fluoride vial"
+    },
+    {
+      "SampleCollectionOrderID": 119,
+      "TestName": "Magnesium",
+      "SampleTypeName": "Serum",
+      "TubeContent": "Plain Tube"
+    },
+    {
+      "SampleCollectionOrderID": 119,
+      "TestName": "HbA1C - Glycated Haemoglobin",
+      "SampleTypeName": "EDTA Whole Blood",
+      "TubeContent": "EDTA"
+    }
+  ],
+  "barcodeDetails": [
+    {
+      "SampleCollectionOrderID": 114,
+      "BarcodeNo": "Ac8487788"
+    },
+    {
+      "SampleCollectionOrderID": 114,
+      "BarcodeNo": "Ac845515"
+    },
+    {
+      "SampleCollectionOrderID": 121,
+      "BarcodeNo": "Ac474585"
+    },
+    {
+      "SampleCollectionOrderID": 121,
+      "BarcodeNo": "Ac478596"
+    },
+    {
+      "SampleCollectionOrderID": 125,
+      "BarcodeNo": "Ac874845"
+    },
+    {
+      "SampleCollectionOrderID": 125,
+      "BarcodeNo": "Ac48418"
+    },
+    {
+      "SampleCollectionOrderID": 119,
+      "BarcodeNo": "Ac4518"
+    },
+    {
+      "SampleCollectionOrderID": 119,
+      "BarcodeNo": "Ac487458"
+    }
+  ]
+};
       return result.data is Map<String, dynamic>
           ? result.data as Map<String, dynamic>
           : result.body;

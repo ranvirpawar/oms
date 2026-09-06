@@ -1,8 +1,8 @@
-// otp_verification_screen.dart
+ // otp_verification_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:lifenity_connect/componenents/otp_boxes_input.dart';
 import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 
 import '../../../../../theme/app_colors.dart';
@@ -43,9 +43,32 @@ class OtpVerificationScreen extends GetView<SampleCollectionController> {
               style: TextStyle(fontSize: 12.5, color: AppColors.textTertiary),
             ),
             const SizedBox(height: 28),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(4, (index) => _OtpBox(index: index, controller: controller)),
+            // Patient sample-collection OTP must NOT auto-detect, so SMS
+            // autofill is disabled via `enableAutofill: false`. The widget
+            // owns its controller internally — no per-digit controllers to
+            // leak or be disposed out of order.
+            Center(
+              child: OtpBoxesInput(
+                key: controller.otpInputKey,
+                enableAutofill: false,
+                boxWidth: 56,
+                boxHeight: 60,
+                spacing: 12,
+                borderWidth: 1.4,
+                boxColor: AppColors.bgCard,
+                filledBoxColor: AppColors.bgCard,
+                borderColor: AppColors.border,
+                filledBorderColor: AppColors.border,
+                focusBorderColor: AppColors.blue,
+                textStyle: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+                onChanged: (code) => controller.otpError.value = '',
+                onCompleted: (_) =>
+                    FocusManager.instance.primaryFocus?.unfocus(),
+              ),
             ),
             const SizedBox(height: 12),
             Obx(() {
@@ -95,38 +118,6 @@ class OtpVerificationScreen extends GetView<SampleCollectionController> {
                 )),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _OtpBox extends StatelessWidget {
-  final int index;
-  final SampleCollectionController controller;
-  const _OtpBox({required this.index, required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 56,
-      height: 60,
-      margin: const EdgeInsets.symmetric(horizontal: 6),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border, width: 1.4),
-      ),
-      alignment: Alignment.center,
-      child: TextField(
-        controller: controller.otpControllers[index],
-        focusNode: controller.otpFocusNodes[index],
-        textAlign: TextAlign.center,
-        keyboardType: TextInputType.number,
-        maxLength: 1,
-        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        decoration: const InputDecoration(counterText: '', border: InputBorder.none),
-        onChanged: (value) => controller.onOtpDigitChanged(index, value),
       ),
     );
   }

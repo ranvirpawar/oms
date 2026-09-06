@@ -6,6 +6,7 @@ import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart'
     hide SnackPosition;
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../../../componenents/otp_boxes_input.dart';
 import '../../../../services/auth_manager.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
 
@@ -96,11 +97,16 @@ class SampleCollectionController extends GetxController {
   final RxString orderLoadError = ''.obs;
 
   // ---- OTP -----------------------------------------------------------------
-  final List<TextEditingController> otpControllers = List.generate(
-    4,
-    (_) => TextEditingController(),
-  );
-  final List<FocusNode> otpFocusNodes = List.generate(4, (_) => FocusNode());
+  /// Reusable OTP input used by [OtpVerificationScreen]. The widget owns its
+  /// controller/focus node internally — no per-digit controllers to leak or be
+  /// disposed out of order. Patient OTP must not auto-detect, so the screen
+  /// renders it with `enableAutofill: false`.
+  final GlobalKey<OtpBoxesInputState> otpInputKey =
+      GlobalKey<OtpBoxesInputState>();
+
+  /// Currently entered OTP ('' while the OTP screen isn't mounted).
+  String get otpValue => otpInputKey.currentState?.code ?? '';
+
   final RxBool isSendingOtp = false.obs;
   final RxBool isVerifyingOtp = false.obs;
   final RxString otpError = ''.obs;
@@ -153,12 +159,6 @@ class SampleCollectionController extends GetxController {
   @override
   void onClose() {
     _resendTimer?.cancel();
-    for (final c in otpControllers) {
-      c.dispose();
-    }
-    for (final f in otpFocusNodes) {
-      f.dispose();
-    }
     for (final e in sampleEntries) {
       e.dispose();
     }
@@ -277,9 +277,7 @@ class SampleCollectionController extends GetxController {
 
   Future<void> resendOtp() async {
     if (resendSecondsLeft.value > 0) return;
-    for (final c in otpControllers) {
-      c.clear();
-    }
+    otpInputKey.currentState?.clear();
     await sendOtp();
   }
 
@@ -296,10 +294,8 @@ class SampleCollectionController extends GetxController {
     });
   }
 
-  String get _otpValue => otpControllers.map((c) => c.text).join();
-
   Future<void> verifyOtp() async {
-    final otp = _otpValue;
+    final otp = otpValue;
     if (otp.length != 4) {
       otpError.value = 'Enter the 4-digit OTP.';
       return;
@@ -321,17 +317,6 @@ class SampleCollectionController extends GetxController {
       otpError.value = 'Unable to verify OTP. Please try again.';
     } finally {
       isVerifyingOtp.value = false;
-    }
-  }
-
-  void onOtpDigitChanged(int index, String value) {
-    if (value.isNotEmpty && index < otpFocusNodes.length - 1) {
-      otpFocusNodes[index + 1].requestFocus();
-    } else if (value.isEmpty && index > 0) {
-      otpFocusNodes[index - 1].requestFocus();
-    }
-    if (_otpValue.length == 4) {
-      FocusManager.instance.primaryFocus?.unfocus();
     }
   }
 

@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 
-import '../../features/phlebotomist/patient_queue/controller/patient_queue_controller.dart';
-import '../../features/phlebotomist/patient_queue/service/patient_queue_service.dart';
+import '../controller/patient_queue_controller.dart';
+import '../service/patient_queue_service.dart';
 
 
 class PatientQueueBinding extends Bindings {

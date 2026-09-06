@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
+import 'package:lifenity_connect/features/auth/view/login_screen.dart';
 import 'package:lifenity_connect/features/cms_eho/view/consumption_dashboard.dart';
 import 'package:lifenity_connect/features/dashboard/view/dashboard_screen.dart';
 import 'package:lifenity_connect/features/lab_technician/passkey/view/passkey_view.dart';
@@ -12,7 +13,6 @@ import 'package:lifenity_connect/features/phlebotomist/patient_registration/view
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/order_confirmation_screen.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_pickup/view/sample%20pickup_entry.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_recollection/view/sample_recollection_list_view.dart';
-import 'package:lifenity_connect/features/phlebotomist/user_attendance/view/user_attendance.dart';
 import 'package:lifenity_connect/features/runner_boy/collect_empty_bag/view/collect_destination_bag.dart';
 import 'package:lifenity_connect/features/runner_boy/collect_from_phlebotomist/view/collect_bag_from_phlebo.dart';
 import 'package:lifenity_connect/features/team_lead/invoice_tracking/view/invoice_tracking_view.dart';
@@ -24,7 +24,7 @@ import 'package:lifenity_connect/features/cms_eho/view/performance_dashboard.dar
 import 'package:lifenity_connect/features/cms_eho/view/summary_dashboard.dart';
 import 'package:lifenity_connect/features/team_lead/visit_details/view/visit_details_screen.dart';
 import 'package:lifenity_connect/features/team_lead/zero_sample_calendar/view/zero_calendar_view.dart';
-import 'package:lifenity_connect/routes/dependancy_injection/sample_collection_binding.dart';
+import 'package:lifenity_connect/features/phlebotomist/sample_collection/binding/sample_collection_binding.dart';
 
 import '../features/dashboard/dashboard_controller/dashboard_controller.dart';
 import '../features/lab_technician/accept_handover_bag/view/accept_bag_in_lab_view.dart';
@@ -34,12 +34,12 @@ import '../features/phlebotomist/patient_queue/model/patient_queue_model.dart';
 import '../features/phlebotomist/patient_registration/view/patient_detail_page.dart';
 import '../features/phlebotomist/patient_registration/view/patient_registration_view.dart';
 import '../features/phlebotomist/patient_report/view/patient_report_view.dart';
-import '../features/phlebotomist/sample_collection/view/sample_collection_screen.dart';
 import '../features/phlebotomist/sample_recollection/controller/sample_recollection_controller.dart';
 import '../features/cms_eho/view/test_analysis_page.dart';
 import '../features/team_lead/barcode_merging/view/merge_barcode_view.dart';
 import '../features/team_lead/sample_live_tracking/view/live_tracking_view.dart';
-import 'dependancy_injection/patient_queue_binding.dart';
+import '../features/auth/binding/login_binding.dart';
+import '../features/phlebotomist/patient_queue/binding/patient_queue_binding.dart';
 
 class RouteManager {
   static void redirectToHomeDashboard() {
@@ -49,7 +49,13 @@ class RouteManager {
     Get.offAll(() => DashboardScreen(), transition: Transition.fadeIn);
   }
 
-  static void redirectToLogin() {}
+  static void redirectToLogin() {
+    Get.offAll(
+      () => const LoginScreenView(),
+      binding: LoginBinding(),
+      transition: Transition.fadeIn,
+    );
+  }
 
   static void redirectToForgotPassword() {}
 

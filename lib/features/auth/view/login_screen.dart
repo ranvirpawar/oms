@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:lifenity_connect/constants/app_assets.dart';
 import 'package:lifenity_connect/features/auth/view/forgot_password_view.dart';
 import 'package:lifenity_connect/services/app_envirionment_service.dart';
+import 'package:lifenity_connect/utils/helper_functions/input_formatter.dart';
 import '../../../componenents/app_textformfeild.dart';
+import '../../../componenents/otp_boxes_input.dart';
 import '../../../constants/app_strings.dart';
 
 // login_controller.dart
@@ -14,13 +15,11 @@ import '../controller/login_controller.dart';
 
 
 
-class LoginScreenView extends StatelessWidget {
+class LoginScreenView extends GetView<LoginController> {
   const LoginScreenView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final LoginController controller = Get.put(LoginController());
-
     return Scaffold(
       resizeToAvoidBottomInset: true,
       body: Column(
@@ -180,6 +179,8 @@ class _CredentialsStep extends StatelessWidget {
                       validator: controller.validateUserName,
                       keyboardType: TextInputType.text,
                       cursorColor: Colors.white,
+                      maxLength: 10,
+                      inputFormatters: InputFormatters.digits,
 
                       // autofillHints: const [AutofillHints.username],
                       // textInputAction: TextInputAction.next,
@@ -301,15 +302,29 @@ class _OtpStep extends StatelessWidget {
         )),
         const SizedBox(height: 28),
 
-        // OTP boxes with SMS autofill
-        SizedBox(
-          height: 58,
-          child: OtpBoxesInput(
-            controller: controller.otpController,
-            length: LoginController.otpLength,
-            onChanged: (code) => controller.otpError.value = '',
-            onCompleted: (code) => controller.verifyOtp(),
+        // OTP boxes — reusable, self-contained widget (see
+        // components/otp_boxes_input.dart). It owns its own TextEditingController
+        // internally, so the "controller used after being disposed" crash can no
+        // longer happen on step switches / route pops.
+        OtpBoxesInput(
+          key: controller.otpInputKey,
+          length: LoginController.otpLength,
+          onChanged: (code) => controller.otpError.value = '',
+          onCompleted: (code) => controller.verifyOtp(),
+          boxWidth: 52,
+          boxHeight: 58,
+          spacing: 10,
+          boxColor: Colors.white.withValues(alpha: 0.10),
+          filledBoxColor: Colors.white.withValues(alpha: 0.18),
+          borderColor: Colors.white.withValues(alpha: 0.35),
+          filledBorderColor: Colors.white,
+          focusBorderColor: Colors.white,
+          textStyle: const TextStyle(
+            fontSize: 22,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
           ),
+          cursorColor: Colors.white,
         ),
 
         Obx(() => controller.otpError.value.isNotEmpty
@@ -393,262 +408,6 @@ class _OtpStep extends StatelessWidget {
 }
 
 
-class OtpBoxesInput extends StatefulWidget {
-  final TextEditingController controller;
-  final int length;
-  final ValueChanged<String>? onChanged;
-  final ValueChanged<String>? onCompleted;
-  final double boxWidth;
-  final double boxHeight;
-  final double spacing;
-
-  const OtpBoxesInput({
-    super.key,
-    required this.controller,
-    required this.length,
-    this.onChanged,
-    this.onCompleted,
-    this.boxWidth = 52,
-    this.boxHeight = 58,
-    this.spacing = 10,
-  });
-
-  @override
-  State<OtpBoxesInput> createState() => _OtpBoxesInputState();
-}
-
-class _OtpBoxesInputState extends State<OtpBoxesInput>
-    with SingleTickerProviderStateMixin {
-  late final FocusNode _focusNode;
-  late final AnimationController _caretBlink;
-
-  // Re-entrancy guard: setting controller.selection below synchronously
-  // re-fires the listener (TextEditingController notifies on ANY value
-  // change, text or selection). Without this we'd either loop or
-  // double-process the same logical change.
-  bool _guardingSelection = false;
-
-  // Tracked so we can tell a single keystroke (delta ±1) apart from a
-  // paste/SMS-autofill (delta > 1 in one shot) inside the listener.
-  late String _previousText;
-
-  @override
-  void initState() {
-    super.initState();
-    _previousText = widget.controller.text;
-    _focusNode = FocusNode(debugLabel: 'otpHiddenField');
-    _caretBlink = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    )..repeat(reverse: true);
-
-    widget.controller.addListener(_handleControllerChange);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _focusNode.requestFocus();
-    });
-  }
-
-  void _handleControllerChange() {
-    // Ignore the re-entrant call caused by us setting selection below.
-    if (_guardingSelection) return;
-
-    final newText = widget.controller.text;
-    final textChanged = newText != _previousText;
-
-    if (textChanged) {
-      final lengthDelta = newText.length - _previousText.length;
-      _previousText = newText;
-
-      // Only override the caret for a multi-char jump (paste / SMS
-      // autofill dropping the whole code in at once) or a genuinely
-      // invalid selection. A single typed digit or single backspace
-      // already carries a correct caret position from Flutter/our own
-      // tap handler — don't stomp on it, that was the original bug.
-      if (lengthDelta.abs() > 1 || !widget.controller.selection.isValid) {
-        _setSelectionSafely(TextSelection.collapsed(offset: newText.length));
-      }
-
-      widget.onChanged?.call(newText);
-      if (newText.length == widget.length) {
-        widget.onCompleted?.call(newText);
-      }
-    }
-
-    setState(() {}); // repaint boxes (covers text changes AND caret moves)
-  }
-
-  void _setSelectionSafely(TextSelection selection) {
-    _guardingSelection = true;
-    widget.controller.selection = selection;
-    _guardingSelection = false;
-  }
-
-  @override
-  void dispose() {
-    widget.controller.removeListener(_handleControllerChange);
-    _focusNode.dispose();
-    _caretBlink.dispose();
-    super.dispose();
-  }
-
-  KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
-    if (event is KeyDownEvent &&
-        event.logicalKey == LogicalKeyboardKey.backspace &&
-        widget.controller.text.isEmpty) {
-      return KeyEventResult.handled;
-    }
-    return KeyEventResult.ignored;
-  }
-
-  /// Handles a tap on box [index]. [localDx] is the tap's x position
-  /// within that box (0..boxWidth), used to decide whether the caret
-  /// should land before or after a digit that's already there.
-  void _handleBoxTap(int index, double localDx) {
-    final code = widget.controller.text;
-    final int targetOffset;
-
-    if (index >= code.length) {
-      // Tapped an empty box (or the box right past the last digit) —
-      // the caret can't go further than the end of the entered text.
-      targetOffset = code.length;
-    } else {
-      // Tapped a box that already holds a digit: land the caret on
-      // whichever side of the digit was actually tapped, same as
-      // clicking inside a normal text field.
-      final tappedRightHalf = localDx > widget.boxWidth / 2;
-      targetOffset = tappedRightHalf ? index + 1 : index;
-    }
-
-    if (!_focusNode.hasFocus) {
-      _focusNode.requestFocus();
-    }
-    _setSelectionSafely(TextSelection.collapsed(offset: targetOffset));
-    setState(() {}); // move the highlight/caret now — text didn't change,
-    // so _handleControllerChange's textChanged branch
-    // won't fire to do it for us.
-  }
-
-  void _handleFallbackTap() {
-    // Tapped in a gap between boxes / outside all of them — just focus
-    // and go to the append point.
-    if (!_focusNode.hasFocus) {
-      _focusNode.requestFocus();
-    }
-    _setSelectionSafely(
-      TextSelection.collapsed(offset: widget.controller.text.length),
-    );
-    setState(() {});
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final code = widget.controller.text;
-    final cursorOffset = widget.controller.selection.isValid
-        ? widget.controller.selection.baseOffset.clamp(0, code.length)
-        : code.length;
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: _handleFallbackTap,
-      child: SizedBox(
-        height: widget.boxHeight,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Hidden field FIRST (bottom of the stack) and wrapped in
-            // IgnorePointer: it exists purely to own focus, the
-            // keyboard, paste, and SMS autofill. It must never
-            // intercept taps — Opacity alone does NOT stop hit-testing,
-            // only IgnorePointer does. That was the actual root cause:
-            // every tap was being swallowed by this field (with
-            // enableInteractiveSelection:false disabling its own
-            // tap-to-place-caret), so nothing you tapped ever moved
-            // the cursor.
-            IgnorePointer(
-              child: Opacity(
-                opacity: 0.0,
-                child: Focus(
-                  onKeyEvent: _handleKey,
-                  child: SizedBox(
-                    width: widget.boxWidth * widget.length,
-                    child: TextField(
-                      controller: widget.controller,
-                      focusNode: _focusNode,
-                      autofocus: true,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      maxLength: widget.length,
-                      autofillHints: const [AutofillHints.oneTimeCode],
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
-                      enableInteractiveSelection: false,
-                      showCursor: false,
-                      decoration: const InputDecoration(
-                        counterText: '',
-                        border: InputBorder.none,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Visible boxes ON TOP — each owns its own tap handler now.
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(widget.length, (i) {
-                final filled = i < code.length;
-                final isCursorHere = i == cursorOffset;
-                return GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTapDown: (details) =>
-                      _handleBoxTap(i, details.localPosition.dx),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    width: widget.boxWidth,
-                    height: widget.boxHeight,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(filled ? 0.18 : 0.10),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: filled || (isCursorHere && _focusNode.hasFocus)
-                            ? Colors.white
-                            : Colors.white.withOpacity(0.35),
-                        width: isCursorHere && _focusNode.hasFocus ? 2 : 1.5,
-                      ),
-                    ),
-                    child: filled
-                        ? Text(
-                      code[i],
-                      style: const TextStyle(
-                        fontSize: 22,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                        : (isCursorHere && _focusNode.hasFocus)
-                        ? FadeTransition(
-                      opacity: _caretBlink,
-                      child: Container(
-                        width: 2,
-                        height: 24,
-                        color: Colors.white,
-                      ),
-                    )
-                        : const SizedBox.shrink(),
-                  ),
-                );
-              }),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 class _WelcomeBackBanner extends StatelessWidget {
   final String username;
   final VoidCallback onSwitch;

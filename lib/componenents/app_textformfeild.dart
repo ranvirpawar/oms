@@ -14,6 +14,8 @@ class CustomTextFormField extends StatelessWidget {
   final VoidCallback? onTogglePassword;
   final List<TextInputFormatter>? inputFormatters;
   final Color? cursorColor;
+  final int? maxLength;
+
 
   const CustomTextFormField({
     super.key,
@@ -27,6 +29,7 @@ class CustomTextFormField extends StatelessWidget {
     this.onTogglePassword,
     this.inputFormatters,
     this.cursorColor,
+    this.maxLength,
   });
 
   @override
@@ -49,6 +52,8 @@ class CustomTextFormField extends StatelessWidget {
           inputFormatters: inputFormatters,
           keyboardType: keyboardType,
           textAlign: TextAlign.start,
+          maxLength: maxLength,
+
           obscureText: isPassword && !isPasswordVisible,
           style: const TextStyle(
             fontSize: 16,
@@ -59,7 +64,7 @@ class CustomTextFormField extends StatelessWidget {
           cursorWidth: 2,
           cursorRadius: const Radius.circular(4),
           decoration: InputDecoration(
-
+            counterText: '',
             hintText: hintText,
             hintStyle: TextStyle(
 
