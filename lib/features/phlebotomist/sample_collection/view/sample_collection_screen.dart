@@ -8,6 +8,7 @@ import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 
 import '../../../../theme/app_colors.dart';
 import '../controller/sample_collection_controller.dart';
+import 'widgets/active_bag_card.dart';
 
 class SampleCollectionScreen extends GetView<SampleCollectionController> {
   const SampleCollectionScreen({super.key});
@@ -22,6 +23,10 @@ class SampleCollectionScreen extends GetView<SampleCollectionController> {
           ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
             children: [
+              // Which bag the phlebotomist is collecting into — shows the
+              // open bag's live capacity and lets them switch bags.
+              ActiveBagCard(controller: controller),
+              const SizedBox(height: 14),
               // No outer Obx needed anymore — _ProgressSummary observes its
               // own reactive counts internally (see fix below).
               _ProgressSummary(controller: controller),

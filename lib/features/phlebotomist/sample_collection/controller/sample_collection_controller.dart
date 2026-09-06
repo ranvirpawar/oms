@@ -11,6 +11,9 @@ import '../../../../services/auth_manager.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
 
 import '../../patient_queue/model/patient_queue_model.dart';
+import '../../patient_registration/bag_status_dashboard/controller/registrarion_bag_controller.dart';
+import '../../patient_registration/bag_status_dashboard/model/qr_bag_details.dart';
+import '../../patient_registration/bag_status_dashboard/model/qr_bag_session.dart';
 import '../model/sample_collection_models.dart';
 import '../service/sample_collection_service.dart';
 import '../view/widgets/barcode_scanner_sheet.dart';
@@ -86,6 +89,47 @@ class SampleCollectionController extends GetxController {
   final RxString empId = ''.obs;
 
   int get _userId => int.tryParse(empId.value) ?? 0;
+
+  // ─── Open-bag integration (shared BagRegistrationController) ───────────────
+  /// Lazily resolves the shared bag controller. When the phlebotomist reaches
+  /// this flow straight from the queue (without visiting the bag dashboard
+  /// first) the controller is created here; otherwise the instance owned by
+  /// the bag dashboard is reused so its live session state stays in sync.
+  BagRegistrationController get bagController =>
+      Get.isRegistered<BagRegistrationController>()
+          ? Get.find<BagRegistrationController>()
+          : Get.put(BagRegistrationController());
+
+  /// The single currently-open bag session (or null).
+  QRBagSession? get activeBag => bagController.activeBag;
+
+  /// True only while at least one bag is open — enforced server-side too.
+  bool get hasOpenBag => bagController.hasOpenBag;
+
+  /// The open bag's identifiers, sent in the collection payload so every
+  /// sample is tracked against the exact bag/session it was collected into.
+  int get activeBagId => bagController.activeBagId;
+  int get activeSessionId => bagController.activeSessionId;
+  String get activeBagcode => bagController.activeBagcode;
+
+  QRBagDetails? get activeBagDetails {
+    final bag = activeBag;
+    if (bag == null) return null;
+    return bagController.bagDetailsMap[bag.bagId];
+  }
+
+  int get bagCapacity => activeBagDetails?.capacity ?? 0;
+  int get bagUsed => activeBagDetails?.patientCount ?? 0;
+  int get bagVacant => activeBagDetails?.spaceVacant ?? 0;
+
+  /// 0..1 — drives the capacity bar on the active-bag card.
+  double get bagFillRatio {
+    final capacity = bagCapacity;
+    if (capacity <= 0) return 0;
+    return (bagUsed / capacity).clamp(0.0, 1.0);
+  }
+
+  bool get isBagFull => activeBagDetails != null && bagUsed >= bagCapacity;
 
   final Rx<SampleCollectionStep> step =
       SampleCollectionStep.orderConfirmation.obs;
@@ -173,7 +217,14 @@ class SampleCollectionController extends GetxController {
     if (!isOrderAccepted) {
       return;
     }
-    await Future.wait([fetchOrderDetails(), _fetchSupportingLists()]);
+    // Load order details, supporting lists and the current open-bag session
+    // in parallel. The bag session is what provides the bagId + sessionId
+    // that get stamped onto the collection payload.
+    await Future.wait([
+      fetchOrderDetails(),
+      _fetchSupportingLists(),
+      bagController.ensureSessionsLoaded(),
+    ]);
   }
 
   // ---------------------------------------------------------------------
@@ -453,6 +504,9 @@ class SampleCollectionController extends GetxController {
   // ---------------------------------------------------------------------
 
   String? validate() {
+    if (!hasOpenBag) {
+      return 'Please open a bag before submitting the collection.';
+    }
     if (sampleEntries.isEmpty) {
       return 'No sample types found for this order.';
     }
@@ -499,11 +553,11 @@ class SampleCollectionController extends GetxController {
       orderStatusCode: incompleteTests.isEmpty
           ? 'COLLECTED'
           : 'PARTIALLY_COLLECTED',
-      // was a hardcoded "37" string — now parses whatever the collector
-      // actually entered, since the field is an int on the backend.
-      bagId: 40,
-
-      sessionId: 12,
+      // The open bag's real identifiers. Every sample is attributed to this
+      // bag/session so movement can be traced end-to-end. (Previously these
+      // were hardcoded placeholder values.)
+      bagId: activeBagId,
+      sessionId: activeSessionId,
       tubeCount: collected.length,
       notes: notesController.text.trim(),
       collectedAt: DateTime.now(),
@@ -545,6 +599,9 @@ class SampleCollectionController extends GetxController {
       kPrint(payload.toJson().toString());
 
       await _service.submitSampleCollection(payload);
+      // Refresh the shared bag state silently so capacity reflects this
+      // submission and the next collection flow sees current counts.
+      unawaited(bagController.checkBagSession(showFeedback: false));
       final result = SampleSubmissionResult(
         outcome: SampleSubmissionOutcome.success,
         orderId: orderId,

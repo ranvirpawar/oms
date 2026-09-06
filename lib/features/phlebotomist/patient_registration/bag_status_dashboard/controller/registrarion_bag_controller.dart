@@ -94,7 +94,16 @@ class BagRegistrationController extends GetxController {
     _loadUser();
   }
 
-  Future<void> _loadUser() async {
+  Future<void>? _loadUserFuture;
+
+  /// Loads the current user and their bag session exactly once per controller
+  /// lifetime. Memoized so concurrent flows (bag dashboard + sample
+  /// collection) never trigger duplicate user/session fetches.
+  Future<void> _loadUser() {
+    return _loadUserFuture ??= _doLoadUser();
+  }
+
+  Future<void> _doLoadUser() async {
     try {
       final userData = await userService.getUser();
       if (userData != null) {
@@ -106,6 +115,25 @@ class BagRegistrationController extends GetxController {
       debugPrint('❌ Error loading user: $e');
     }
   }
+
+  /// Makes sure user + session data are ready for the current flow. Safe to
+  /// call any time: existing sessions are kept, and open-bag details are
+  /// refreshed so capacity shown in child flows (e.g. sample collection) is
+  /// current.
+  Future<void> ensureSessionsLoaded() async {
+    await _loadUser(); // memoized — no-op once user/session is loaded
+
+    // Top-up open-bag details so capacity/quota figures are fresh.
+    if (allSessions.isEmpty) {
+      await checkBagSession(showFeedback: false);
+    } else {
+      final openSessions = allSessions.where((s) => s.isOpen).toList();
+      if (openSessions.isNotEmpty) {
+        await Future.wait(openSessions.map(_loadBagDetails));
+      }
+    }
+  }
+
   Future<void> ensureBagDetailsLoaded(int bagId) async {
     if (bagDetailsMap.containsKey(bagId)) return; // already cached
     final session = allSessions.firstWhereOrNull((s) => s.bagId == bagId);
@@ -117,7 +145,7 @@ class BagRegistrationController extends GetxController {
   // Loads ALL sessions (open + closed) for this user.
   // =========================================================================
 
-  Future<void> checkBagSession() async {
+  Future<void> checkBagSession({bool showFeedback = true}) async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
@@ -143,7 +171,9 @@ class BagRegistrationController extends GetxController {
       }
     } catch (e) {
       errorMessage.value = e.toString();
-      Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      if (showFeedback) {
+        Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      }
     } finally {
       isLoading.value = false;
     }
