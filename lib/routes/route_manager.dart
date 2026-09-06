@@ -244,7 +244,7 @@ class RouteManager {
 
   static void navigateToSampleLiveTracking() {
     Get.to(
-      () => LiveTrackingView(),
+      () => const LiveTrackingView(),
       transition: Transition.circularReveal,
       duration: const Duration(milliseconds: 200),
     );

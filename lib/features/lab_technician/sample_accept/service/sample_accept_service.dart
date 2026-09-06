@@ -8,7 +8,6 @@ import '../../../../network/api_client.dart';
 import '../../../../network/app_urls.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
 import '../../../phlebotomist/sample_pickup/model/work_item_model.dart';
-import 'package:lifenity_connect/utils/helper_functions/debug_print.dart';
 
 class SampleAcceptService {
   final APIClient apiClient = Get.find<APIClient>();

@@ -307,7 +307,7 @@ class _StatusBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
+          const Icon(
             Icons.location_on_rounded,
             size: 13,
             color: AppColors.textPrimary,

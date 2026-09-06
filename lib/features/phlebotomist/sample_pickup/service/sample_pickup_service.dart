@@ -93,9 +93,7 @@ class SamplePickupService {
 
       debugPrint('📬 Submit to Lab Response: ${response.body}');
 
-      return response.body is Map<String, dynamic>
-          ? response.body
-          : jsonDecode(response.body.toString());
+      return response.body;
     } catch (e) {
       debugPrint('❌ Error submitting to lab: $e');
       throw Exception('Failed to submit samples to lab: $e');

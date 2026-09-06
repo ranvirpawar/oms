@@ -112,7 +112,7 @@ class BagDrilldownSheet extends StatelessWidget {
                       else if (error != null)
                         _ErrorState(message: error)
                       else if (data != null) ...[
-                          _SectionLabel(
+                          const _SectionLabel(
                             icon: Icons.timeline_rounded,
                             label: 'Status Timeline',
                           ),
@@ -124,7 +124,7 @@ class BagDrilldownSheet extends StatelessWidget {
 
                           const SizedBox(height: 26),
 
-                          _SectionLabel(
+                          const _SectionLabel(
                             icon: Icons.science_outlined,
                             label: 'Tube Contents',
                           ),

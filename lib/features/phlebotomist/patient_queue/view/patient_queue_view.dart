@@ -207,6 +207,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
 class _AnimatedListEntry extends StatefulWidget {
   final int index;
   final Widget child;
+  @override
   final Key? key;
 
   const _AnimatedListEntry({

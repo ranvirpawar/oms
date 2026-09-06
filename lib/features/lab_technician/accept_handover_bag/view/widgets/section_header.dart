@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class SectionHeader extends StatelessWidget {
   final ThemeData theme;
-  const SectionHeader({required this.theme});
+  const SectionHeader({super.key, required this.theme});
 
   @override
   Widget build(BuildContext context) {

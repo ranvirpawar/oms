@@ -137,12 +137,12 @@ class FacilityListTab extends GetView<LiveTrackingController> {
             final list = controller.filteredFacilities;
 
             if (list.isEmpty) {
-              return Center(
+              return const Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.search_off_rounded, size: 40, color: AppColors.textTertiary),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Text('No facilities found', style: AppTextStyles.bodySecondary),
                   ],
                 ),

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get_core/src/get_main.dart';
 
 import '../../../../../constants/app_assets.dart';
 import '../../../../../theme/app_colors.dart';

@@ -108,9 +108,9 @@ class PatientQueueService {
         },
       ],
       'AssignStatusID': assignStatusId,
-      'RescheduleDate': rescheduleDate?.toIso8601String() ?? null,
-      'RescheduleStartTime': rescheduleStartTime ?? null,
-      'RescheduleEndTime': rescheduleEndTime ?? null,
+      'RescheduleDate': rescheduleDate?.toIso8601String(),
+      'RescheduleStartTime': rescheduleStartTime,
+      'RescheduleEndTime': rescheduleEndTime,
       'AssignRejectReasonID': rejectReasonId ?? 0,
       'UpdatedBy': updatedBy,
     };

@@ -89,7 +89,7 @@ class _DateRangePickerSheetState extends State<DateRangePickerSheet> {
           : _today.subtract(Duration(days: days));
 
       // Fixed: Safe comparison for nullable DateTime
-      if (_start != null && _minDate != null && _start!.isBefore(_minDate!)) {
+      if (_start != null && _start!.isBefore(_minDate)) {
         _start = _minDate;
       }
 
@@ -240,10 +240,10 @@ class _DateRangePickerSheetState extends State<DateRangePickerSheet> {
       color: AppColors.blueLight,
       child: Row(
         children: [
-          Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.blueText),
+          const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.blueText),
           const SizedBox(width: 8),
           Text(text,
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.blueText),
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.blueText),
           ),
         ],
       ),
@@ -343,7 +343,7 @@ class _DateRangePickerSheetState extends State<DateRangePickerSheet> {
           child: OutlinedButton(
             onPressed: () => Navigator.pop(context),
             style: OutlinedButton.styleFrom(
-              side: BorderSide(color: AppColors.border, width: 0.5),
+              side: const BorderSide(color: AppColors.border, width: 0.5),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               padding: const EdgeInsets.symmetric(vertical: 13),
             ),
@@ -436,7 +436,7 @@ class _DayCell extends StatelessWidget {
                 bottom: 5,
                 child: Container(
                   width: 4, height: 4,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),

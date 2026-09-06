@@ -5,7 +5,7 @@ import '../../controller/accept_bag_in_lab_controller.dart';
 
 class CollapsedScannerHeader extends StatelessWidget {
   final AcceptBagInLabController controller;
-  const CollapsedScannerHeader({required this.controller});
+  const CollapsedScannerHeader({super.key, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +52,7 @@ class CollapsedScannerHeader extends StatelessWidget {
 
 class ScannerHint extends StatelessWidget {
   final bool active;
-  const ScannerHint({required this.active});
+  const ScannerHint({super.key, required this.active});
 
   @override
   Widget build(BuildContext context) {

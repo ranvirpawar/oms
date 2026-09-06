@@ -199,7 +199,7 @@ class RegisteredPatientController extends GetxController {
         fetchPatients();
         SnackBarService.to.showSnack(
           message: 'Patient updated successfully',
-          title: "Success",
+          title: 'Success',
         );
       } else {
         SnackBarService.to.showMessage(

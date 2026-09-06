@@ -16,7 +16,7 @@ class DonutChartWidget extends StatelessWidget {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     if (entries.isEmpty) {
-      return SizedBox(
+      return const SizedBox(
         height: 120,
         child: Center(
           child: Text('No bag activity yet today', style: AppTextStyles.bodySecondary),

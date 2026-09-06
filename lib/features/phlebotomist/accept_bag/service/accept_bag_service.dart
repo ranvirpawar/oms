@@ -1,18 +1,13 @@
 // accept_bag_service.dart
 
-import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:lifenity_connect/network/app_urls.dart';
-import 'dart:convert';
 
 import '../../../../utils/helper_functions/helper_methods.dart';
 import '../model/accept_bag_model.dart';
 
 import 'package:get/get.dart';
-import 'package:geolocator/geolocator.dart';
 
-import '../../../../network/app_urls.dart';
 import '../../../../network/api_client.dart'; // adjust path if needed
 
 class AcceptBagService {

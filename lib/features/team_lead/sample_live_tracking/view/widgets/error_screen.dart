@@ -7,7 +7,7 @@ class ErrorScreen extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  const ErrorScreen({required this.message, required this.onRetry});
+  const ErrorScreen({super.key, required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {

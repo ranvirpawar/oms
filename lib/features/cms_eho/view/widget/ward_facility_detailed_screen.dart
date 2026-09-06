@@ -165,14 +165,14 @@ class _WardFacilityDetailScreenState
                 border: InputBorder.none,
 
                 // SEARCH ICON
-                prefixIcon: Padding(
-                  padding: const EdgeInsets.only(
+                prefixIcon: const Padding(
+                  padding: EdgeInsets.only(
                     left: 10,
                     right: 8,
                   ),
                   child: Icon(
                     Icons.search_rounded,
-                    color: const Color(0xFF94A3B8),
+                    color: Color(0xFF94A3B8),
                     size: 22,
                   ),
                 ),
@@ -207,8 +207,8 @@ class _WardFacilityDetailScreenState
                     },
                     icon: Container(
                       padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF1F5F9),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(

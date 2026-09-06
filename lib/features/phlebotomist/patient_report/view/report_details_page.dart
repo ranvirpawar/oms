@@ -33,7 +33,7 @@ class ReportDetailPage extends StatelessWidget {
             ),
             Text(
               'Barcode: ${report.barcode}',
-              style: TextStyle(fontSize: 12, color: AppColors.surface),
+              style: const TextStyle(fontSize: 12, color: AppColors.surface),
             ),
           ],
         ),

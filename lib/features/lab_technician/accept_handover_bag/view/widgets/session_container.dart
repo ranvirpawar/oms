@@ -5,7 +5,7 @@ import '../../model/bag_model_new.dart';
 
 class SessionBadgeRow extends StatelessWidget {
   final ScanQRBagOutput scan;
-  const SessionBadgeRow({required this.scan});
+  const SessionBadgeRow({super.key, required this.scan});
 
   @override
   Widget build(BuildContext context) {

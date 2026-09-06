@@ -38,7 +38,7 @@ class PatientRegistrationList extends StatelessWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child:AnimatedSearchBar(hintValues: ['barcode', '  name', 'mobile', '    opd'],
+              child:AnimatedSearchBar(hintValues: const ['barcode', '  name', 'mobile', '    opd'],
                   onChanged: controller.onSearchChanged,
                   onClear: controller.clearSearch),
             ),

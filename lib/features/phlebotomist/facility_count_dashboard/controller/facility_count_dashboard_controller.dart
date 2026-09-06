@@ -1,6 +1,4 @@
 import 'package:get/get.dart';
-import 'package:lifenity_connect/services/snackbar_service.dart';
-import 'package:lifenity_connect/theme/app_colors.dart';
 
 
 

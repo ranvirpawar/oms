@@ -6,7 +6,6 @@ import 'package:lifenity_connect/features/dashboard/view/widget/dashboard_tile_c
 import 'package:lifenity_connect/utils/widgets/app_drawer.dart';
 
 import '../../../constants/app_strings.dart';
-import '../../../utils/widgets/custom_appbar.dart';
 
 class DashboardScreen extends StatelessWidget {
   DashboardScreen({super.key});

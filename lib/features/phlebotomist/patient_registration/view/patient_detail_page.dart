@@ -434,7 +434,7 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
       ),
       child: Text(
         isImported ? 'Authenticated' : 'Report Pending',
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
           color: AppColors.surface,
@@ -745,7 +745,7 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
 
                 // ── Patient Type ──
                 DropdownButtonFormField<String>(
-                  value: selectedType,
+                  initialValue: selectedType,
                   decoration: InputDecoration(
                     labelText: 'Patient Type',
                     border: OutlineInputBorder(
@@ -763,8 +763,9 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
                   onChanged: isImported
                       ? null
                       : (val) {
-                          if (val != null)
+                          if (val != null) {
                             setModalState(() => selectedType = val);
+                          }
                         },
                 ),
 

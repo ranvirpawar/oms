@@ -411,7 +411,7 @@ class PatientCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Expanded(
+            const Expanded(
               flex: 3,
               child: QueueActionButton(
                 label: 'Collect',
@@ -553,7 +553,7 @@ class PatientCard extends StatelessWidget {
 
   String _identitySubtitle() {
     final ageLine = patient.age != null ? 'Age: ${patient.age} Years' : null;
-    final idLine = '${patient.orderId}';
+    final idLine = patient.orderId;
 
     if (ageLine != null) {
       return '$ageLine\n$idLine';

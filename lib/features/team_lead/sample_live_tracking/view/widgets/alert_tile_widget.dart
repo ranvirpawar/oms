@@ -50,13 +50,13 @@ class AlertTileWidget extends StatelessWidget {
                 ],
               ),
             ),
-            Column(
+            const Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 /*Text(timeAgo, style: AppTextStyles.caption),
                 const SizedBox(height: 4),*/
-                const Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.textTertiary),
+                Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.textTertiary),
               ],
             ),
           ],

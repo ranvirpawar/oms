@@ -7,7 +7,7 @@ class ManualInputField extends StatelessWidget {
   final AcceptBagInLabController controller;
   final bool isDark;
   const ManualInputField(
-      {required this.controller, required this.isDark});
+      {super.key, required this.controller, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +48,7 @@ class ManualInputField extends StatelessWidget {
 
 class EmptyPlaceholder extends StatelessWidget {
   final ThemeData theme;
-  const EmptyPlaceholder({required this.theme});
+  const EmptyPlaceholder({super.key, required this.theme});
 
   @override
   Widget build(BuildContext context) {

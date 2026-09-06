@@ -401,7 +401,7 @@ class PatientReportController extends GetxController {
     HapticFeedback.lightImpact();
 
     Get.to(
-          () => ReportDetailPage(),
+          () => const ReportDetailPage(),
       arguments: {'report': report},
       transition: Transition.circularReveal,
       duration: const Duration(milliseconds: 300),

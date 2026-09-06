@@ -119,7 +119,7 @@ class FacilityModel {
   });
 
   factory FacilityModel.fromJson(Map<String, dynamic> json) {
-    String? _cleanString(dynamic v) {
+    String? cleanString(dynamic v) {
       final s = v?.toString().trim();
       return (s == null || s.isEmpty) ? null : s;
     }
@@ -129,14 +129,14 @@ class FacilityModel {
       facilityName: json['FacilityName']?.toString() ?? '',
       facilityCode: (json['FacilityCode'] as num?)?.toInt() ?? 0,
       fType: json['FType']?.toString() ?? '',
-      bagcode: _cleanString(json['Bagcode']),
-      phleboName: _cleanString(json['PhleboName']),
-      phleboPhone: _cleanString(json['PhleboMobile']),
-      rbName: _cleanString(json['RbName']) ?? '',
-      rbPhone: _cleanString(json['RbPhone']),
+      bagcode: cleanString(json['Bagcode']),
+      phleboName: cleanString(json['PhleboName']),
+      phleboPhone: cleanString(json['PhleboMobile']),
+      rbName: cleanString(json['RbName']) ?? '',
+      rbPhone: cleanString(json['RbPhone']),
       isBagClosed: json['IsBagClosed'] as bool?,
       timeElapsed: json['TimeElapsed']?.toString() ?? '',
-      status: _cleanString(json['Status']),
+      status: cleanString(json['Status']),
       tubecount: (json['Tubecount'] as num?)?.toInt(),
       processid: (json['Processid'] as num?)?.toInt(),
       tatTimeInHrs: (json['TAT_TIME_in_HRS'] as num?)?.toDouble(),

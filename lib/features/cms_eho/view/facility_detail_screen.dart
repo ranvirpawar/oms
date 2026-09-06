@@ -537,13 +537,15 @@ class _WardCard extends StatefulWidget {
 }
 
 class _WardCardState extends State<_WardCard> {
-  bool _expanded = false;
+  final bool _expanded = false;
 
   ({Color bg, Color fg}) _badgeStyle(double pct) {
-    if (pct >= 100)
+    if (pct >= 100) {
       return (bg: const Color(0xFFDCFCE7), fg: const Color(0xFF16A34A));
-    if (pct >= 50)
+    }
+    if (pct >= 50) {
       return (bg: const Color(0xFFFEF3C7), fg: const Color(0xFFB45309));
+    }
     return (bg: const Color(0xFFFFE4E6), fg: const Color(0xFFBE123C));
   }
 
@@ -924,10 +926,12 @@ class _ExpandedFacilityGroup extends StatelessWidget {
   });
 
   ({Color bg, Color fg}) _badgeStyle(double pct) {
-    if (pct >= 100)
+    if (pct >= 100) {
       return (bg: const Color(0xFFDCFCE7), fg: const Color(0xFF16A34A));
-    if (pct >= 50)
+    }
+    if (pct >= 50) {
       return (bg: const Color(0xFFFEF3C7), fg: const Color(0xFFB45309));
+    }
     return (bg: const Color(0xFFFFE4E6), fg: const Color(0xFFBE123C));
   }
 
@@ -975,7 +979,7 @@ class _ExpandedFacilityGroup extends StatelessWidget {
                     color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.local_hospital_rounded,
                     color: AppColors.primary,
                     size: 13,
@@ -985,7 +989,7 @@ class _ExpandedFacilityGroup extends StatelessWidget {
                 Expanded(
                   child: Text(
                     facilityName,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.primary,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -1035,7 +1039,7 @@ class SummaryBanner extends StatelessWidget {
   final int totalPatients;
   final double overallPct;
 
-  const SummaryBanner({
+  const SummaryBanner({super.key, 
     required this.totalTarget,
     required this.totalPatients,
     required this.overallPct,
@@ -1201,7 +1205,7 @@ class FacilityGroup extends StatelessWidget {
   final AnimationController animController;
   final int groupIndex;
 
-  const FacilityGroup({
+  const FacilityGroup({super.key, 
     required this.facilityName,
     required this.categories,
     required this.animController,
@@ -1209,10 +1213,12 @@ class FacilityGroup extends StatelessWidget {
   });
 
   ({Color bg, Color fg}) _badgeStyle(double pct) {
-    if (pct >= 100)
+    if (pct >= 100) {
       return (bg: const Color(0xFFDCFCE7), fg: const Color(0xFF16A34A));
-    if (pct >= 50)
+    }
+    if (pct >= 50) {
       return (bg: const Color(0xFFFEF3C7), fg: const Color(0xFFB45309));
+    }
     return (bg: const Color(0xFFFFE4E6), fg: const Color(0xFFBE123C));
   }
 
@@ -1346,10 +1352,12 @@ class _CategoryRow extends StatelessWidget {
   }
 
   ({Color bg, Color fg}) _badgeStyle(double pct) {
-    if (pct >= 100)
+    if (pct >= 100) {
       return (bg: const Color(0xFFDCFCE7), fg: const Color(0xFF16A34A));
-    if (pct >= 50)
+    }
+    if (pct >= 50) {
       return (bg: const Color(0xFFFEF3C7), fg: const Color(0xFFB45309));
+    }
     return (bg: const Color(0xFFFFE4E6), fg: const Color(0xFFBE123C));
   }
 

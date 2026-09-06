@@ -1,6 +1,5 @@
 // bag_status_service.dart
 
-import 'dart:convert';
 import 'package:get/get.dart';
 
 import 'package:lifenity_connect/network/app_urls.dart';

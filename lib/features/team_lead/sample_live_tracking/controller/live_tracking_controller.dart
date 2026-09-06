@@ -223,6 +223,7 @@ class LiveTrackingController extends GetxController {
   }
 
   // ── Pull-to-refresh ────────────────────────────────────────────────────────
+  @override
   Future<void> refresh() => loadAll();
 
   // ── Filter actions (Facilities tab) ──────────────────────────────────────────

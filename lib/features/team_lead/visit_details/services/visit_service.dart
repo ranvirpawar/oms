@@ -36,11 +36,6 @@ class VisitService {
 
       kPrint('Response data: ${response.body}');
 
-      // Add null safety check
-      if (response.body == null) {
-        throw Exception('No data received from server');
-      }
-
       final data = response.body;
 
       if (data['status'] == 'Success') {
@@ -72,11 +67,6 @@ class VisitService {
       );
 
       kPrint('Response data: ${response.body}');
-
-      // Add null safety check
-      if (response.body == null) {
-        throw Exception('No data received from server');
-      }
 
       // Decode the JSON string to a Map
       final Map<String, dynamic> data = response.body;

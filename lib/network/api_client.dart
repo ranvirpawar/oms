@@ -98,7 +98,7 @@ class APIClient {
   TypedApiResult<T> _decode<T>(ApiResult raw, T Function(dynamic) fromJson, String path) {
     try {
       return TypedApiResult(statusCode: raw.statusCode, data: fromJson(raw.data));
-    } catch (e, st) {
+    } catch (e) {
       throw ResponseParsingError('Failed to parse response from $path', cause: e);
     }
   }
@@ -491,7 +491,7 @@ class APIClient {
     }
     buffer.writeln('   headers : ${_redactedHeaders(headers)}');
     buffer.writeln('   status  : ${statusCode ?? '—'} (${durationMs}ms)');
-    buffer.write('   response: ${ok ? response?.data : (error!.response?.data ?? error.message)}');
+    buffer.write('   response: ${ok ? response?.data : (error.response?.data ?? error.message)}');
 
     log(buffer.toString());
   }

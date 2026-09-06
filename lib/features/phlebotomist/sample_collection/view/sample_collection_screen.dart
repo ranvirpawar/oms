@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/complication_section.dart';
-import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/incomplete_collection_section.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/sample_item_card.dart';
 import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 

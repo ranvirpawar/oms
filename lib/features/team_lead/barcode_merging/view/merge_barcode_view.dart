@@ -11,6 +11,7 @@ import '../model/merge_test_patient_model.dart';
 
 class MergeBarcodeView extends GetView<MergeBarcodeController> {
    MergeBarcodeView({super.key});
+  @override
   final MergeBarcodeController controller = Get.put(MergeBarcodeController());
 
   static const Color kPrimaryAccent = Color(0xFF3B6DF5); // primary barcode

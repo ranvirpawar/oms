@@ -217,7 +217,7 @@ class _PulsingIconBadgeState extends State<_PulsingIconBadge> with SingleTickerP
 /// active background fetch/poll, so the user has a persistent, low-noise
 /// cue that something is actually happening right now.
 class _LiveDot extends StatefulWidget {
-  const _LiveDot({required this.color, this.size = 8});
+   _LiveDot({required this.color, this.size = 8});
 
   final Color color;
   final double size;
@@ -463,7 +463,7 @@ class _CheckingState extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const _LiveDot(color: _accent),
+                     _LiveDot(color: _accent),
                   ],
                 ),
               ),
@@ -535,7 +535,7 @@ class _LinkSentState extends StatelessWidget {
                   child: Text('DPDP consent link sent', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
                 ),
                 if (controller.isPollingConsent.value) ...[
-                  const _LiveDot(color: _accent),
+                   _LiveDot(color: _accent),
                   const SizedBox(width: 8),
                 ],
                 const _StatusPill(label: 'PENDING', color: _Palette.attention),
@@ -609,11 +609,11 @@ class _InitialState extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
-                const _IconBadge(icon: Icons.shield_outlined, color: _accent),
-                const SizedBox(width: 12),
-                const Expanded(
+                _IconBadge(icon: Icons.shield_outlined, color: _accent),
+                SizedBox(width: 12),
+                Expanded(
                   child: Text(
                     'DPDP consent required before you can proceed',
                     style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),

@@ -962,11 +962,11 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
           if (_selectedReason == null &&
               !_loadingReasons &&
               _reasons.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
+                children: [
                   Icon(
                     Icons.info_outline_rounded,
                     size: 13,

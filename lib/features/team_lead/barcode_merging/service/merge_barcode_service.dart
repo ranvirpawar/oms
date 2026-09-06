@@ -1,5 +1,3 @@
-import 'dart:convert';
-import 'package:get/get_core/src/get_main.dart';
 
 import 'package:lifenity_connect/network/app_urls.dart';
 

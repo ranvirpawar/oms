@@ -88,7 +88,7 @@ class AddVisitNotifier extends StateNotifier<AddVisitState> {
     }
   }
   Future<void> _ensurePermissions() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) throw Exception('Location services are disabled.');
 
     LocationPermission permission = await Geolocator.checkPermission();
@@ -221,7 +221,7 @@ class AddVisitNotifier extends StateNotifier<AddVisitState> {
     return 'You are $distance km away';
   }
   Future<Position> _determinePosition() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) throw Exception('Location services are disabled.');
 
     LocationPermission permission = await Geolocator.checkPermission();

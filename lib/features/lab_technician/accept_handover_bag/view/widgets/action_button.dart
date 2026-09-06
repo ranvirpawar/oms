@@ -9,7 +9,7 @@ class ActionButtons extends StatelessWidget {
   final AcceptBagInLabController controller;
   final ThemeData theme;
   const ActionButtons(
-      {required this.controller, required this.theme});
+      {super.key, required this.controller, required this.theme});
 
   @override
   Widget build(BuildContext context) {

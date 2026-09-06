@@ -201,8 +201,8 @@ class _InstructionsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: const [
+          const Row(
+            children: [
               Icon(
                 Icons.info_outline_rounded,
                 size: 17,
@@ -620,9 +620,9 @@ class _NotAcceptedView extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.amberBorder),
           ),
-          child: Row(
+          child: const Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Icon(
                 Icons.lock_clock_outlined,
                 size: 18,

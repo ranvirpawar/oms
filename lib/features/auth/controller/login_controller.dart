@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:developer' as AppLogger;
 import 'dart:math';
 
@@ -16,11 +15,8 @@ import '../../../services/snackbar_service.dart';
 import '../service/login_service.dart';
 
 import 'dart:async';
-import 'dart:convert';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
-import 'package:get/get.dart';
 import 'package:sms_autofill/sms_autofill.dart';
 
 /// Add to pubspec.yaml:  sms_autofill: ^2.4.0

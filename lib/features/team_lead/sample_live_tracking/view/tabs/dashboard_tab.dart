@@ -222,12 +222,12 @@ class _AlertsList extends GetView<LiveTrackingController> {
     final feed = controller.attentionFeed.take(4).toList();
 
     if (feed.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 12),
         child: Row(
           children: [
-            const Icon(Icons.check_circle_outline_rounded, color: AppColors.greenText, size: 18),
-            const SizedBox(width: 8),
+            Icon(Icons.check_circle_outline_rounded, color: AppColors.greenText, size: 18),
+            SizedBox(width: 8),
             Expanded(
               child: Text('All facilities are within TAT. No action needed.', style: AppTextStyles.bodySecondary),
             ),
@@ -240,7 +240,7 @@ class _AlertsList extends GetView<LiveTrackingController> {
       children: [
         for (var i = 0; i < feed.length; i++) ...[
           _FacilityAlertTile(facility: feed[i]),
-          if (i != feed.length - 1) Divider(height: 1, color: AppColors.border, thickness: 0.5),
+          if (i != feed.length - 1) const Divider(height: 1, color: AppColors.border, thickness: 0.5),
         ],
       ],
     );
@@ -348,8 +348,8 @@ class _ViewAllButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Row(
-        children: const [
+      child: const Row(
+        children: [
           Text(
             'View All',
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.primary),

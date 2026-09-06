@@ -126,12 +126,12 @@ class BagsTab extends GetView<LiveTrackingController> {
             final list = controller.filteredBags;
 
             if (list.isEmpty) {
-              return Center(
+              return const Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.inventory_2_outlined, size: 40, color: AppColors.textTertiary),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Text('No bags found', style: AppTextStyles.bodySecondary),
                   ],
                 ),

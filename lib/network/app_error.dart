@@ -5,7 +5,7 @@
 /// entirely at the call site (ViewModel/Controller), which is what makes
 /// this layer unit-testable and lets different screens react differently
 /// to the same error type.
-library app_error;
+library;
 
 sealed class AppError implements Exception {
   const AppError(this.message, {this.statusCode, this.requestId, this.cause});

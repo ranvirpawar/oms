@@ -58,10 +58,6 @@ class PatientQueueController extends GetxController {
     getUserdata().then((_) => fetchPatients());
   }
 
-  @override
-  void onClose() {
-    super.onClose();
-  }
 
   // ---------------------------------------------------------------------
   // Derived state

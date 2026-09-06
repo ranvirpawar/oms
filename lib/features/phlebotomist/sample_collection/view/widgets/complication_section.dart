@@ -18,8 +18,9 @@ class ComplicationSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      if (controller.complicationOptions.isEmpty)
+      if (controller.complicationOptions.isEmpty) {
         return const SizedBox.shrink();
+      }
 
       return Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -43,7 +44,7 @@ class ComplicationSection extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'Record any complications during collection?',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,

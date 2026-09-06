@@ -1,5 +1,4 @@
 // Controller for handling splash screen logic
-import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';

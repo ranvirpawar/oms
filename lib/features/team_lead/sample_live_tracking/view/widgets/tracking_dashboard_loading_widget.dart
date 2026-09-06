@@ -18,7 +18,7 @@ class LiveTrackingSkeleton extends StatelessWidget {
   Widget _circlePlaceholder(double size) => Container(
     width: size,
     height: size,
-    decoration: BoxDecoration(color: AppColors.bgCard, shape: BoxShape.circle),
+    decoration: const BoxDecoration(color: AppColors.bgCard, shape: BoxShape.circle),
   );
 
   Widget _line(double height, {double width = double.infinity}) => Container(
@@ -136,7 +136,7 @@ class LiveTrackingSkeleton extends StatelessWidget {
                       Container(
                         width: 34,
                         height: 34,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: AppColors.bgCard,
                           shape: BoxShape.circle,
                         ),

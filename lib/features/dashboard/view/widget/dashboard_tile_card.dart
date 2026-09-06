@@ -177,7 +177,7 @@ class _GraphicBody extends StatelessWidget {
               height: bandHeight,
               child: Container(
 
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   /*gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,

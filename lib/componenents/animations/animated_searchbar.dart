@@ -1,9 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import '../../theme/app_colors.dart';
 
 class AnimatedSearchBar extends StatefulWidget {
   final List<String> hintValues;

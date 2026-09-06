@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:lifenity_connect/constants/app_assets.dart';
 import 'package:lifenity_connect/features/auth/view/forgot_password_view.dart';
 import 'package:lifenity_connect/services/app_envirionment_service.dart';
