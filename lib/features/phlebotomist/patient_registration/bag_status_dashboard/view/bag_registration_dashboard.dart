@@ -610,8 +610,9 @@ class _ActionRow extends StatelessWidget {
                   if (controller.isBagFull(session.bagId)) {
                     _showBagFullSheet(context);
                   } else {
-                    RouteManager.navigateToPatientRegistration(
-                      session.bagId.toString(),
+                    RouteManager.navigateToPatientQueue(
+                    isCollectionTrue: true,
+                      
                     );
                   }
                 },

@@ -11,19 +11,27 @@ class QueueEmptyState extends StatelessWidget {
   final bool isFiltered;
   final VoidCallback? onClearFilter;
 
+  /// Optional copy overrides — collection mode (bag registration entry)
+  /// uses them to explain that only Arrived orders are listed here.
+  final String? title;
+  final String? subtitle;
+
   const QueueEmptyState({
     super.key,
     this.isFiltered = false,
     this.onClearFilter,
+    this.title,
+    this.subtitle,
   });
 
   @override
   Widget build(BuildContext context) {
-    final title =
-        isFiltered ? 'No matching patients' : 'No patients assigned yet';
-    final subtitle = isFiltered
-        ? 'Try a different filter or clear your search to see the full queue.'
-        : 'New assignments for today will show up here automatically.';
+    final effectiveTitle =
+        title ?? (isFiltered ? 'No matching patients' : 'No patients assigned yet');
+    final effectiveSubtitle = subtitle ??
+        (isFiltered
+            ? 'Try a different filter or clear your search to see the full queue.'
+            : 'New assignments for today will show up here automatically.');
 
     return Center(
       child: Padding(
@@ -47,7 +55,7 @@ class QueueEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              title,
+              effectiveTitle,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -56,7 +64,7 @@ class QueueEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              subtitle,
+              effectiveSubtitle,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 13,

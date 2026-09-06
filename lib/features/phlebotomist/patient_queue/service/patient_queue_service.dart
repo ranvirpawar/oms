@@ -66,7 +66,7 @@ class PatientQueueService {
       }*/
 
 
-      final output = dummyData['output'];
+      final output = dummyPatientList['output'];
       // final output = body['output'];
 
 
@@ -242,7 +242,10 @@ final dummyPatientList = {
       'AssignStatusID': 1,
       'UserID': 17,
       'UserRosterID': 7,
-      'Status': 'Assigned',
+      // TEMP fixture (service is on dummy data): marked Arrived so the bag
+      // registration "Collect" → patient-queue (arrived-only) flow can be
+      // verified on device until the real API call is re-enabled.
+      'Status': 'Arrived',
       'Priority': null,
       'VisitType': 'Clinic',
       'Title': null,
@@ -407,7 +410,10 @@ final dummyPatientList = {
       'AssignStatusID': 1,
       'UserID': 17,
       'UserRosterID': 7,
-      'Status': 'Assigned',
+      // TEMP fixture (service is on dummy data): marked Arrived so the bag
+      // registration "Collect" → patient-queue (arrived-only) flow can be
+      // verified on device until the real API call is re-enabled.
+      'Status': 'Arrived',
       'Priority': null,
       'VisitType': 'Clinic',
       'Title': null,
