@@ -37,6 +37,14 @@ class StatusBadge extends StatelessWidget {
           AppColors.tealLight,
           Icons.check_circle_outline,
         );
+      case PatientStatus.inRoute:
+        // On the way to the patient — route tracking is active.
+        return const _StatusStyle(
+          'En Route',
+          AppColors.blueText,
+          AppColors.blueLight,
+          Icons.directions_car_filled_rounded,
+        );
       case PatientStatus.inProgress:
         return const _StatusStyle(
           'In Progress',

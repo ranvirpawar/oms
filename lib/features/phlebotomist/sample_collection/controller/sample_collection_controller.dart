@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart'
     hide SnackPosition;
@@ -8,6 +9,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../componenents/otp_boxes_input.dart';
 import '../../../../services/auth_manager.dart';
+import '../../../../services/location_tracking_service.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
 
 import '../../patient_queue/model/patient_queue_model.dart';
@@ -85,10 +87,57 @@ class SampleCollectionController extends GetxController {
 
   bool get isOrderAccepted =>
       assignedPatient.status == PatientStatus.accepted ||
-      assignedPatient.status == PatientStatus.rescheduled;
+      assignedPatient.status == PatientStatus.rescheduled ||
+      assignedPatient.status == PatientStatus.inRoute ||
+      assignedPatient.status == PatientStatus.arrived;
   final RxString empId = ''.obs;
 
   int get _userId => int.tryParse(empId.value) ?? 0;
+
+  // ─── En-route tracking (live map on the order confirmation screen) ─────────
+  /// Sends the END tracking ping when the phlebotomist marks arrival.
+  final LocationTrackingService _locationTrackingService =
+      LocationTrackingService();
+
+  /// True while the order is "En Route" and the live map should be shown
+  /// instead of the sample-collection details.
+  final RxBool showRouteMap = false.obs;
+
+  final RxBool isMarkingArrived = false.obs;
+
+  /// Latest GPS fix — drives the blue "you are here" dot and the distance.
+  final Rx<Position?> currentPosition = Rx<Position?>(null);
+
+  StreamSubscription<Position>? _positionSub;
+
+  /// Distance from the first GPS fix — the 0% reference for the route
+  /// progress bar.
+  double? _initialDistanceMeters;
+
+  double? get destinationLat => assignedPatient.destinationLat;
+  double? get destinationLng => assignedPatient.destinationLng;
+
+  /// Straight-line distance from the current position to the patient's
+  /// destination, or null when either coordinate is unknown.
+  double? get distanceToPatientMeters {
+    final lat = destinationLat;
+    final lng = destinationLng;
+    final pos = currentPosition.value;
+    if (lat == null || lng == null || pos == null) return null;
+    return Geolocator.distanceBetween(pos.latitude, pos.longitude, lat, lng);
+  }
+
+  /// 0..1 estimate of how much of the route is behind us, based on the
+  /// distance covered since the first fix. Clamped so GPS noise at the
+  /// start (or overshooting the destination) can't push it out of range.
+  double get routeProgress {
+    final current = distanceToPatientMeters;
+    if (current == null) return 0;
+    _initialDistanceMeters ??= current;
+    final initial = _initialDistanceMeters!;
+    if (initial <= 0) return 1;
+    return (1 - (current / initial)).clamp(0.0, 1.0);
+  }
 
   // ─── Open-bag integration (shared BagRegistrationController) ───────────────
   /// Lazily resolves the shared bag controller. When the phlebotomist reaches
@@ -203,6 +252,7 @@ class SampleCollectionController extends GetxController {
   @override
   void onClose() {
     _resendTimer?.cancel();
+    _positionSub?.cancel();
     for (final e in sampleEntries) {
       e.dispose();
     }
@@ -217,6 +267,15 @@ class SampleCollectionController extends GetxController {
     if (!isOrderAccepted) {
       return;
     }
+
+    // En route — show the live map and start GPS updates instead of the
+    // collection details; those only load once arrival is marked.
+    if (assignedPatient.status == PatientStatus.inRoute) {
+      showRouteMap.value = true;
+      _startLocationUpdates();
+      return;
+    }
+
     // Load order details, supporting lists and the current open-bag session
     // in parallel. The bag session is what provides the bagId + sessionId
     // that get stamped onto the collection payload.
@@ -225,6 +284,82 @@ class SampleCollectionController extends GetxController {
       _fetchSupportingLists(),
       bagController.ensureSessionsLoaded(),
     ]);
+  }
+
+  /// Starts streaming GPS fixes so the map's blue dot and the distance
+  /// readout stay live while the phlebotomist drives to the patient.
+  void _startLocationUpdates() {
+    _positionSub?.cancel();
+    _resolveInitialPosition();
+    _positionSub = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10,
+      ),
+    ).listen((pos) => currentPosition.value = pos);
+  }
+
+  /// One-shot fix so the map isn't blank while the stream warms up.
+  /// Non-fatal on failure — the position stream keeps trying.
+  Future<void> _resolveInitialPosition() async {
+    try {
+      currentPosition.value = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+    } catch (_) {
+      // Ignored — the stream will deliver a fix when one becomes available.
+    }
+  }
+
+  /// END tracking ping — flips the order out of "En Route", stops the GPS
+  /// stream and loads the sample-collection details for the arrived visit.
+  Future<void> markArrived() async {
+    if (isMarkingArrived.value) return;
+    isMarkingArrived.value = true;
+    try {
+      final pos = currentPosition.value ??
+          await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high,
+          );
+      final success = await _locationTrackingService.sendTracking(
+        orderAssignDetailId: assignedPatient.orderAssignDetailId ?? 0,
+        sampleCollectionOrderId: assignedPatient.sampleCollectionOrderId,
+        userId: _userId,
+        action: TrackingAction.end,
+        latitude: pos.latitude,
+        longitude: pos.longitude,
+        createdBy: _userId,
+      );
+      if (success) {
+        _positionSub?.cancel();
+        showRouteMap.value = false;
+        await Future.wait([
+          fetchOrderDetails(),
+          _fetchSupportingLists(),
+          bagController.ensureSessionsLoaded(),
+        ]);
+      } else {
+        Get.snackbar(
+          'Action failed',
+          'Unable to mark arrival. Please try again.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } on LocationTrackingException catch (e) {
+      Get.snackbar(
+        'Action failed',
+        e.message,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (_) {
+      Get.snackbar(
+        'Action failed',
+        'Please check your connection and try again.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      isMarkingArrived.value = false;
+    }
   }
 
   // ---------------------------------------------------------------------

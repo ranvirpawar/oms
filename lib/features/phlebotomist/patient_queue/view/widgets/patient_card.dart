@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -18,6 +20,7 @@ class PatientCard extends StatelessWidget {
   final VoidCallback? onReject;
   final VoidCallback? onReschedule;
   final VoidCallback? onPrimaryAction;
+  final VoidCallback? onStartRoute;
   final VoidCallback? onSyncToLis;
 
   const PatientCard({
@@ -28,6 +31,7 @@ class PatientCard extends StatelessWidget {
     this.onReject,
     this.onReschedule,
     this.onPrimaryAction,
+    this.onStartRoute,
     this.onSyncToLis,
   });
 
@@ -420,7 +424,7 @@ class PatientCard extends StatelessWidget {
         );
 
       case PatientStatus.accepted:
-      // No reject once accepted — only Reschedule + Start.
+      // No reject once accepted — only Reschedule + Start Route.
         return Row(
           children: [
             Expanded(
@@ -435,15 +439,41 @@ class PatientCard extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: QueueActionButton(
-                label: 'Collect',
+                label: 'Start Route',
                 color: AppColors.accent700,
                 gradient: AppColors.accentGradient,
                 style: QueueActionStyle.gradient,
                 isLoading: isProcessing,
-                onPressed: null,
+                onPressed: onStartRoute,
               ),
             ),
           ],
+        );
+
+      case PatientStatus.inRoute:
+      // En route — tracking is active; from the queue the phlebotomist
+      // can jump straight into turn-by-turn navigation.
+        return QueueActionButton(
+          label: 'View Direction',
+          color: AppColors.blue,
+          style: QueueActionStyle.filled,
+          isDisabled: false,
+          onPressed: () {
+            final lat = patient.destinationLat;
+            final lng = patient.destinationLng;
+            if (lat != null && lng != null) _launchDirections(lat, lng);
+          },
+        );
+
+      case PatientStatus.arrived:
+      // At the patient's location — continue into the collection flow.
+        return QueueActionButton(
+          label: 'Collect',
+          color: AppColors.accent700,
+          gradient: AppColors.accentGradient,
+          style: QueueActionStyle.gradient,
+          isDisabled: false,
+          onPressed: onTapDetails,
         );
 
       case PatientStatus.collect:
@@ -493,6 +523,24 @@ class PatientCard extends StatelessWidget {
             ),
           ],
         );
+    }
+  }
+
+  /// Opens turn-by-turn navigation to the patient's location — the native
+  /// maps app when available, browser Google Maps as a fallback.
+  Future<void> _launchDirections(double lat, double lng) async {
+    final uri = Platform.isIOS
+        ? Uri.parse('https://maps.apple.com/?daddr=$lat,$lng')
+        : Uri.parse('google.navigation:q=$lat,$lng&mode=d');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      await launchUrl(
+        Uri.parse(
+          'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
+        ),
+        mode: LaunchMode.externalApplication,
+      );
     }
   }
 

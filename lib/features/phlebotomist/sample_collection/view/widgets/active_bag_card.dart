@@ -254,6 +254,13 @@ class _NoOpenBagCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Closed assigned bags — the phlebotomist can reopen one of these
+    // instead of being forced to scan a brand-new bag.
+    final closedSessions = controller.bagController.allSessions
+        .where((s) => !s.isOpen)
+        .toList();
+    final hasClosed = closedSessions.isNotEmpty;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -280,11 +287,11 @@ class _NoOpenBagCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'No open bag',
                       style: TextStyle(
                         fontSize: 15,
@@ -292,10 +299,17 @@ class _NoOpenBagCard extends StatelessWidget {
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
-                      'Open a bag to tag every collected sample to it.',
-                      style: TextStyle(
+                      hasClosed
+                          ? closedSessions.length == 1
+                              ? 'Reopen "${closedSessions.first.bagcode}" to '
+                                  'continue tagging samples to it, or scan a '
+                                  'new one.'
+                              : 'Reopen one of your closed bags to continue '
+                                  'tagging samples, or scan a new one.'
+                          : 'Open a bag to tag every collected sample to it.',
+                      style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textTertiary,
                         height: 1.35,
@@ -307,26 +321,82 @@ class _NoOpenBagCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => Get.to(() => const ScanBagPage()),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary700,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(13),
+          if (hasClosed)
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      if (closedSessions.length == 1) {
+                        confirmOpenBag(context, closedSessions.first);
+                      } else {
+                        showBagPicker(context, controller);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary700,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                    ),
+                    icon: const Icon(Icons.unarchive_rounded, size: 19),
+                    label: Text(
+                      closedSessions.length == 1 ? 'Reopen Bag' : 'Reopen a Bag',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => Get.to(() => const ScanBagPage()),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary800,
+                      side: const BorderSide(color: AppColors.primary200),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                    ),
+                    icon: const Icon(Icons.qr_code_scanner_rounded, size: 19),
+                    label: const Text(
+                      'New Bag',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => Get.to(() => const ScanBagPage()),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary700,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                ),
+                icon: const Icon(Icons.qr_code_scanner_rounded, size: 19),
+                label: const Text(
+                  'Open New Bag',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
                 ),
               ),
-              icon: const Icon(Icons.qr_code_scanner_rounded, size: 19),
-              label: const Text(
-                'Open New Bag',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
-              ),
             ),
-          ),
         ],
       ),
     );
@@ -857,7 +927,11 @@ class _ReopenButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FilledButton.tonal(
-      onPressed: () => _confirmOpenBag(context, session),
+      onPressed: () => confirmOpenBag(
+        context,
+        session,
+        onConfirmed: () => Navigator.of(context).maybePop(),
+      ),
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.primary100,
         foregroundColor: AppColors.primary900,
@@ -874,23 +948,32 @@ class _ReopenButton extends StatelessWidget {
 }
 // ─── Confirmations ───────────────────────────────────────────────────────────
 
-Future<void> _confirmOpenBag(BuildContext context, QRBagSession session) async {
+/// Asks for confirmation, then reopens [session] (a closed bag) via the
+/// shared [BagRegistrationController].
+///
+/// [onConfirmed] lets sheet-based callers close their picker before the
+/// reopen fires; callers without a sheet underneath (e.g. the
+/// order-confirmation banner) omit it so nothing else gets popped.
+Future<void> confirmOpenBag(
+  BuildContext context,
+  QRBagSession session, {
+  VoidCallback? onConfirmed,
+}) async {
   final bagController = Get.find<BagRegistrationController>();
-  // Capture the navigator up-front so it is safe to use after the await.
-  final navigator = Navigator.of(context);
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      title: const Text(
-        'Open this bag?',
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+      title: Text(
+        session.isOpen ? 'Open this bag?' : 'Reopen this bag?',
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
       ),
       content: Text(
         bagController.hasOpenBag
             ? 'Opening "${session.bagcode}" will automatically close the bag '
                 'that is currently open. Continue?'
-            : 'Open "${session.bagcode}" and start collecting into it?',
+            : '${session.isOpen ? 'Open' : 'Reopen'} "${session.bagcode}" and '
+                'start collecting into it?',
         style: const TextStyle(fontSize: 13, height: 1.4),
       ),
       actions: [
@@ -904,14 +987,14 @@ Future<void> _confirmOpenBag(BuildContext context, QRBagSession session) async {
         FilledButton(
           onPressed: () => Navigator.of(ctx).pop(true),
           style: FilledButton.styleFrom(backgroundColor: AppColors.primary700),
-          child: const Text('Open Bag'),
+          child: Text(session.isOpen ? 'Open Bag' : 'Reopen Bag'),
         ),
       ],
     ),
   );
 
   if (confirmed == true) {
-    navigator.maybePop(); // close the picker
+    onConfirmed?.call();
     await bagController.reopenBag(session);
   }
 }

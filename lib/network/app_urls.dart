@@ -363,6 +363,14 @@ class AppUrls {
 
   static String verifyPatientOTP = '$_asmxBase/verify-otp';
 
+  /// START/END route tracking — fired when the phlebotomist taps
+  /// "Start Route" on an accepted order (action START) and when they mark
+  /// arrival on the order-confirmation map (action END). Payload carries
+  /// OrderAssignDetailID, SampleCollectionOrderID, UserID, TrackingAction,
+  /// Latitude, Longitude and CreatedBy.
+  static String get locationTracking =>
+      '$_asmxBase/UserSampleOrderLocationTracking';
+
    static const String dishaSampleCollectionSync =
        '/api/SampleCollection/Recolled_DishaSampleCollection_API/{orderId}';
 

@@ -48,6 +48,7 @@ dependencies:
   http_parser: any
   google_maps_flutter:
   latlong2:
+  flutter_map: ^7.0.2
   sms_autofill:
 dependency_overrides:
   vector_math: ^2.2.0

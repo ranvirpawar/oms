@@ -1,6 +1,8 @@
 import 'package:get/get.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:lifenity_connect/services/auth_manager.dart';
 
+import '../../../../services/location_tracking_service.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
 import '../../sample_collection/model/sample_collection_models.dart';
 import '../../sample_collection/service/sample_collection_service.dart';
@@ -32,6 +34,10 @@ class PatientQueueController extends GetxController {
   SampleCollectionService get sampleCollectionService =>
       _sampleCollectionService;
 
+  /// Pushes the START tracking ping when the phlebotomist begins the route.
+  final LocationTrackingService _locationTrackingService =
+      LocationTrackingService();
+
   // ---------------------------------------------------------------------
   // State
   // ---------------------------------------------------------------------
@@ -57,7 +63,6 @@ class PatientQueueController extends GetxController {
     super.onInit();
     getUserdata().then((_) => fetchPatients());
   }
-
 
   // ---------------------------------------------------------------------
   // Derived state
@@ -284,12 +289,80 @@ class PatientQueueController extends GetxController {
     }
   }
 
-  Future<void> startRoute(String patientId) => _runAction(
-    patientId,
-    () => _service.startRoute(patientId),
+  /// Sends the START tracking ping with the device's current GPS fix and
+  /// refreshes the queue so the order flips to "En Route".
+  Future<void> startRoute(AssignedPatient patient) async {
+    if (processingIds.contains(patient.id)) return;
+    processingIds.add(patient.id);
+    try {
+      final position = await _getCurrentPosition();
+      if (position == null) {
+        Get.snackbar(
+          'Location required',
+          'Please enable location access to start the route.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+      final success = await _locationTrackingService.sendTracking(
+        orderAssignDetailId: patient.orderAssignDetailId ?? 0,
+        sampleCollectionOrderId: patient.sampleCollectionOrderId,
+        userId: int.tryParse(empId.value) ?? 0,
+        action: TrackingAction.start,
+        latitude: position.latitude,
+        longitude: position.longitude,
+        createdBy: int.tryParse(empId.value) ?? 0,
+      );
+      if (success) {
+        Get.snackbar(
+          'Route started',
+          '',
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2),
+        );
+        await fetchPatients();
+      } else {
+        Get.snackbar(
+          'Action failed',
+          'Please try again.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } on LocationTrackingException catch (e) {
+      Get.snackbar(
+        'Action failed',
+        e.message,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (_) {
+      Get.snackbar(
+        'Action failed',
+        'Please check your connection and try again.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      processingIds.remove(patient.id);
+    }
+  }
 
-    successMessage: 'Route started',
-  );
+  /// Best-effort current position — returns null (instead of throwing)
+  /// when permission, service or hardware isn't available.
+  Future<Position?> _getCurrentPosition() async {
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) return null;
+      }
+      if (permission == LocationPermission.deniedForever) return null;
+      if (!await Geolocator.isLocationServiceEnabled()) return null;
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// Re-pushes a "collect" (LIS sync failed) order to Disha from the queue.
   ///
@@ -301,9 +374,7 @@ class PatientQueueController extends GetxController {
     if (processingIds.contains(patient.id)) return;
     processingIds.add(patient.id);
     try {
-      await _sampleCollectionService.resubmitToDisha(
-        orderId: patient.orderId,
-      );
+      await _sampleCollectionService.resubmitToDisha(orderId: patient.orderId);
       Get.snackbar(
         'Synced to LIS',
         'Order ${patient.orderId} was pushed to Disha successfully.',
@@ -395,3 +466,5 @@ class PatientQueueController extends GetxController {
     }
   }
 }
+
+

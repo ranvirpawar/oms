@@ -1,16 +1,21 @@
 // order_confirmation_screen.dart
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:lifenity_connect/constants/app_strings.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../theme/app_colors.dart';
 import '../../patient_registration/bag_status_dashboard/view/scan_bag_page.dart';
 import '../../patient_queue/model/patient_queue_model.dart';
 import '../controller/sample_collection_controller.dart';
 import '../model/sample_collection_models.dart';
+import 'widgets/active_bag_card.dart';
 import 'widgets/otp_verification_screen.dart';
 
 class OrderConfirmationScreen extends GetView<SampleCollectionController> {
@@ -24,6 +29,12 @@ class OrderConfirmationScreen extends GetView<SampleCollectionController> {
       body: Obx(() {
         if (!controller.isOrderAccepted) {
           return _NotAcceptedView(patient: controller.assignedPatient);
+        }
+
+        // En route — full-screen live tile map with the destination pin,
+        // current GPS position and the "Arrived at Location" action.
+        if (controller.showRouteMap.value) {
+          return _RouteTrackingMap(controller: controller);
         }
 
         if (controller.isLoadingOrder.value) {
@@ -68,6 +79,177 @@ class OrderConfirmationScreen extends GetView<SampleCollectionController> {
     );
   }
 }
+class _NotAcceptedView extends StatelessWidget {
+  final AssignedPatient patient;
+
+  const _NotAcceptedView({required this.patient});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.bgCard,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.border),
+            boxShadow: AppColors.shadowSm,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: AppColors.primary100,
+                    backgroundImage: (patient.avatarUrl?.isNotEmpty ?? false)
+                        ? NetworkImage(patient.avatarUrl!)
+                        : null,
+                    child: (patient.avatarUrl?.isNotEmpty ?? false)
+                        ? null
+                        : Text(
+                      patient.name.isNotEmpty
+                          ? patient.name.trim()[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                        color: AppColors.primary800,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          patient.name,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Order #${patient.orderId}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Shows the current status once, as requested.
+                  // StatusBadge(status: patient.status, compact: true),
+                ],
+              ),
+              const Divider(height: 24),
+              if (patient.slotDateTime != null)
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.access_time_rounded,
+                      size: 15,
+                      color: AppColors.blueText,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      DateFormat(
+                        'dd MMM yyyy, hh:mm a',
+                      ).format(patient.slotDateTime!),
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.blueText,
+                      ),
+                    ),
+                  ],
+                ),
+              if (patient.tests.isNotEmpty) ...[
+                const Divider(height: 24),
+                const Text(
+                  'Tests',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                for (var i = 0; i < patient.tests.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 22,
+                          child: Text(
+                            '${i + 1}.',
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            patient.tests[i],
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.amberLight.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.amberBorder),
+          ),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.lock_clock_outlined,
+                size: 18,
+                color: AppColors.amberText,
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'You need to accept this order first in order to start the collection.',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
 
 /// Compact banner showing which open bag this collection is being tagged
 /// to, or a call-to-action when no bag is open.
@@ -84,6 +266,18 @@ class _BagContextBanner extends StatelessWidget {
       if (bag.isLoading.value && !bag.hasBags) return const SizedBox.shrink();
 
       if (!controller.hasOpenBag) {
+        // Closed assigned bags can be reopened — don't force the phlebo
+        // through the new-bag scan flow when their own bag just needs
+        // reopening.
+        final closedSessions =
+            bag.allSessions.where((s) => !s.isOpen).toList();
+        final message = closedSessions.isEmpty
+            ? 'No open bag — open one so samples can be tagged to it.'
+            : closedSessions.length == 1
+                ? 'Bag ${closedSessions.first.bagcode} is closed — reopen it '
+                    'so samples can be tagged to it.'
+                : 'No open bag — reopen one of your closed bags to continue.';
+
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
@@ -99,16 +293,38 @@ class _BagContextBanner extends StatelessWidget {
                 color: AppColors.amberText,
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'No open bag — open one so samples can be tagged to it.',
-                  style: TextStyle(
+                  message,
+                  style: const TextStyle(
                     fontSize: 12.5,
                     color: AppColors.textSecondary,
                     height: 1.35,
                   ),
                 ),
               ),
+              if (closedSessions.isNotEmpty)
+                TextButton(
+                  onPressed: () {
+                    if (closedSessions.length == 1) {
+                      confirmOpenBag(context, closedSessions.first);
+                    } else {
+                      showBagPicker(context, controller);
+                    }
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary800,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: const Size(0, 32),
+                  ),
+                  child: const Text(
+                    'Reopen',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ),
               TextButton(
                 onPressed: () => Get.to(() => const ScanBagPage()),
                 style: TextButton.styleFrom(
@@ -116,9 +332,9 @@ class _BagContextBanner extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   minimumSize: const Size(0, 32),
                 ),
-                child: const Text(
-                  'Open',
-                  style: TextStyle(
+                child: Text(
+                  closedSessions.isEmpty ? 'Open' : 'New',
+                  style: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 12.5,
                   ),
@@ -614,174 +830,336 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
-class _NotAcceptedView extends StatelessWidget {
-  final AssignedPatient patient;
 
-  const _NotAcceptedView({required this.patient});
+
+/// Full-screen live route map shown while the order is "En Route".
+///
+/// OpenStreetMap tiles (no API key/billing needed): the blue dot is the
+/// phlebotomist's live GPS position, the red pin the patient's destination,
+/// with a dotted line between them. The camera auto-fits both points once
+/// on the first fix and then leaves the map alone so pan/zoom gestures
+/// aren't fought by every GPS update.
+class _RouteTrackingMap extends StatefulWidget {
+  final SampleCollectionController controller;
+
+  const _RouteTrackingMap({required this.controller});
+
+  @override
+  State<_RouteTrackingMap> createState() => _RouteTrackingMapState();
+}
+
+class _RouteTrackingMapState extends State<_RouteTrackingMap> {
+  final MapController _mapController = MapController();
+  bool _hasFramedOnce = false;
+
+  SampleCollectionController get controller => widget.controller;
+
+  LatLng? get _destination {
+    final lat = controller.destinationLat;
+    final lng = controller.destinationLng;
+    if (lat == null || lng == null) return null;
+    return LatLng(lat, lng);
+  }
+
+  LatLng? get _current {
+    final pos = controller.currentPosition.value;
+    if (pos == null) return null;
+    return LatLng(pos.latitude, pos.longitude);
+  }
+
+  void _fitToRoute(LatLng current, LatLng destination) {
+    final bounds = LatLngBounds.fromPoints([current, destination]);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: bounds,
+          padding: const EdgeInsets.fromLTRB(60, 100, 60, 220),
+        ),
+      );
+    });
+  }
+
+  Future<void> _launchDirections(LatLng dest) async {
+    final uri = Platform.isIOS
+        ? Uri.parse(
+            'https://maps.apple.com/?daddr=${dest.latitude},${dest.longitude}')
+        : Uri.parse(
+            'google.navigation:q=${dest.latitude},${dest.longitude}&mode=d');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      await launchUrl(
+        Uri.parse(
+          'https://www.google.com/maps/dir/?api=1&destination=${dest.latitude},${dest.longitude}',
+        ),
+        mode: LaunchMode.externalApplication,
+      );
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.bgCard,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.border),
-            boxShadow: AppColors.shadowSm,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Obx(() {
+      final current = _current;
+      final destination = _destination;
+
+      // Frame both points once, on the first GPS fix.
+      if (current != null && destination != null && !_hasFramedOnce) {
+        _hasFramedOnce = true;
+        _fitToRoute(current, destination);
+      }
+
+      return Stack(
+        children: [
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter:
+                  current ?? destination ?? const LatLng(19.8762, 75.3433),
+              initialZoom: 14,
+            ),
             children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: AppColors.primary100,
-                    backgroundImage: (patient.avatarUrl?.isNotEmpty ?? false)
-                        ? NetworkImage(patient.avatarUrl!)
-                        : null,
-                    child: (patient.avatarUrl?.isNotEmpty ?? false)
-                        ? null
-                        : Text(
-                            patient.name.isNotEmpty
-                                ? patient.name.trim()[0].toUpperCase()
-                                : '?',
-                            style: const TextStyle(
-                              color: AppColors.primary800,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 18,
-                            ),
-                          ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          patient.name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Order #${patient.orderId}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textTertiary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Shows the current status once, as requested.
-                  // StatusBadge(status: patient.status, compact: true),
-                ],
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.lifenity_health.oms',
               ),
-              const Divider(height: 24),
-              if (patient.slotDateTime != null)
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.access_time_rounded,
-                      size: 15,
-                      color: AppColors.blueText,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      DateFormat(
-                        'dd MMM yyyy, hh:mm a',
-                      ).format(patient.slotDateTime!),
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.blueText,
-                      ),
+              if (current != null && destination != null)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: [current, destination],
+                      strokeWidth: 3.5,
+                      color: AppColors.blue,
+                      pattern: const StrokePattern.dotted(),
                     ),
                   ],
                 ),
-              if (patient.tests.isNotEmpty) ...[
-                const Divider(height: 24),
-                const Text(
-                  'Tests',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                for (var i = 0; i < patient.tests.length; i++)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 22,
-                          child: Text(
-                            '${i + 1}.',
-                            style: const TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textTertiary,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            patient.tests[i],
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
+              MarkerLayer(
+                markers: [
+                  if (destination != null)
+                    Marker(
+                      point: destination,
+                      width: 40,
+                      height: 40,
+                      child: const Icon(
+                        Icons.location_on_rounded,
+                        color: AppColors.redText,
+                        size: 40,
+                      ),
                     ),
-                  ),
-              ],
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.amberLight.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.amberBorder),
-          ),
-          child: const Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                Icons.lock_clock_outlined,
-                size: 18,
-                color: AppColors.amberText,
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'You need to accept this order first in order to start the collection.',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: AppColors.textSecondary,
-                    height: 1.4,
-                  ),
-                ),
+                  if (current != null)
+                    Marker(
+                      point: current,
+                      width: 26,
+                      height: 26,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.blue,
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.blue.withOpacity(0.4),
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),
-        ),
-      ],
+
+          // Status pill.
+          Positioned(
+            top: 12,
+            left: 12,
+            right: 12,
+            child: _StatusPill(controller: controller),
+          ),
+
+          // Bottom action sheet — distance, progress, Directions, Arrived.
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _RouteBottomSheet(
+              controller: controller,
+              onDirections: destination != null
+                  ? () => _launchDirections(destination)
+                  : null,
+            ),
+          ),
+        ],
+      );
+    });
+  }
+}
+
+
+/// Floating "On the way to {patient name}" pill over the map.
+class _StatusPill extends StatelessWidget {
+  final SampleCollectionController controller;
+
+  const _StatusPill({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: AppColors.shadowSm,
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.directions_car_filled_rounded,
+            color: AppColors.blue,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'On the way to ${controller.assignedPatient.name}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
+
+
+/// Fixed bottom sheet over the map — distance readout, route progress bar
+/// and the Directions / Arrived actions (reachable one-handed).
+class _RouteBottomSheet extends StatelessWidget {
+  final SampleCollectionController controller;
+  final VoidCallback? onDirections;
+
+  const _RouteBottomSheet({required this.controller, this.onDirections});
+
+  String _distanceLabel(double? meters) {
+    if (meters == null) return 'Locating…';
+    if (meters >= 1000) return '${(meters / 1000).toStringAsFixed(1)} km away';
+    return '${meters.toStringAsFixed(0)} m away';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+      decoration: const BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 16,
+            offset: Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Obx(() {
+        final distance = controller.distanceToPatientMeters;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _distanceLabel(distance),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                Flexible(
+                  child: Text(
+                    controller.assignedPatient.address ?? '',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: controller.routeProgress,
+                minHeight: 5,
+                backgroundColor: AppColors.grayLight,
+                valueColor:
+                    const AlwaysStoppedAnimation(AppColors.accent700),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: OutlinedButton.icon(
+                    onPressed: onDirections,
+                    icon: const Icon(Icons.navigation_outlined, size: 18),
+                    label: const Text('Directions'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: 3,
+                  child: ElevatedButton(
+                    onPressed: controller.isMarkingArrived.value
+                        ? null
+                        : controller.markArrived,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accent700,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: controller.isMarkingArrived.value
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation(Colors.white),
+                            ),
+                          )
+                        : const Text(
+                            'Arrived at Location',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      }),
+    );
+  }
+}
+

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 /// Raw test line from the API — kept intact so it can be re-sent in the
 /// accept payload's `listTestDetails`, not just flattened for display.
 class OrderTest {
@@ -35,10 +37,15 @@ enum PatientStatus {
   assigned,
   pending,
   accepted,
+
+  /// Phlebotomist tapped "Start Route" — GPS tracking active, on the way
+  /// to the patient.
+  inRoute,
   inProgress,
   arrived,
   sampleCollectionStarted,
   sampleCollected,
+
   /// Sample(s) were collected but the push to LIS (Disha) failed — the
   /// order is stuck in "collect" until it is manually re-synced.
   collect,
@@ -47,17 +54,17 @@ enum PatientStatus {
   failed,
   rescheduled,
   unableToCollect,
-  rejected
+  rejected,
 }
-
 
 enum PriorityLevel { normal, high, urgent }
 
 extension PatientStatusX on PatientStatus {
   bool get isActionable =>
       this == PatientStatus.assigned ||
-          this == PatientStatus.pending ||
-          this == PatientStatus.accepted ||this == PatientStatus.rescheduled;
+      this == PatientStatus.pending ||
+      this == PatientStatus.accepted ||
+      this == PatientStatus.rescheduled;
 
   /// A "collect" order means the collection itself is done but the LIS
   /// (Disha) sync failed — it still requires manual intervention.
@@ -66,19 +73,20 @@ extension PatientStatusX on PatientStatus {
   /// Shortcut for the queue's "needs attention / sync to LIS" state.
   bool get needsDishaSync => this == PatientStatus.collect;
 
-
   bool get isTerminal =>
       this == PatientStatus.completed ||
-          this == PatientStatus.cancelled ||
-          this == PatientStatus.failed ||
-          this == PatientStatus.rejected ||
-          this == PatientStatus.unableToCollect;
+      this == PatientStatus.cancelled ||
+      this == PatientStatus.failed ||
+      this == PatientStatus.rejected ||
+      this == PatientStatus.unableToCollect;
 }
 
 class TubeRequirement {
   final String type;
   final int count;
+
   const TubeRequirement({required this.type, required this.count});
+
   String get label => '$count $type';
 }
 
@@ -90,14 +98,13 @@ class AssignedPatient {
   final int? assignStatusId;
   final int? userId;
 
-
-  final String orderId;      // OrderID for display
-  final String? omsOrderId;      // OrderID for display
+  final String orderId; // OrderID for display
+  final String? omsOrderId; // OrderID for display
   final String? title;
   final String firstName;
   final String? middleName;
   final String? lastName;
-  final String name;         // PatientName, display-ready
+  final String name; // PatientName, display-ready
   final int? userRosterId;
 
   final int? age;
@@ -116,8 +123,13 @@ class AssignedPatient {
   final String? phone;
   final double? distanceKm;
 
-  final List<String> tests;        // display strings
-  final List<OrderTest> rawTests;  // kept for accept payload
+  // Destination coordinates for the en-route map — the patient's address
+  // geocoded by the backend (Latitude/Longitude on the order payload).
+  final double? destinationLat;
+  final double? destinationLng;
+
+  final List<String> tests; // display strings
+  final List<OrderTest> rawTests; // kept for accept payload
   final List<TubeRequirement> tubes;
 
   final String? notes;
@@ -148,6 +160,8 @@ class AssignedPatient {
     this.clinic,
     this.phone,
     this.distanceKm,
+    this.destinationLat,
+    this.destinationLng,
     this.tests = const [],
     this.rawTests = const [],
     this.tubes = const [],
@@ -185,6 +199,8 @@ class AssignedPatient {
       clinic: clinic,
       phone: phone,
       distanceKm: distanceKm,
+      destinationLat: destinationLat,
+      destinationLng: destinationLng,
       tests: tests,
       rawTests: rawTests,
       tubes: tubes,
@@ -200,6 +216,10 @@ class AssignedPatient {
         return PatientStatus.pending;
       case 'accepted':
         return PatientStatus.accepted;
+      case 'inroute':
+      case 'in route':
+      case 'in_route':
+        return PatientStatus.inRoute;
       case 'inprogress':
       case 'in progress':
         return PatientStatus.inProgress;
@@ -210,6 +230,7 @@ class AssignedPatient {
       case 'samplecollected':
         return PatientStatus.sampleCollected;
       case 'collected':
+      case 'collect':
         // Sample collected but LIS sync failed — needs a manual re-sync.
         return PatientStatus.collect;
       case 'completed':
@@ -288,31 +309,33 @@ class AssignedPatient {
   }
 
   factory AssignedPatient.fromJson(Map<String, dynamic> json) {
-    final rawTests = (json['Tests'] as List?)
-        ?.map((e) => OrderTest.fromJson(e as Map<String, dynamic>))
-        .toList() ??
+    final rawTests =
+        (json['Tests'] as List?)
+            ?.map((e) => OrderTest.fromJson(e as Map<String, dynamic>))
+            .toList() ??
         const <OrderTest>[];
+    final puneLocation = _randomPuneLocation();
 
     return AssignedPatient(
       sampleCollectionOrderId:
-      (json['SampleCollectionOrderID'] as num?)?.toInt() ?? 0,
+          (json['SampleCollectionOrderID'] as num?)?.toInt() ?? 0,
       patientId: json['PatientID'] as String? ?? '',
 
       orderAssignDetailId: (json['OrderAssignDetailID'] as num?)?.toInt(),
       assignStatusId: (json['AssignStatusID'] as num?)?.toInt(),
       userId: (json['UserID'] as num?)?.toInt(),
-      orderId:
-       json['OrderID'] as String? ?? '',
+      orderId: json['OrderID'] as String? ?? '',
       omsOrderId: json['OMSOrderID'] as String?,
       userRosterId: json['UserRosterID'] ?? 0,
       title: json['Title'] as String?,
       firstName: json['FirstName'] as String? ?? '',
       middleName: json['MiddleName'] as String?,
       lastName: json['LastName'] as String?,
-      name: (json['PatientName'] as String?)?.trim().replaceAll(
-        RegExp(r'\s+'),
-        ' ',
-      ) ??
+      name:
+          (json['PatientName'] as String?)?.trim().replaceAll(
+            RegExp(r'\s+'),
+            ' ',
+          ) ??
           'Unknown Patient',
       age: _parseAge(json['Age'] as String?),
       gender: json['Gender'] as String?,
@@ -320,7 +343,20 @@ class AssignedPatient {
       visitType: (json['VisitType'] as String?)?.toLowerCase() == 'clinic'
           ? VisitType.clinic
           : VisitType.home,
-      status: _parseStatus(json['Status'] as String?),
+      status: (() {
+        final isRoute = (json['IsRoute'] as String?)?.trim().toLowerCase();
+
+        if (isRoute == 'start') {
+          return PatientStatus.inRoute;
+        }
+
+        if (isRoute == 'end') {
+          return PatientStatus.arrived;
+        }
+
+        return _parseStatus(json['Status'] as String?);
+      })(),
+
       priority: _parsePriority(json['Priority'] as String?),
       slotDateTime: _parseSlot(
         json['SlotDate'] as String?,
@@ -331,12 +367,26 @@ class AssignedPatient {
       clinic: json['Clinic'] as String?,
       phone: json['MobileNumber'] as String?,
       distanceKm: (json['DistanceInKM'] as num?)?.toDouble(),
+      destinationLat:
+      (json['Latitude'] as num?)?.toDouble() ?? puneLocation.lat,
+
+      destinationLng:
+      (json['Longitude'] as num?)?.toDouble() ?? puneLocation.lng,
       tests: rawTests.map((t) => t.testName).toList(),
       rawTests: rawTests,
       tubes: _buildTubes(rawTests),
       notes: null,
     );
   }
+
+
+  // for testing purpose only remove this latter
+  static ({double lat, double lng}) _randomPuneLocation() {
+    final random = Random();
+
+    return (
+    lat: 18.45 + random.nextDouble() * (18.65 - 18.45),
+    lng: 73.75 + random.nextDouble() * (73.95 - 73.75),
+    );
+  }
 }
-
-

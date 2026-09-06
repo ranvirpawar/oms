@@ -162,6 +162,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
                               ),
                             ),
                         onPrimaryAction: () => _handlePrimaryAction(patient),
+                        onStartRoute: () => controller.startRoute(patient),
                         onSyncToLis: () => controller.syncToLis(patient),
                       ),
                     ),
@@ -176,11 +177,9 @@ class PatientQueueView extends GetView<PatientQueueController> {
   }
 
   void _handlePrimaryAction(AssignedPatient patient) {
-    if (patient.status == PatientStatus.accepted) {
-      controller.startRoute(patient.id);
-    } else {
-      controller.acceptAndStart(patient);
-    }
+    // "Start Route" has its own button on the card now — the primary
+    // action only needs to accept the assignment.
+    controller.acceptAndStart(patient);
   }
 
   void _openPatientDetails(AssignedPatient patient) {
