@@ -2,36 +2,54 @@
 //
 // A modern, interactive "Liquid Glass" style snackbar system for Flutter.
 //
-// Design rationale (see apple-design / Liquid Glass review skill):
+// Design rationale:
 //  - Layer separation: a blurred/tinted GLASS SURFACE sits behind a crisp,
-//    never-blurred CONTENT layer (icon + text + action). This is the core
-//    rule of the Liquid Glass material — content must stay legible.
-//  - Legibility over dynamic backgrounds: an adaptive dimming scrim sits
-//    between the backdrop and the glass tint so light/busy content behind
-//    the snackbar never washes out the text.
-//  - Accessibility: WCAG 4.5:1 text contrast, >=44pt touch targets, full
-//    Dynamic-Type/text-scale support, Semantics for screen readers, and a
-//    reduced-motion fallback (MediaQuery.disableAnimations).
+//    never-blurred CONTENT layer (icon + text + action). Content stays legible.
+//  - Legibility over ANY backdrop: this widget floats over arbitrary screen
+//    content, not just the app's own background — so the glass base is a
+//    fixed dark scrim regardless of the app's light/dark theme. Tying the
+//    scrim to `Theme.of(context).brightness` (as before) meant light mode
+//    produced a pale glass with white text on top of it, which is the
+//    "text/contrast doesn't look good" problem. A constant dark base fixes
+//    this everywhere and matches how iOS's own notification banners behave.
+//  - Hierarchy comes from type weight/size, not opacity. Opacity was
+//    previously used both for "secondary text" and "dim it a bit," which
+//    silently eats into contrast. Title is bold/full-white; body is a
+//    lighter weight at full white — no opacity trick doing double duty.
+//  - Restraint: no close button by default. Auto-dismiss + swipe-to-dismiss
+//    already cover dismissal; a persistent close icon on every toast is
+//    chrome nobody asked for. Tapping the card dismisses it when there's no
+//    action button, so there's always an obvious way out without adding a
+//    third widget for it. Pass `showCloseButton: true` on `show()` if a
+//    specific call site really needs a persistent close affordance.
 //  - Color is never the only signal: every variant pairs a hue with a
 //    distinct icon shape.
-//  - Motion: spring-like slide + fade + slight scale on entry, matching
-//    platform-standard "gentle overshoot" easing; swipe-to-dismiss with a
-//    velocity threshold, matching native gesture conventions.
+//  - Motion: spring-like slide + fade + slight scale on entry (easeOutBack),
+//    matching platform-standard "gentle overshoot" easing; swipe-to-dismiss
+//    with a velocity threshold; light haptic on entrance.
+//  - Accessibility: WCAG 4.5:1 text contrast, >=44pt touch targets, respects
+//    text scaling, Semantics for screen readers, reduced-motion fallback.
 //
 // No GetX dependency required for rendering — this uses Overlay directly,
 // which is what actually exposes BackdropFilter/blur compositing. A tiny
-// facade (LiquidSnack) keeps call sites as simple one-liners. If you still
-// want GetX for navigation elsewhere in the app that's unaffected; this
-// service only needs a BuildContext (or a global navigatorKey, see bottom).
+// facade (LiquidSnack) keeps call sites as simple one-liners.
 
 import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-// ---------------------------------------------------------------------------
-// Variant definitions
-// ---------------------------------------------------------------------------
+
+class _SnackTokens {
+  // Fixed glass base — intentionally NOT theme-dependent. See rationale above.
+  static const glassBase = Color(0xFF0B0B0D); // near-black, always
+  static const glassBaseOpacity = 0.72;
+  static const borderColor = Colors.white;
+  static const borderOpacity = 0.14;
+  static const radiusLg = 20.0;
+  static const radiusPill = 999.0;
+}
 
 enum SnackVariant { success, error, warning, info, neutral }
 
@@ -78,7 +96,7 @@ const Map<SnackVariant, _VariantStyle> _variantStyles = {
 enum SnackPosition { top, bottom }
 
 // ---------------------------------------------------------------------------
-// Public facade — mirrors the old SnackBarService's ergonomics
+// Public facade
 // ---------------------------------------------------------------------------
 
 class LiquidSnack {
@@ -102,6 +120,8 @@ class LiquidSnack {
     String? actionLabel,
     VoidCallback? onAction,
     VoidCallback? onDismiss,
+    bool showCloseButton = false,
+    bool isQuick = false,
   }) async {
     final overlayState = navigatorKey.currentState?.overlay;
     if (overlayState == null) return; // no navigator attached yet
@@ -118,6 +138,8 @@ class LiquidSnack {
         duration: duration,
         actionLabel: actionLabel,
         onAction: onAction,
+        showCloseButton: showCloseButton,
+        isQuick: isQuick,
         onDismissed: () {
           onDismiss?.call();
           entry.remove();
@@ -131,7 +153,7 @@ class LiquidSnack {
 
     if (_busy) {
       // Queue rather than stack glass panels on top of each other —
-      // stacked translucent layers destroy contrast (Color guideline).
+      // stacked translucent layers destroy contrast.
       _queue.add(entry);
       return completer.future;
     }
@@ -150,7 +172,24 @@ class LiquidSnack {
     overlayState.insert(next);
   }
 
-  // ---- Shorthand helpers, matching your existing API surface ----
+  // ---- Shorthand helpers ----
+
+  /// Minimal, low-chrome toast: no title, no icon row, no action, no close
+  /// button — just a short message in a self-sizing pill. Use this for quick
+  /// confirmations ("Copied", "Saved", "Link copied") where a full card with
+  /// an icon and title would be overkill.
+  static Future<void> quick(
+      String message, {
+        SnackPosition position = SnackPosition.bottom,
+        Duration duration = const Duration(seconds: 2),
+      }) =>
+      show(
+        message: message,
+        variant: SnackVariant.neutral,
+        position: position,
+        duration: duration,
+        isQuick: true,
+      );
 
   static Future<void> success(String message, {String? title}) => show(
     message: message,
@@ -205,6 +244,8 @@ class _GlassSnackbar extends StatefulWidget {
   final Duration duration;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final bool showCloseButton;
+  final bool isQuick;
   final VoidCallback onDismissed;
 
   const _GlassSnackbar({
@@ -215,6 +256,8 @@ class _GlassSnackbar extends StatefulWidget {
     required this.duration,
     required this.actionLabel,
     required this.onAction,
+    required this.showCloseButton,
+    required this.isQuick,
     required this.onDismissed,
   });
 
@@ -246,18 +289,22 @@ class _GlassSnackbarState extends State<_GlassSnackbar>
         ? const Offset(0, 0.4)
         : const Offset(0, -0.4);
 
-    // Gentle overshoot curve reads as "springy" without needing a physics
-    // simulation — matches platform-standard entry motion.
+    // Gentle overshoot curve reads as "springy" without a physics sim —
+    // matches platform-standard entry motion (250-400ms, easeOutBack).
     _slide = Tween<Offset>(begin: beginOffset, end: Offset.zero).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
     );
-    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
     _scale = Tween<double>(begin: 0.92, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
 
     _controller.forward();
     _scheduleAutoDismiss();
+
+    // Discrete state-change haptic, not tied to a continuous gesture.
+    final isError = widget.variant == SnackVariant.error;
+    isError ? HapticFeedback.mediumImpact() : HapticFeedback.lightImpact();
   }
 
   void _scheduleAutoDismiss() {
@@ -284,114 +331,28 @@ class _GlassSnackbarState extends State<_GlassSnackbar>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final style = _variantStyles[widget.variant]!;
     final mq = MediaQuery.of(context);
     final reduceMotion = mq.disableAnimations;
+    final style = _variantStyles[widget.variant]!;
 
-    // Adaptive scrim strength: dark mode needs less dimming to hit contrast,
-    // light mode (busy/bright backdrops) needs more (Legibility guideline).
-    final scrimOpacity = isDark ? 0.28 : 0.45;
-    final borderOpacity = isDark ? 0.18 : 0.35;
-    final textColor = Colors.white; // fixed for contrast on tinted glass
+    Widget content =
+    widget.isQuick ? _buildQuickPill(style) : _buildFullCard(style);
 
-    Widget content = Semantics(
+    content = Semantics(
       liveRegion: true,
       label: '${style.semanticPrefix}: '
           '${widget.title != null ? '${widget.title}. ' : ''}${widget.message}',
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 56),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              // Content/blur layer: dimming scrim + tint, glass surface,
-              // never the text — text sits in an un-blurred child below.
-              color: Color.alphaBlend(
-                style.tint.withOpacity(0.32),
-                (isDark ? Colors.black : Colors.white)
-                    .withOpacity(scrimOpacity),
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Colors.white.withOpacity(borderOpacity),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.4 : 0.18),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Icon chip — >=24pt visual target, sits in its own
-                // slightly-brighter glass pill for depth without noise.
-                Container(
-                  width: 32,
-                  height: 32,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: style.tint.withOpacity(0.9),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(style.icon, size: 18, color: Colors.white),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (widget.title != null)
-                        Text(
-                          widget.title!,
-                          style: TextStyle(
-                            color: textColor,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 15,
-                          ),
-                          // Respects system text scaling automatically via
-                          // inherited MediaQuery — no fixed px ceiling.
-                        ),
-                      Text(
-                        widget.message,
-                        style: TextStyle(
-                          color: textColor.withOpacity(0.92),
-                          fontSize: 14,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (widget.actionLabel != null) ...[
-                  const SizedBox(width: 8),
-                  _GlassActionButton(
-                    label: widget.actionLabel!,
-                    onTap: () {
-                      widget.onAction?.call();
-                      _dismiss();
-                    },
-                  ),
-                ],
-                const SizedBox(width: 4),
-                _GlassCloseButton(onTap: _dismiss),
-              ],
-            ),
-          ),
-        ),
-      ),
+      child: content,
     );
 
-    // Swipe-to-dismiss with velocity threshold — matches native gesture
-    // conventions; direction depends on position (bottom -> swipe down/away).
+    // Tap-anywhere-to-dismiss when there's no action button competing for
+    // the tap target — this is what replaces the old always-on close icon.
+    if (widget.actionLabel == null && !widget.showCloseButton) {
+      content = GestureDetector(onTap: _dismiss, child: content);
+    }
+
+    // Swipe-to-dismiss with a velocity threshold — matches native gesture
+    // conventions. Only fires on discrete threshold-crossing, not per pixel.
     content = GestureDetector(
       onHorizontalDragUpdate: (details) {
         setState(() => _dragOffset += details.delta.dx);
@@ -399,6 +360,7 @@ class _GlassSnackbarState extends State<_GlassSnackbar>
       onHorizontalDragEnd: (details) {
         final velocity = details.velocity.pixelsPerSecond.dx;
         if (_dragOffset.abs() > 80 || velocity.abs() > 600) {
+          HapticFeedback.selectionClick();
           _dismiss();
         } else {
           setState(() => _dragOffset = 0);
@@ -415,7 +377,7 @@ class _GlassSnackbarState extends State<_GlassSnackbar>
     );
 
     final animated = reduceMotion
-        ? Opacity(opacity: 1, child: content)
+        ? content
         : FadeTransition(
       opacity: _fade,
       child: SlideTransition(
@@ -424,49 +386,219 @@ class _GlassSnackbarState extends State<_GlassSnackbar>
       ),
     );
 
+    if (widget.isQuick) {
+      // Self-sizing pill, centered — not stretched edge-to-edge like a card.
+      return Positioned(
+        left: 24,
+        right: 24,
+        top: widget.position == SnackPosition.top
+            ? mq.padding.top + 12
+            : null,
+        bottom: widget.position == SnackPosition.bottom
+            ? mq.padding.bottom + 24
+            : null,
+        child: Center(
+          child: Material(color: Colors.transparent, child: animated),
+        ),
+      );
+    }
+
     return Positioned(
       left: 16,
       right: 16,
-      top: widget.position == SnackPosition.top
-          ? mq.padding.top + 12
-          : null,
-      bottom: widget.position == SnackPosition.bottom
-          ? mq.padding.bottom + 24
-          : null,
-      child: Material(
-        color: Colors.transparent,
-        child: animated,
+      top: widget.position == SnackPosition.top ? mq.padding.top + 12 : null,
+      bottom:
+      widget.position == SnackPosition.bottom ? mq.padding.bottom + 24 : null,
+      child: Material(color: Colors.transparent, child: animated),
+    );
+  }
+
+  // -- Full card: icon chip + optional title + message + optional action --
+  Widget _buildFullCard(_VariantStyle style) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(_SnackTokens.radiusLg),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 56),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: _glassDecoration(style),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: style.tint,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(style.icon, size: 18, color: Colors.white),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (widget.title != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          widget.title!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            height: 1.25,
+                            letterSpacing: 0.1,
+                          ),
+                        ),
+                      ),
+                    Text(
+                      widget.message,
+                      // Full white, weight-led hierarchy instead of opacity —
+                      // keeps contrast high regardless of variant tint.
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w400,
+                        fontSize: 14,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (widget.actionLabel != null) ...[
+                const SizedBox(width: 8),
+                _GlassActionButton(
+                  label: widget.actionLabel!,
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    widget.onAction?.call();
+                    _dismiss();
+                  },
+                ),
+              ],
+              if (widget.showCloseButton) ...[
+                const SizedBox(width: 4),
+                _GlassCloseButton(onTap: _dismiss),
+              ],
+            ],
+          ),
+        ),
       ),
+    );
+  }
+
+  // -- Quick pill: message only, no icon/title/action/close chrome --
+  Widget _buildQuickPill(_VariantStyle style) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(_SnackTokens.radiusPill),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 44),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            color: _SnackTokens.glassBase
+                .withOpacity(_SnackTokens.glassBaseOpacity),
+            borderRadius: BorderRadius.circular(_SnackTokens.radiusPill),
+            border: Border.all(
+              color: _SnackTokens.borderColor
+                  .withOpacity(_SnackTokens.borderOpacity),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.35),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Text(
+            widget.message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
+              fontSize: 14,
+              height: 1.3,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Fixed dark glass base tinted per variant — always legible regardless of
+  // the app's theme or whatever's behind the snackbar. See top-of-file note.
+  BoxDecoration _glassDecoration(_VariantStyle style) {
+    final tinted = Color.alphaBlend(
+      style.tint.withOpacity(0.28),
+      _SnackTokens.glassBase.withOpacity(_SnackTokens.glassBaseOpacity),
+    );
+    return BoxDecoration(
+      color: tinted,
+      borderRadius: BorderRadius.circular(_SnackTokens.radiusLg),
+      border: Border.all(
+        color:
+        _SnackTokens.borderColor.withOpacity(_SnackTokens.borderOpacity),
+        width: 1,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.35),
+          blurRadius: 24,
+          offset: const Offset(0, 8),
+        ),
+      ],
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Action / close buttons — kept as real, non-blurred content (>=44pt target)
+// Action / close buttons — real, non-blurred content (>=44pt touch target)
 // ---------------------------------------------------------------------------
 
-class _GlassActionButton extends StatelessWidget {
+class _GlassActionButton extends StatefulWidget {
   final String label;
   final VoidCallback onTap;
   const _GlassActionButton({required this.label, required this.onTap});
 
   @override
+  State<_GlassActionButton> createState() => _GlassActionButtonState();
+}
+
+class _GlassActionButtonState extends State<_GlassActionButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: label,
-      child: Material(
-        color: Colors.white.withOpacity(0.18),
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
+      label: widget.label,
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapCancel: () => setState(() => _pressed = false),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: _pressed ? 0.96 : 1.0,
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOut,
           child: Container(
             constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
             alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(_pressed ? 0.28 : 0.18),
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Text(
-              label,
+              widget.label,
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
@@ -504,30 +636,3 @@ class _GlassCloseButton extends StatelessWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Usage
-// ---------------------------------------------------------------------------
-//
-// 1) Attach the navigator key once:
-//
-//    MaterialApp(
-//      navigatorKey: LiquidSnack.navigatorKey,
-//      ...
-//    )
-//
-// 2) Call from anywhere, no BuildContext needed:
-//
-//    LiquidSnack.success('Profile updated');
-//    LiquidSnack.error('Could not connect', title: 'Network error');
-//    LiquidSnack.withAction(
-//      message: 'Item removed from cart',
-//      actionLabel: 'UNDO',
-//      onAction: () => cartController.restoreLastRemoved(),
-//    );
-//    LiquidSnack.show(
-//      message: 'New version available',
-//      variant: SnackVariant.info,
-//      position: SnackPosition.top,
-//      duration: const Duration(seconds: 6),
-//    );
