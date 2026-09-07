@@ -12,7 +12,6 @@ import 'queue_info_chip.dart';
 import 'status_badge.dart';
 import 'visit_type_badge.dart';
 
-
 class PatientCard extends StatelessWidget {
   final AssignedPatient patient;
   final bool isProcessing;
@@ -78,9 +77,9 @@ class PatientCard extends StatelessWidget {
                       const SizedBox(height: 10),
                       if (patient.tests.isNotEmpty ||
                           patient.tubes.isNotEmpty) ...[
-                        _buildTestsRow(),
+                        // _buildTestsRow(),
                         if (patient.tubes.isNotEmpty) ...[
-                          const SizedBox(height: 10),
+                          // const SizedBox(height: 10),
                           _buildTubesRow(),
                         ],
                         const SizedBox(height: 10),
@@ -109,17 +108,14 @@ class PatientCard extends StatelessWidget {
         children: [
           // cornerRadius matches the card's 18px border radius so the ribbon
           // sits flush against the card border — no gap in the top-left corner.
-          VisitTypeBadge(
-            visitType: patient.visitType,
-            cornerRadius: 18,
-          ),
+          VisitTypeBadge(visitType: patient.visitType, cornerRadius: 18),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: StatusBadge(status: patient.status, compact: true),
           ),
         ],
-
-    ));
+      ),
+    );
   }
 
   // -- Avatar + name + age/id, with priority indicator on the right --------
@@ -167,17 +163,18 @@ class PatientCard extends StatelessWidget {
     return CircleAvatar(
       radius: 18,
       backgroundColor: AppColors.primary100,
-      backgroundImage:
-      patient.avatarUrl != null ? NetworkImage(patient.avatarUrl!) : null,
+      backgroundImage: patient.avatarUrl != null
+          ? NetworkImage(patient.avatarUrl!)
+          : null,
       child: patient.avatarUrl == null
           ? Text(
-        _initials(patient.name),
-        style: const TextStyle(
-          color: AppColors.primary800,
-          fontWeight: FontWeight.w700,
-          fontSize: 14,
-        ),
-      )
+              _initials(patient.name),
+              style: const TextStyle(
+                color: AppColors.primary800,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+            )
           : null,
     );
   }
@@ -186,8 +183,11 @@ class PatientCard extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.location_on_outlined,
-            size: 14, color: AppColors.textQuaternary),
+        const Icon(
+          Icons.location_on_outlined,
+          size: 14,
+          color: AppColors.textQuaternary,
+        ),
         const SizedBox(width: 4),
         Expanded(
           child: Text(
@@ -218,8 +218,11 @@ class PatientCard extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.call_outlined,
-                size: 13, color: AppColors.tealText),
+            const Icon(
+              Icons.call_outlined,
+              size: 13,
+              color: AppColors.tealText,
+            ),
             const SizedBox(width: 5),
             Text(
               _maskedPhone(phone),
@@ -263,8 +266,11 @@ class PatientCard extends StatelessWidget {
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.no_food_outlined,
-                  size: 12, color: AppColors.amberText),
+              Icon(
+                Icons.no_food_outlined,
+                size: 12,
+                color: AppColors.amberText,
+              ),
               SizedBox(width: 4),
               Text(
                 'Fasting Required',
@@ -293,7 +299,11 @@ class PatientCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.science_outlined, size: 15, color: AppColors.redText),
+          const Icon(
+            Icons.science_outlined,
+            size: 15,
+            color: AppColors.redText,
+          ),
           const SizedBox(width: 6),
           Expanded(
             child: Text(
@@ -328,8 +338,11 @@ class PatientCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.vaccines_outlined,
-              size: 15, color: AppColors.purpleText),
+          const Icon(
+            Icons.vaccines_outlined,
+            size: 15,
+            color: AppColors.purpleText,
+          ),
           const SizedBox(width: 6),
           Expanded(
             child: Text(
@@ -358,13 +371,13 @@ class PatientCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          if (patient.distanceKm != null)
+          /*if (patient.distanceKm != null)
             QueueInfoChip(
               icon: Icons.social_distance_outlined,
               iconColor: AppColors.blue,
               label: 'Distance',
               value: '${patient.distanceKm!.toStringAsFixed(1)} km away',
-            ),
+            ),*/
           // Slot now carries date *and* time in a single row (the time used
           // to live in the header above, next to the info icon).
           QueueInfoChip(
@@ -373,7 +386,7 @@ class PatientCard extends StatelessWidget {
             label: 'Slot',
             value: patient.slotDateTime != null
                 ? '${DateFormat('dd MMM yyyy').format(patient.slotDateTime!)}  •  '
-                    '${DateFormat('hh:mm a').format(patient.slotDateTime!)}'
+                      '${DateFormat('hh:mm a').format(patient.slotDateTime!)}'
                 : 'Not set',
           ),
           // Tube section is intentionally disabled for now — kept commented
@@ -390,7 +403,6 @@ class PatientCard extends StatelessWidget {
       ),
     );
   }
-
 
   Widget _buildActionsRow() {
     if (_isTerminal) return const SizedBox.shrink();
@@ -424,7 +436,7 @@ class PatientCard extends StatelessWidget {
         );
 
       case PatientStatus.accepted:
-      // No reject once accepted — only Reschedule + Start Route.
+        // No reject once accepted — only Reschedule + Start Route.
         return Row(
           children: [
             Expanded(
@@ -451,8 +463,8 @@ class PatientCard extends StatelessWidget {
         );
 
       case PatientStatus.inRoute:
-      // En route — tracking is active; from the queue the phlebotomist
-      // can jump straight into turn-by-turn navigation.
+        // En route — tracking is active; from the queue the phlebotomist
+        // can jump straight into turn-by-turn navigation.
         return QueueActionButton(
           label: 'View Direction',
           color: AppColors.blue,
@@ -466,7 +478,7 @@ class PatientCard extends StatelessWidget {
         );
 
       case PatientStatus.arrived:
-      // At the patient's location — continue into the collection flow.
+        // At the patient's location — continue into the collection flow.
         return QueueActionButton(
           label: 'Collect',
           color: AppColors.accent700,
@@ -476,9 +488,9 @@ class PatientCard extends StatelessWidget {
           onPressed: onTapDetails,
         );
 
-      case PatientStatus.collect:
-      // "Collect" means collection is done but the LIS push failed — the
-      // only action is re-syncing to Disha. No reject/accept/reschedule.
+      case PatientStatus.sampleCollected:
+        // "Collect" means collection is done but the LIS push failed — the
+        // only action is re-syncing to Disha. No reject/accept/reschedule.
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -498,7 +510,7 @@ class PatientCard extends StatelessWidget {
       case PatientStatus.assigned:
       case PatientStatus.pending:
       default:
-      // Assigned/pending — just Reject + Accept, nothing else.
+        // Assigned/pending — just Reject + Accept, nothing else.
         return Row(
           children: [
             Expanded(
@@ -558,11 +570,7 @@ class PatientCard extends StatelessWidget {
       child: const Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.cloud_off_rounded,
-            size: 15,
-            color: AppColors.amberText,
-          ),
+          Icon(Icons.cloud_off_rounded, size: 15, color: AppColors.amberText),
           SizedBox(width: 6),
           Expanded(
             child: Column(

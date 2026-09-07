@@ -1,10 +1,13 @@
 // order_confirmation_screen.dart
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
@@ -29,6 +32,11 @@ class OrderConfirmationScreen extends GetView<SampleCollectionController> {
       body: Obx(() {
         if (!controller.isOrderAccepted) {
           return _NotAcceptedView(patient: controller.assignedPatient);
+        }
+        // Accepted, but route hasn't started — don't wait on orderDetails,
+        // there's nothing loaded yet.
+        if (controller.needsToStartRoute) {
+          return _NeedsRouteStartView(patient: controller.assignedPatient);
         }
 
         // En route — full-screen live tile map with the destination pin,
@@ -79,6 +87,7 @@ class OrderConfirmationScreen extends GetView<SampleCollectionController> {
     );
   }
 }
+
 class _NotAcceptedView extends StatelessWidget {
   final AssignedPatient patient;
 
@@ -111,15 +120,15 @@ class _NotAcceptedView extends StatelessWidget {
                     child: (patient.avatarUrl?.isNotEmpty ?? false)
                         ? null
                         : Text(
-                      patient.name.isNotEmpty
-                          ? patient.name.trim()[0].toUpperCase()
-                          : '?',
-                      style: const TextStyle(
-                        color: AppColors.primary800,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                      ),
-                    ),
+                            patient.name.isNotEmpty
+                                ? patient.name.trim()[0].toUpperCase()
+                                : '?',
+                            style: const TextStyle(
+                              color: AppColors.primary800,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 18,
+                            ),
+                          ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -269,14 +278,13 @@ class _BagContextBanner extends StatelessWidget {
         // Closed assigned bags can be reopened — don't force the phlebo
         // through the new-bag scan flow when their own bag just needs
         // reopening.
-        final closedSessions =
-            bag.allSessions.where((s) => !s.isOpen).toList();
+        final closedSessions = bag.allSessions.where((s) => !s.isOpen).toList();
         final message = closedSessions.isEmpty
             ? 'No open bag — open one so samples can be tagged to it.'
             : closedSessions.length == 1
-                ? 'Bag ${closedSessions.first.bagcode} is closed — reopen it '
-                    'so samples can be tagged to it.'
-                : 'No open bag — reopen one of your closed bags to continue.';
+            ? 'Bag ${closedSessions.first.bagcode} is closed — reopen it '
+                  'so samples can be tagged to it.'
+            : 'No open bag — reopen one of your closed bags to continue.';
 
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -346,8 +354,9 @@ class _BagContextBanner extends StatelessWidget {
       }
 
       final ratio = controller.bagFillRatio;
-      final color =
-          ratio >= 0.9 ? AppColors.redText : (ratio >= 0.6 ? AppColors.amberText : AppColors.greenText);
+      final color = ratio >= 0.9
+          ? AppColors.redText
+          : (ratio >= 0.6 ? AppColors.amberText : AppColors.greenText);
       final pct = (ratio * 100).round().clamp(0, 100).toInt();
 
       return Container(
@@ -830,15 +839,6 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
-
-
-/// Full-screen live route map shown while the order is "En Route".
-///
-/// OpenStreetMap tiles (no API key/billing needed): the blue dot is the
-/// phlebotomist's live GPS position, the red pin the patient's destination,
-/// with a dotted line between them. The camera auto-fits both points once
-/// on the first fix and then leaves the map alone so pan/zoom gestures
-/// aren't fought by every GPS update.
 class _RouteTrackingMap extends StatefulWidget {
   final SampleCollectionController controller;
 
@@ -848,7 +848,335 @@ class _RouteTrackingMap extends StatefulWidget {
   State<_RouteTrackingMap> createState() => _RouteTrackingMapState();
 }
 
-class _RouteTrackingMapState extends State<_RouteTrackingMap> {
+class _RouteTrackingMapState extends State<_RouteTrackingMap>
+    with SingleTickerProviderStateMixin {
+  final MapController _mapController = MapController();
+  bool _hasFramedOnce = false;
+
+  List<LatLng>? _routePoints;
+  LatLng? _routeFetchedForDestination;
+  bool _isFetchingRoute = false;
+
+  // --- Smooth marker animation ---
+  late final AnimationController _markerAnimController;
+  LatLng? _animFrom;
+  LatLng? _animTo;
+  LatLng? _displayedCurrent;
+
+  // --- Follow-me camera ---
+  bool _followMode = true;
+  double _currentZoom = 15;
+
+  SampleCollectionController get controller => widget.controller;
+
+  LatLng? get _destination {
+    final lat = controller.destinationLat;
+    final lng = controller.destinationLng;
+    if (lat == null || lng == null) return null;
+    return LatLng(lat, lng);
+  }
+
+  LatLng? get _rawCurrent {
+    final pos = controller.currentPosition.value;
+    if (pos == null) return null;
+    return LatLng(pos.latitude, pos.longitude);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _markerAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..addListener(_onMarkerTick);
+
+    // Fires every time the GPS gives a new fix.
+    ever<Position?>(controller.currentPosition, (pos) {
+      if (pos == null) return;
+      _onNewFix(LatLng(pos.latitude, pos.longitude));
+    });
+  }
+
+  @override
+  void dispose() {
+    _markerAnimController.dispose();
+    super.dispose();
+  }
+
+  void _onNewFix(LatLng next) {
+    final from = _displayedCurrent ?? next;
+    _animFrom = from;
+    _animTo = next;
+    _markerAnimController
+      ..reset()
+      ..forward();
+
+    if (_followMode) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _mapController.move(next, _currentZoom);
+      });
+    }
+  }
+
+  void _onMarkerTick() {
+    final from = _animFrom;
+    final to = _animTo;
+    if (from == null || to == null) return;
+    final t = Curves.easeInOut.transform(_markerAnimController.value);
+    setState(() {
+      _displayedCurrent = LatLng(
+        from.latitude + (to.latitude - from.latitude) * t,
+        from.longitude + (to.longitude - from.longitude) * t,
+      );
+    });
+  }
+
+  void _fitToPoints(List<LatLng> points) {
+    if (points.length < 2) return;
+    final bounds = LatLngBounds.fromPoints(points);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: bounds,
+          padding: const EdgeInsets.fromLTRB(60, 100, 60, 220),
+        ),
+      );
+    });
+  }
+
+  Future<List<LatLng>?> _fetchRoute(LatLng origin, LatLng dest) async {
+    final url = Uri.parse(
+      'https://router.project-osrm.org/route/v1/driving/'
+      '${origin.longitude},${origin.latitude};'
+      '${dest.longitude},${dest.latitude}'
+      '?overview=full&geometries=polyline',
+    );
+    try {
+      final res = await http.get(url).timeout(const Duration(seconds: 8));
+      if (res.statusCode != 200) return null;
+      final body = jsonDecode(res.body) as Map<String, dynamic>;
+      final routes = body['routes'] as List?;
+      if (routes == null || routes.isEmpty) return null;
+      return _decodePolyline(routes.first['geometry'] as String);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<LatLng> _decodePolyline(String encoded) {
+    final points = <LatLng>[];
+    int index = 0, lat = 0, lng = 0;
+    while (index < encoded.length) {
+      int shift = 0, result = 0, b;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      lat += (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
+
+      shift = 0;
+      result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      lng += (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
+
+      points.add(LatLng(lat / 1e5, lng / 1e5));
+    }
+    return points;
+  }
+
+  void _maybeFetchRoute(LatLng current, LatLng destination) {
+    if (_isFetchingRoute) return;
+    if (_routePoints != null && _routeFetchedForDestination == destination) {
+      return;
+    }
+    _isFetchingRoute = true;
+    _fetchRoute(current, destination).then((points) {
+      if (!mounted) return;
+      setState(() {
+        _isFetchingRoute = false;
+        if (points != null && points.isNotEmpty) {
+          _routePoints = points;
+          _routeFetchedForDestination = destination;
+        }
+      });
+      if (points != null && points.isNotEmpty && !_followMode) {
+        _fitToPoints(points);
+      }
+    });
+  }
+
+  Future<void> _launchDirections(LatLng dest) async {
+    final uri = Platform.isIOS
+        ? Uri.parse(
+            'https://maps.apple.com/?daddr=${dest.latitude},${dest.longitude}',
+          )
+        : Uri.parse(
+            'google.navigation:q=${dest.latitude},${dest.longitude}&mode=d',
+          );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      await launchUrl(
+        Uri.parse(
+          'https://www.google.com/maps/dir/?api=1&destination=${dest.latitude},${dest.longitude}',
+        ),
+        mode: LaunchMode.externalApplication,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final rawCurrent = _rawCurrent;
+      final destination = _destination;
+      final current = _displayedCurrent ?? rawCurrent;
+
+      if (rawCurrent != null && destination != null) {
+        if (!_hasFramedOnce) {
+          _hasFramedOnce = true;
+          _displayedCurrent ??= rawCurrent;
+          _fitToPoints([rawCurrent, destination]);
+        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _maybeFetchRoute(rawCurrent, destination);
+        });
+      }
+
+      final routeLine =
+          _routePoints ??
+          (current != null && destination != null
+              ? [current, destination]
+              : null);
+
+      return Stack(
+        children: [
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter:
+                  current ?? destination ?? const LatLng(19.8762, 75.3433),
+              initialZoom: _currentZoom,
+              onPositionChanged: (position, hasGesture) {
+                _currentZoom = position.zoom;
+                // If the user drags the map themselves, drop out of
+                // follow mode so we don't fight their gesture.
+                if (hasGesture && _followMode) {
+                  setState(() => _followMode = false);
+                }
+              },
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.lifenity_health.oms',
+              ),
+              if (routeLine != null)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: routeLine,
+                      strokeWidth: _routePoints != null ? 4.5 : 3.5,
+                      color: AppColors.blue,
+                      pattern: _routePoints != null
+                          ? const StrokePattern.solid()
+                          : const StrokePattern.dotted(),
+                    ),
+                  ],
+                ),
+              MarkerLayer(
+                markers: [
+                  if (destination != null)
+                    Marker(
+                      point: destination,
+                      width: 40,
+                      height: 40,
+                      child: const Icon(
+                        Icons.location_on_rounded,
+                        color: AppColors.redText,
+                        size: 40,
+                      ),
+                    ),
+                  if (current != null)
+                    Marker(
+                      point: current,
+                      width: 26,
+                      height: 26,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.blue,
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.blue.withOpacity(0.4),
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+
+          Positioned(
+            top: 12,
+            left: 12,
+            right: 12,
+            child: _StatusPill(
+              controller: controller,
+              // isRouting: _isFetchingRoute && _routePoints == null, //todo
+            ),
+          ),
+
+          // Recenter button — appears once the user has panned away
+          // from follow mode.
+          if (!_followMode)
+            Positioned(
+              right: 16,
+              bottom: 190,
+              child: FloatingActionButton.small(
+                heroTag: 'recenter',
+                backgroundColor: AppColors.bgCard,
+                onPressed: () {
+                  setState(() => _followMode = true);
+                  final target = _displayedCurrent ?? _rawCurrent;
+                  if (target != null) {
+                    _mapController.move(target, _currentZoom);
+                  }
+                },
+                child: const Icon(
+                  Icons.my_location_rounded,
+                  color: AppColors.blue,
+                ),
+              ),
+            ),
+
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _RouteBottomSheet(
+              controller: controller,
+              onDirections: destination != null
+                  ? () => _launchDirections(destination)
+                  : null,
+            ),
+          ),
+        ],
+      );
+    });
+  }
+}
+/*class _RouteTrackingMapState extends State<_RouteTrackingMap> {
   final MapController _mapController = MapController();
   bool _hasFramedOnce = false;
 
@@ -997,8 +1325,7 @@ class _RouteTrackingMapState extends State<_RouteTrackingMap> {
       );
     });
   }
-}
-
+}*/
 
 /// Floating "On the way to {patient name}" pill over the map.
 class _StatusPill extends StatelessWidget {
@@ -1040,7 +1367,6 @@ class _StatusPill extends StatelessWidget {
     );
   }
 }
-
 
 /// Fixed bottom sheet over the map — distance readout, route progress bar
 /// and the Directions / Arrived actions (reachable one-handed).
@@ -1109,15 +1435,14 @@ class _RouteBottomSheet extends StatelessWidget {
                 value: controller.routeProgress,
                 minHeight: 5,
                 backgroundColor: AppColors.grayLight,
-                valueColor:
-                    const AlwaysStoppedAnimation(AppColors.accent700),
+                valueColor: const AlwaysStoppedAnimation(AppColors.accent700),
               ),
             ),
             const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
-                  flex: 2,
+                  flex: 1,
                   child: OutlinedButton.icon(
                     onPressed: onDirections,
                     icon: const Icon(Icons.navigation_outlined, size: 18),
@@ -1126,7 +1451,7 @@ class _RouteBottomSheet extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  flex: 3,
+                  flex: 1,
                   child: ElevatedButton(
                     onPressed: controller.isMarkingArrived.value
                         ? null
@@ -1141,8 +1466,7 @@ class _RouteBottomSheet extends StatelessWidget {
                             height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor:
-                                  AlwaysStoppedAnimation(Colors.white),
+                              valueColor: AlwaysStoppedAnimation(Colors.white),
                             ),
                           )
                         : const Text(
@@ -1163,3 +1487,103 @@ class _RouteBottomSheet extends StatelessWidget {
   }
 }
 
+/// Shown when the order is accepted but the phlebotomist hasn't started
+/// the route yet — nothing has been fetched, so this is purely informational.
+class _NeedsRouteStartView extends StatelessWidget {
+  final AssignedPatient patient;
+
+  const _NeedsRouteStartView({required this.patient});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.bgCard,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.border),
+            boxShadow: AppColors.shadowSm,
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: AppColors.primary100,
+                backgroundImage: (patient.avatarUrl?.isNotEmpty ?? false)
+                    ? NetworkImage(patient.avatarUrl!)
+                    : null,
+                child: (patient.avatarUrl?.isNotEmpty ?? false)
+                    ? null
+                    : Text(
+                        patient.name.isNotEmpty
+                            ? patient.name.trim()[0].toUpperCase()
+                            : '?',
+                        style: const TextStyle(
+                          color: AppColors.primary800,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                        ),
+                      ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      patient.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Order #${patient.orderId}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.amberLight.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.amberBorder),
+          ),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.route_outlined, size: 18, color: AppColors.amberText),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'You need to start the route and mark yourself as '
+                  'arrived at the collection location before you can '
+                  'collect the sample.',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}

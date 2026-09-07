@@ -40,7 +40,7 @@ class BarcodeInputField extends StatelessWidget {
             child: TextField(
               controller: controller,
               onChanged: onChanged,
-              maxLength: 30,
+              maxLength: 14,
               style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
               inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
               decoration: const InputDecoration(

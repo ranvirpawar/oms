@@ -162,7 +162,97 @@ class SampleCollectionService {
   /// with [SampleCollectionException.isLisSyncFailure] set when the order
   /// row was inserted but the push to LIS failed — the caller treats that
   /// as a "soft" success, not a hard failure.
+/*  {
+  "status": "Success",
+  "omsResult": {
+  "retval": 1,
+  "statusCode": 201,
+  "status": "SUCCESS",
+  "message": "Sample collection details saved successfully."
+  },
+  "dishaResult": {
+  "status": "201",
+  "message": "Patient registered successfully!",
+  "output": [],
+  "timestamp": "2026-09-05T19:46:40.407",
+  "patientId": 42526,
+  "treatmentId": 42585
+  }
+  }*/
   Future<bool> submitSampleCollection(SampleCollectionPayload payload) async {
+    try {
+      final url = AppUrls.submitSampleCollection.replaceFirst(
+        '{orderId}',
+        payload.orderId.toString(),
+      );
+      final response = await _apiClient.post(url, data: payload.toJson());
+
+      final Map<String, dynamic> respBody = response.data is String
+          ? jsonDecode(response.data as String) as Map<String, dynamic>
+          : response.data as Map<String, dynamic>;
+
+      // New shape: dishaResult is a map with a "status" field that is a
+      // 2xx-style HTTP status code (e.g. "201"). Treat 200-299 as success.
+      // Anything else — a non-2xx code, or a non-numeric legacy value like
+      // "fail insert disha" — is treated as an LIS/Disha sync failure.
+      final dishaResultRaw = respBody['dishaResult'];
+
+      bool isLisSuccess;
+      String? dishaMessage;
+
+      if (dishaResultRaw is Map<String, dynamic>) {
+        final rawStatus = dishaResultRaw['status'];
+        final statusCode = rawStatus is int
+            ? rawStatus
+            : int.tryParse(rawStatus?.toString() ?? '');
+
+        isLisSuccess = statusCode != null && statusCode >= 200 && statusCode < 300;
+        dishaMessage = dishaResultRaw['message'] as String?;
+      } else if (dishaResultRaw is String) {
+        // Legacy shape: dishaResult itself is a plain string. Fall back to
+        // the old top-level "Dishstatuss" field to judge success/failure.
+        dishaMessage = dishaResultRaw;
+        final topLevelDishStatus =
+        (respBody['Dishstatuss'] as String?)?.trim().toLowerCase();
+        isLisSuccess = topLevelDishStatus != 'fail insert disha';
+      } else {
+        // No dishaResult at all — nothing to flag, let the top-level
+        // `status` field below decide the outcome.
+        isLisSuccess = true;
+      }
+
+      if (!isLisSuccess) {
+        throw SampleCollectionException(
+          respBody['message'] as String? ??
+              dishaMessage ??
+              'Sample collection saved, but the LIS sync failed.',
+          isLisSyncFailure: true,
+        );
+      }
+
+      // Check the LIS/Disha outcome first (above), since the backend can
+      // send a top-level status of "Fail" even for this soft-failure case,
+      // not just for hard failures where the order row itself wasn't saved.
+      final status = (respBody['status'] as String?)?.trim().toLowerCase();
+      if (status != 'success') {
+        throw SampleCollectionException(
+          respBody['message'] as String? ??
+              'Unable to submit sample collection.',
+        );
+      }
+
+      return true;
+    } on SampleCollectionException {
+      rethrow;
+    } catch (e) {
+      kPrint(e.toString());
+      throw SampleCollectionException(
+        'Unable to submit sample collection. Please check your connection and try again.',
+        isNetworkError: true,
+      );
+    }
+  }
+  /*Future<bool> submitSampleCollection(SampleCollectionPayload payload) async {
     try {
       final url = AppUrls.submitSampleCollection.replaceFirst(
         '{orderId}',
@@ -222,17 +312,21 @@ class SampleCollectionService {
         isNetworkError: true,
       );
     }
-  }
+  }*/
 
 
 
-  Future<bool> resubmitToDisha({required String orderId}) async {
+  Future<bool> resubmitToDisha({required String orderId, required String userId}) async {
     try {
       final url = AppUrls.dishaSampleCollectionSync.replaceFirst(
         '{orderId}',
         orderId,
       );
-      final response = await _apiClient.post(url);
+      final reqBody = {
+        'orderId ' :orderId,
+        'userId': userId
+      };
+      final response = await _apiClient.post(url, data: reqBody);
 
       final Map<String, dynamic> body = response.data is String
           ? jsonDecode(response.data as String) as Map<String, dynamic>

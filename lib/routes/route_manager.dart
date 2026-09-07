@@ -34,6 +34,7 @@ import '../features/phlebotomist/patient_queue/model/patient_queue_model.dart';
 import '../features/phlebotomist/patient_registration/view/patient_detail_page.dart';
 import '../features/phlebotomist/patient_registration/view/patient_registration_view.dart';
 import '../features/phlebotomist/patient_report/view/patient_report_view.dart';
+import '../features/phlebotomist/sample_collection/controller/sample_collection_controller.dart';
 import '../features/phlebotomist/sample_recollection/controller/sample_recollection_controller.dart';
 import '../features/cms_eho/view/test_analysis_page.dart';
 import '../features/team_lead/barcode_merging/view/merge_barcode_view.dart';
@@ -346,6 +347,9 @@ class RouteManager {
   }
 
   static void navigateToSampleCollection(AssignedPatient patient) {
+    if (Get.isRegistered<SampleCollectionController>()) {
+      Get.delete<SampleCollectionController>(force: true);
+    }
     Get.to(
           () => const OrderConfirmationScreen(),
       binding: SampleCollectionBinding(),

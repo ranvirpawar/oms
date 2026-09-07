@@ -90,6 +90,9 @@ class SampleCollectionController extends GetxController {
       assignedPatient.status == PatientStatus.rescheduled ||
       assignedPatient.status == PatientStatus.inRoute ||
       assignedPatient.status == PatientStatus.arrived;
+
+  bool get needsToStartRoute =>
+      assignedPatient.status == PatientStatus.accepted;
   final RxString empId = ''.obs;
 
   int get _userId => int.tryParse(empId.value) ?? 0;
@@ -115,6 +118,7 @@ class SampleCollectionController extends GetxController {
   double? _initialDistanceMeters;
 
   double? get destinationLat => assignedPatient.destinationLat;
+
   double? get destinationLng => assignedPatient.destinationLng;
 
   /// Straight-line distance from the current position to the patient's
@@ -146,8 +150,8 @@ class SampleCollectionController extends GetxController {
   /// the bag dashboard is reused so its live session state stays in sync.
   BagRegistrationController get bagController =>
       Get.isRegistered<BagRegistrationController>()
-          ? Get.find<BagRegistrationController>()
-          : Get.put(BagRegistrationController());
+      ? Get.find<BagRegistrationController>()
+      : Get.put(BagRegistrationController());
 
   /// The single currently-open bag session (or null).
   QRBagSession? get activeBag => bagController.activeBag;
@@ -158,7 +162,9 @@ class SampleCollectionController extends GetxController {
   /// The open bag's identifiers, sent in the collection payload so every
   /// sample is tracked against the exact bag/session it was collected into.
   int get activeBagId => bagController.activeBagId;
+
   int get activeSessionId => bagController.activeSessionId;
+
   String get activeBagcode => bagController.activeBagcode;
 
   QRBagDetails? get activeBagDetails {
@@ -168,7 +174,9 @@ class SampleCollectionController extends GetxController {
   }
 
   int get bagCapacity => activeBagDetails?.capacity ?? 0;
+
   int get bagUsed => activeBagDetails?.patientCount ?? 0;
+
   int get bagVacant => activeBagDetails?.spaceVacant ?? 0;
 
   /// 0..1 — drives the capacity bar on the active-bag card.
@@ -267,6 +275,10 @@ class SampleCollectionController extends GetxController {
     if (!isOrderAccepted) {
       return;
     }
+    // Accepted but not started yet — nothing to fetch till they arrive.
+    if (needsToStartRoute) {
+      return;
+    }
 
     // En route — show the live map and start GPS updates instead of the
     // collection details; those only load once arrival is marked.
@@ -317,7 +329,8 @@ class SampleCollectionController extends GetxController {
     if (isMarkingArrived.value) return;
     isMarkingArrived.value = true;
     try {
-      final pos = currentPosition.value ??
+      final pos =
+          currentPosition.value ??
           await Geolocator.getCurrentPosition(
             desiredAccuracy: LocationAccuracy.high,
           );
@@ -339,24 +352,14 @@ class SampleCollectionController extends GetxController {
           bagController.ensureSessionsLoaded(),
         ]);
       } else {
-        Get.snackbar(
-          'Action failed',
-          'Unable to mark arrival. Please try again.',
-          snackPosition: SnackPosition.BOTTOM,
-        );
+        LiquidSnack.error('Unable to mark arrival. Please try again.',
+            title: 'Action failed');
       }
     } on LocationTrackingException catch (e) {
-      Get.snackbar(
-        'Action failed',
-        e.message,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      LiquidSnack.error(e.message, title: 'Action failed');
     } catch (_) {
-      Get.snackbar(
-        'Action failed',
-        'Please check your connection and try again.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      LiquidSnack.error('Please check your connection and try again.',
+          title: 'Action failed');
     } finally {
       isMarkingArrived.value = false;
     }
@@ -518,10 +521,9 @@ class SampleCollectionController extends GetxController {
   void onBarcodeChanged(SampleBarcodeEntry entry, String value) {
     final trimmed = value.trim();
     if (_isDuplicateBarcode(entry, trimmed)) {
-      Get.snackbar(
-        'Duplicate barcode',
+      LiquidSnack.warning(
         'This barcode is already used for another sample.',
-        snackPosition: SnackPosition.TOP,
+        title: 'Duplicate barcode',
       );
     }
     _recomputeStatus(entry);
@@ -533,10 +535,9 @@ class SampleCollectionController extends GetxController {
     _closeScanner(entry);
 
     if (_isDuplicateBarcode(entry, value)) {
-      Get.snackbar(
-        'Duplicate barcode',
+      LiquidSnack.warning(
         'This barcode is already used for another sample.',
-        snackPosition: SnackPosition.TOP,
+        title: 'Duplicate barcode',
       );
     }
     _recomputeStatus(entry);
@@ -724,7 +725,7 @@ class SampleCollectionController extends GetxController {
   Future<SampleSubmissionResult?> submitCollection() async {
     final error = validate();
     if (error != null) {
-      Get.snackbar('Incomplete', error, snackPosition: SnackPosition.TOP);
+      LiquidSnack.warning(error, title: 'Incomplete');
       return null;
     }
 
@@ -757,11 +758,8 @@ class SampleCollectionController extends GetxController {
       return null;
     } catch (e) {
       kPrint(e.toString());
-      Get.snackbar(
-        'Submission failed',
-        'Something went wrong. Please try again.',
-        snackPosition: SnackPosition.TOP,
-      );
+      LiquidSnack.error('Something went wrong. Please try again.',
+          title: 'Submission failed');
       return null;
     } finally {
       isSubmitting.value = false;
@@ -790,7 +788,7 @@ class SampleCollectionController extends GetxController {
     isRetryingDisha.value = true;
     dishaRetryMessage.value = '';
     try {
-      await _service.resubmitToDisha(orderId: orderId);
+      await _service.resubmitToDisha(orderId: orderId, userId: empId.value);
       dishaSyncResolved.value = true;
       dishaRetryMessage.value = 'Synced to Disha successfully.';
     } on SampleCollectionException catch (e) {
