@@ -4,6 +4,7 @@ import 'package:lifenity_connect/constants/bag_process_ids.dart';
 import 'package:lifenity_connect/routes/route_manager.dart';
 
 import '../../../../../services/user_service.dart';
+import '../../../../../utils/ui_designs/liquid_snackbar.dart' hide SnackPosition;
 import '../model/active_bag_model.dart';
 import '../service/bag_registration_service.dart';
 
@@ -110,8 +111,7 @@ class PatientListController extends GetxController {
         activeBagSessions.clear();
       }
     } catch (e) {
-      Get.snackbar('Error', e.toString(),
-          snackPosition: SnackPosition.BOTTOM);
+      LiquidSnack.error(e.toString());
     } finally {
       isLoadingBags.value = false;
     }
@@ -143,11 +143,7 @@ class PatientListController extends GetxController {
         filteredPatientList.value = orders;
       }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      LiquidSnack.error(e.toString());
     } finally {
       isLoadingPatients.value = false;
     }
@@ -188,33 +184,22 @@ class PatientListController extends GetxController {
 
       if (response['status'] == 'Success') {
         Get.back(); // close bottom sheet
-        Get.snackbar(
-          'Bag Submitted',
+        LiquidSnack.success(
           'Bag ${session.bagcode} has been successfully submitted to the lab.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: const Color(0xFF1DB954),
-          colorText: Colors.white,
-          duration: const Duration(seconds: 3),
+          title: 'Bag Submitted',
         );
         // Navigate back — bag is now closed, nothing more to do here.
         RouteManager.redirectToHomeDashboard();
       } else {
         Get.back(); // close bottom sheet
-        Get.snackbar(
-          'Submission Failed',
+        LiquidSnack.error(
           response['message'] ?? 'Unable to submit bag. Please try again.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.redAccent,
-          colorText: Colors.white,
+          title: 'Submission Failed',
         );
       }
     } catch (e) {
       Get.back(); // close bottom sheet
-      Get.snackbar(
-        'Error',
-        e.toString(),
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      LiquidSnack.error(e.toString());
     } finally {
       isSubmittingToLab.value = false;
     }

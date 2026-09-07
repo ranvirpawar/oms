@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../network/api_client.dart';
 import '../../../network/app_urls.dart';
-import '../../../services/snackbar_service.dart';
+import '../../../utils/ui_designs/liquid_snackbar.dart';
 
 
 
@@ -38,16 +38,12 @@ class ChangePasswordService {
       if (data['status'] == 'Success') {
         return true;
       } else {
-        SnackBarService.to.showMessage(
-          message: data['message'] ?? 'Password change failed',
-        );
+        LiquidSnack.error(data['message'] ?? 'Password change failed');
         return false;
       }
     } catch (e) {
       kPrint('❌ ChangePasswordService error: $e');
-      SnackBarService.to.showMessage(
-        message: 'Something went wrong. Please try later.',
-      );
+      LiquidSnack.error('Something went wrong. Please try later.');
       rethrow;
     }
   }

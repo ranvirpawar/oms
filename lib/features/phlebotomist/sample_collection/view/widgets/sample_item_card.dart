@@ -322,7 +322,7 @@ class _MoreActionsButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (details) => onTapDown(details.globalPosition),
+      onTapDown: null/*(details) => onTapDown(details.globalPosition)*/,
       child: Material(
         color: AppColors.grayLight,
         borderRadius: BorderRadius.circular(12),

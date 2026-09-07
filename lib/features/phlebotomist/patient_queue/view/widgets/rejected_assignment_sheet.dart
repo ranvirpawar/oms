@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/controller/patient_queue_controller.dart';
 
@@ -7,6 +6,7 @@ import 'package:lifenity_connect/features/phlebotomist/patient_queue/model/patie
 import 'package:lifenity_connect/features/phlebotomist/sample_pickup/service/sample_pickup_service.dart';
 
 import '../../../../../theme/app_colors.dart';
+import '../../../../../utils/ui_designs/liquid_snackbar.dart' hide SnackPosition;
 
 import '../../../sample_collection/service/sample_collection_service.dart';
 import '../widgets/visit_type_badge.dart';
@@ -95,15 +95,9 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
         _loadingReasons = false;
       });
 
-      Get.snackbar(
-        'Unable to load reasons',
+      LiquidSnack.error(
         'Please try again before rejecting this assignment.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 14,
-        backgroundColor: Colors.white,
-        colorText: AppColors.textPrimary,
-        icon: const Icon(Icons.error_outline_rounded, color: AppColors.redText),
+        title: 'Unable to load reasons',
       );
     }
   }
@@ -147,15 +141,9 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
         _submitting = false;
       });
 
-      Get.snackbar(
-        'Unable to reject assignment',
+      LiquidSnack.error(
         'Something went wrong. Please try again.',
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 14,
-        backgroundColor: Colors.white,
-        colorText: AppColors.textPrimary,
-        icon: const Icon(Icons.error_outline_rounded, color: AppColors.redText),
+        title: 'Unable to reject assignment',
       );
     }
   }

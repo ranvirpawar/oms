@@ -11,9 +11,8 @@ import '../../../constants/app_strings.dart';
 import 'package:get/get.dart';
 
 import '../../../theme/app_colors.dart';
+import '../binding/login_binding.dart';
 import '../controller/login_controller.dart';
-
-
 
 class LoginScreenView extends GetView<LoginController> {
   const LoginScreenView({super.key});
@@ -74,18 +73,22 @@ class LoginScreenView extends GetView<LoginController> {
                         ).animate(animation);
                         return FadeTransition(
                           opacity: animation,
-                          child: SlideTransition(position: offsetAnim, child: child),
+                          child: SlideTransition(
+                            position: offsetAnim,
+                            child: child,
+                          ),
                         );
                       },
-                      child: controller.currentStep.value == LoginStep.credentials
+                      child:
+                          controller.currentStep.value == LoginStep.credentials
                           ? _CredentialsStep(
-                        key: const ValueKey('credentials'),
-                        controller: controller,
-                      )
+                              key: const ValueKey('credentials'),
+                              controller: controller,
+                            )
                           : _OtpStep(
-                        key: const ValueKey('otp'),
-                        controller: controller,
-                      ),
+                              key: const ValueKey('otp'),
+                              controller: controller,
+                            ),
                     );
                   }),
                 ),
@@ -103,6 +106,7 @@ class LoginScreenView extends GetView<LoginController> {
 // ======================================================================
 class _CredentialsStep extends StatelessWidget {
   final LoginController controller;
+
   const _CredentialsStep({super.key, required this.controller});
 
   @override
@@ -122,35 +126,37 @@ class _CredentialsStep extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.white.withOpacity(0.3)),
               ),
-              child: Obx(() => DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  isExpanded: true,
-                  dropdownColor: AppColors.primary,
-                  borderRadius: BorderRadius.circular(16),
-                  hint: const Text(
-                    'Select Beta User (Auto-Fill)',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
-                  value: controller.selectedBetaUser.value,
-                  icon: const Icon(Icons.bug_report, color: Colors.white70),
-                  style: const TextStyle(color: Colors.white),
-                  items: controller.betaUsers.entries.map((entry) {
-                    final String role = entry.key.trim();
-                    final String phone = entry.value['user']!;
-                    return DropdownMenuItem<String>(
-                      value: role,
-                      child: Text(
-                        '$role – $phone',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+              child: Obx(
+                () => DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    isExpanded: true,
+                    dropdownColor: AppColors.primary,
+                    borderRadius: BorderRadius.circular(16),
+                    hint: const Text(
+                      'Select Beta User (Auto-Fill)',
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
+                    value: controller.selectedBetaUser.value,
+                    icon: const Icon(Icons.bug_report, color: Colors.white70),
+                    style: const TextStyle(color: Colors.white),
+                    items: controller.betaUsers.entries.map((entry) {
+                      final String role = entry.key.trim();
+                      final String phone = entry.value['user']!;
+                      return DropdownMenuItem<String>(
+                        value: role,
+                        child: Text(
+                          '$role – $phone',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (val) => controller.fillBetaCredentials(val),
+                      );
+                    }).toList(),
+                    onChanged: (val) => controller.fillBetaCredentials(val),
+                  ),
                 ),
-              )),
+              ),
             ),
 
           const SizedBox(height: 12),
@@ -186,19 +192,21 @@ class _CredentialsStep extends StatelessWidget {
                       // textInputAction: TextInputAction.next,
                     ),
                     const SizedBox(height: 16),
-                    Obx(() => CustomTextFormField(
-                      controller: controller.passwordController,
-                      cursorColor: Colors.white,
-                      hintText: AppStrings.password,
-                      svgAssetPath: AppAssets.lockIcons,
-                      validator: controller.validatePassword,
-                      isPassword: true,
-                      isPasswordVisible: controller.isPasswordVisible.value,
-                      onTogglePassword: controller.togglePasswordVisibility,
-                      // autofillHints: const [AutofillHints.password],
-                      // textInputAction: TextInputAction.done,
-                      // onFieldSubmitted: (_) => controller.requestOtp(),
-                    )),
+                    Obx(
+                      () => CustomTextFormField(
+                        controller: controller.passwordController,
+                        cursorColor: Colors.white,
+                        hintText: AppStrings.password,
+                        svgAssetPath: AppAssets.lockIcons,
+                        validator: controller.validatePassword,
+                        isPassword: true,
+                        isPasswordVisible: controller.isPasswordVisible.value,
+                        onTogglePassword: controller.togglePasswordVisibility,
+                        // autofillHints: const [AutofillHints.password],
+                        // textInputAction: TextInputAction.done,
+                        // onFieldSubmitted: (_) => controller.requestOtp(),
+                      ),
+                    ),
                   ],
                 ),
               );
@@ -212,44 +220,53 @@ class _CredentialsStep extends StatelessWidget {
           const SizedBox(height: 28),
 
           // Continue button — sends OTP
-          Obx(() => SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: controller.isLoading.value ? null : controller.requestOtp,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: AppColors.primary,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+          Obx(
+            () => SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: controller.isLoading.value
+                    ? null
+                    : controller.requestOtp,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: AppColors.primary,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
-              ),
-              child: controller.isLoading.value
-                  ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  color: AppColors.primary,
-                  strokeWidth: 2,
-                ),
-              )
-                  : const Text(
-                'CONTINUE',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 4,
-                ),
+                child: controller.isLoading.value
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'CONTINUE',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 4,
+                        ),
+                      ),
               ),
             ),
-          )),
+          ),
 
           // Forgot password
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: () => Get.to(() => const ForgotPasswordView()),
+              onPressed: () {
+                Get.to(
+                  () => ForgotPasswordView(),
+                  binding: ForgotPasswordBinding(),
+                );
+              },
               style: TextButton.styleFrom(overlayColor: Colors.white),
               child: const Text(
                 AppStrings.forgotPassword,
@@ -270,6 +287,7 @@ class _CredentialsStep extends StatelessWidget {
 // ======================================================================
 class _OtpStep extends StatelessWidget {
   final LoginController controller;
+
   const _OtpStep({super.key, required this.controller});
 
   @override
@@ -290,16 +308,22 @@ class _OtpStep extends StatelessWidget {
         const SizedBox(height: 16),
         const Text(
           'Verify it\'s you',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         const SizedBox(height: 6),
-        Obx(() => Text(
-          controller.maskedMobile.value.isNotEmpty
-              ? 'Enter the ${LoginController.otpLength}-digit code sent to ${controller.maskedMobile.value}'
-              : 'Enter the ${LoginController.otpLength}-digit code sent to your registered mobile number',
-          style: const TextStyle(color: Colors.white70, fontSize: 13),
-          textAlign: TextAlign.center,
-        )),
+        Obx(
+          () => Text(
+            controller.maskedMobile.value.isNotEmpty
+                ? 'Enter the ${LoginController.otpLength}-digit code sent to ${controller.maskedMobile.value}'
+                : 'Enter the ${LoginController.otpLength}-digit code sent to your registered mobile number',
+            style: const TextStyle(color: Colors.white70, fontSize: 13),
+            textAlign: TextAlign.center,
+          ),
+        ),
         const SizedBox(height: 28),
 
         // OTP boxes — reusable, self-contained widget (see
@@ -327,16 +351,21 @@ class _OtpStep extends StatelessWidget {
           cursorColor: Colors.white,
         ),
 
-        Obx(() => controller.otpError.value.isNotEmpty
-            ? Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: Text(
-            controller.otpError.value,
-            style: const TextStyle(color: Colors.redAccent, fontSize: 13),
-            textAlign: TextAlign.center,
-          ),
-        )
-            : const SizedBox(height: 12)),
+        Obx(
+          () => controller.otpError.value.isNotEmpty
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    controller.otpError.value,
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 13,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              : const SizedBox(height: 12),
+        ),
 
         const SizedBox(height: 20),
 
@@ -347,24 +376,35 @@ class _OtpStep extends StatelessWidget {
             width: double.infinity,
             height: 56,
             child: ElevatedButton(
-              onPressed: (controller.isVerifyingOtp.value || locked) ? null : controller.verifyOtp,
+              onPressed: (controller.isVerifyingOtp.value || locked)
+                  ? null
+                  : controller.verifyOtp,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: AppColors.primary,
                 disabledBackgroundColor: Colors.white.withOpacity(0.5),
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               child: controller.isVerifyingOtp.value
                   ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
-              )
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                        strokeWidth: 2,
+                      ),
+                    )
                   : const Text(
-                'VERIFY & LOGIN',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 2),
-              ),
+                      'VERIFY & LOGIN',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
+                      ),
+                    ),
             ),
           );
         }),
@@ -379,16 +419,21 @@ class _OtpStep extends StatelessWidget {
             onPressed: disabled ? null : controller.resendOtp,
             child: controller.isResendingOtp.value
                 ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-            )
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
                 : Text(
-              secs > 0
-                  ? 'Resend code in 0:${secs.toString().padLeft(2, '0')}'
-                  : "Didn't get a code? Resend",
-              style: TextStyle(color: Colors.white.withOpacity(disabled ? 0.5 : 1)),
-            ),
+                    secs > 0
+                        ? 'Resend code in 0:${secs.toString().padLeft(2, '0')}'
+                        : "Didn't get a code? Resend",
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(disabled ? 0.5 : 1),
+                    ),
+                  ),
           );
         }),
 
@@ -407,15 +452,11 @@ class _OtpStep extends StatelessWidget {
   }
 }
 
-
 class _WelcomeBackBanner extends StatelessWidget {
   final String username;
   final VoidCallback onSwitch;
 
-  const _WelcomeBackBanner({
-    required this.username,
-    required this.onSwitch,
-  });
+  const _WelcomeBackBanner({required this.username, required this.onSwitch});
 
   @override
   Widget build(BuildContext context) {
@@ -448,7 +489,11 @@ class _WelcomeBackBanner extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: const Center(
-                    child: Icon(Icons.person_outline, color: Colors.white, size: 24),
+                    child: Icon(
+                      Icons.person_outline,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -523,7 +568,11 @@ class _WelcomeBackBanner extends StatelessWidget {
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.switch_account_outlined, color: Colors.white70, size: 13),
+                  Icon(
+                    Icons.switch_account_outlined,
+                    color: Colors.white70,
+                    size: 13,
+                  ),
                   SizedBox(width: 4),
                   Text(
                     'Or sign in with a different account',
@@ -542,5 +591,3 @@ class _WelcomeBackBanner extends StatelessWidget {
     );
   }
 }
-
-

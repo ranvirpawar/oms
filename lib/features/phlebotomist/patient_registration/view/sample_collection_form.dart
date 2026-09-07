@@ -13,8 +13,9 @@ import 'package:lifenity_connect/features/phlebotomist/patient_registration/view
 import 'package:lifenity_connect/features/phlebotomist/patient_registration/view/widget/patient_card_header.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_registration/view/widget/trf_upload_widget.dart';
 
-import 'package:lifenity_connect/services/snackbar_service.dart';
 import 'package:lifenity_connect/utils/helper_functions/helper_methods.dart';
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart'
+    hide SnackPosition;
 import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../componenents/success_dialog.dart';
@@ -821,22 +822,20 @@ class TestBarcodeView extends StatelessWidget {
     if (controller.shouldShowMainBarcode() &&
         (controller.mainBarcodeController.text.isEmpty ||
             controller.mainBarcodeError.value.isNotEmpty)) {
-      SnackBarService.to.showMessage(message: 'Please enter a valid barcode');
+      LiquidSnack.warning('Please enter a valid barcode');
       return;
     }
 
     if (controller.shouldShowGlucoseBarcode() &&
         (controller.glucoseBarcodeController.text.isEmpty ||
             controller.glucoseBarcodeError.value.isNotEmpty)) {
-      SnackBarService.to.showMessage(
-        message: 'Please enter a valid glucose barcode',
-      );
+      LiquidSnack.warning('Please enter a valid glucose barcode');
       return;
     }
 
     // Validate selected doctor
     if (controller.selectedDoctor.value == null) {
-      SnackBarService.to.showMessage(message: 'Please select the doctor');
+      LiquidSnack.warning('Please select the doctor');
       return;
     }
     // both receipt number should not be identical
@@ -844,14 +843,14 @@ class TestBarcodeView extends StatelessWidget {
         controller.advancedReceiptNumberController.text.isNotEmpty &&
         controller.basicReceiptNumberController.text ==
             controller.advancedReceiptNumberController.text) {
-      SnackBarService.to.showMessage(
-        message: 'Basic & Advanced receipt numbers should not be identical',
+      LiquidSnack.warning(
+        'Basic & Advanced receipt numbers should not be identical',
       );
       return;
     }
     // making trf upload compulsory
     if (controller.selectedTrfFiles.isEmpty) {
-      SnackBarService.to.showMessage(message: 'It is mandatory to upload trf files');
+      LiquidSnack.warning('It is mandatory to upload trf files');
       return;
     }
 
@@ -893,13 +892,8 @@ class TestBarcodeView extends StatelessWidget {
 
         if (!uploadSuccess) {
           // Show warning but don't block success
-          Get.snackbar(
-            'Warning',
+          LiquidSnack.warning(
             'Patient registered successfully but some TRF files failed to upload',
-            snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: Colors.orange,
-            colorText: Colors.white,
-            duration: const Duration(seconds: 3),
           );
         } else {
           HelperMethods.printDebug('✅ All TRF files uploaded successfully');
@@ -919,14 +913,7 @@ class TestBarcodeView extends StatelessWidget {
         errorMessage = 'Failed to submit lab test data: ${e.toString()}';
       }
 
-      Get.snackbar(
-        'Error',
-        errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 4),
-      );
+      LiquidSnack.error(errorMessage);
     } finally {
       controller.isProcessing.value = false;
     }

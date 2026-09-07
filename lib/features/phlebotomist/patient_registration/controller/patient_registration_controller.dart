@@ -12,7 +12,8 @@ import 'package:lifenity_connect/features/phlebotomist/patient_registration/mode
 import 'package:lifenity_connect/features/phlebotomist/patient_registration/models/facility_list_model.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_registration/models/marital_status_model.dart';
 import 'package:lifenity_connect/services/auth_manager.dart';
-import 'package:lifenity_connect/services/snackbar_service.dart';
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart'
+    hide SnackPosition;
 import 'package:uuid/uuid.dart';
 
 import '../models/doctor_reference.dart';
@@ -327,9 +328,7 @@ class PatientRegistrationController extends GetxController {
       final facilityCode = selectedFacilityName.value;
       if (facilityCode == null) {
         opdError.value = 'Please select a facility first';
-        SnackBarService.to.showMessage(
-          message: 'Please select a facility first',
-        );
+        LiquidSnack.warning('Please select a facility first');
         return;
       }
       final isExist = await _service.checkOpdNumberExists(
@@ -341,17 +340,14 @@ class PatientRegistrationController extends GetxController {
 
         isOpdVerified.value = false;
         opdNoController.clear();
-        SnackBarService.to.showMessage(
-          message: 'OPD number already exists',
-          position: SnackPosition.TOP,
-        );
+        LiquidSnack.warning('OPD number already exists');
       } else {
         isOpdVerified.value = true;
         opdError.value = '';
         labInfoError.value = '';
       }
     } catch (e) {
-      SnackBarService.to.showMessage(message: 'Failed to check OPD number');
+      LiquidSnack.error('Failed to check OPD number');
       return;
     } finally {
       isOPDVerifying.value = false;
@@ -919,7 +915,7 @@ class PatientRegistrationController extends GetxController {
     if (!validateResidenceInfo()) isValid = false;
 
     if (!isValid) {
-      SnackBarService.to.showMessage(message: 'Please add required fields');
+      LiquidSnack.warning('Please add required fields');
       return;
     }
     final patientArray = createPatientArray();
@@ -1228,11 +1224,7 @@ class PatientRegistrationController extends GetxController {
       isVerified.value = true;
       otpError.value = '';
       Get.back();
-      Get.snackbar(
-        'Success',
-        'Mobile number verified successfully',
-        snackPosition: SnackPosition.TOP,
-      );
+      LiquidSnack.success('Mobile number verified successfully');
     } else {
       otpError.value = 'Invalid OTP';
     }
@@ -1483,10 +1475,7 @@ class PatientRegistrationController extends GetxController {
         consentMethod.value = 'link';
         _startConsentResendTimer();
         _startConsentPolling(mobile, name);
-        SnackBarService.to.showMessage(
-          message: 'Verification link sent to $mobile',
-          position: SnackPosition.TOP,
-        );
+        LiquidSnack.success('Verification link sent to $mobile');
       } else {
         consentLinkError.value =
             response['message'] ?? 'Failed to send verification link';
@@ -1570,9 +1559,7 @@ class PatientRegistrationController extends GetxController {
       await uploadConsentPhoto();
     } catch (e) {
       CustomDebugFunction.log('Error picking consent photo: $e');
-      SnackBarService.to.showMessage(
-        message: 'Unable to capture consent photo',
-      );
+      LiquidSnack.error('Unable to capture consent photo');
     }
   }
 
@@ -1600,9 +1587,7 @@ class PatientRegistrationController extends GetxController {
         consentStatusMessage.value = 'Paper consent captured and uploaded';
         _consentPollTimer?.cancel();
         isPollingConsent.value = false;
-        SnackBarService.to.showMessage(
-          message: 'Consent photo uploaded successfully',
-        );
+        LiquidSnack.success('Consent photo uploaded successfully');
       } else {
         consentPhotoFile.value = null;
         consentError.value = 'Failed to upload consent photo. Please retry.';

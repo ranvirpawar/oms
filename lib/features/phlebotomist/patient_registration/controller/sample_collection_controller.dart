@@ -8,7 +8,8 @@ import 'package:intl/intl.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_registration/service/patient_registration_service.dart';
 import 'package:lifenity_connect/network/app_urls.dart';
 import 'package:lifenity_connect/services/auth_manager.dart';
-import 'package:lifenity_connect/services/snackbar_service.dart';
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart'
+    hide SnackPosition;
 import '../../../../componenents/c_textformfeild.dart';
 import '../../../../constants/app_assets.dart';
 import '../../../../theme/app_colors.dart';
@@ -115,8 +116,10 @@ class TestBarcodeController extends GetxController {
               const BagRegistrationDashboard().runtimeType.toString();
         });
 
-        Get.snackbar(
-            'Session Ended', 'The bag was closed. Please open a bag first.');
+        LiquidSnack.warning(
+          'The bag was closed. Please open a bag first.',
+          title: 'Session Ended',
+        );
       });
     }
 
@@ -327,7 +330,7 @@ class TestBarcodeController extends GetxController {
       );
       doctorNames.assignAll(response);
     } catch (e) {
-      Get.snackbar('Error', 'Failed to fetch doctor references: $e');
+      LiquidSnack.error('Failed to fetch doctor references: $e');
     }
   }
 
@@ -474,9 +477,7 @@ class TestBarcodeController extends GetxController {
       if (status == 'Success' &&
           output is List &&
           output.isNotEmpty) {
-        SnackBarService.to.showMessage(
-          message: 'Barcode Already Exists!',
-        );
+        LiquidSnack.warning('Barcode Already Exists!');
 
         mainBarcodeController.clear();
         glucoseBarcodeController.clear();
@@ -485,9 +486,7 @@ class TestBarcodeController extends GetxController {
       }
 
       // Unexpected API response
-      SnackBarService.to.showMessage(
-        message: 'Unable to verify barcode. Please try again.',
-      );
+      LiquidSnack.warning('Unable to verify barcode. Please try again.');
 
       return false;
     } catch (e) {
@@ -760,8 +759,10 @@ class TestBarcodeController extends GetxController {
                     final last = lastNameController.text.trim();
 
                     if (first.isEmpty || last.isEmpty) {
-                      Get.snackbar(
-                          'Validation', 'First and Last name are required.');
+                      LiquidSnack.warning(
+                        'First and Last name are required.',
+                        title: 'Validation',
+                      );
                       return;
                     }
 
@@ -788,12 +789,10 @@ class TestBarcodeController extends GetxController {
                       // Add doctor locally (if needed)
 
                       Get.back(); // Close bottom sheet
-                      SnackBarService.to
-                          .showMessage(message: 'Doctor added successfully');
+                      LiquidSnack.success('Doctor added successfully');
                       fetchDoctorReferences();
                     } else {
-                      SnackBarService.to.showMessage(
-                          message: 'Failed to add doctor. Try again.');
+                      LiquidSnack.error('Failed to add doctor. Try again.');
                     }
                   },
                   /* onPressed: () {
@@ -1007,14 +1006,10 @@ class TestBarcodeController extends GetxController {
 
       if (photo != null) {
         selectedTrfFiles.add(File(photo.path));
-        SnackBarService.to.showMessage(
-          message: 'Image added successfully',
-        );
+        LiquidSnack.success('Image added successfully');
       }
     } catch (e) {
-      SnackBarService.to.showMessage(
-        message: 'Failed to capture image: $e',
-      );
+      LiquidSnack.error('Failed to capture image: $e');
     }
   }
 
@@ -1031,14 +1026,10 @@ class TestBarcodeController extends GetxController {
         for (var image in images) {
           selectedTrfFiles.add(File(image.path));
         }
-        SnackBarService.to.showMessage(
-          message: '${images.length} image(s) added successfully',
-        );
+        LiquidSnack.success('${images.length} image(s) added successfully');
       }
     } catch (e) {
-      SnackBarService.to.showMessage(
-        message: 'Failed to pick images: $e',
-      );
+      LiquidSnack.error('Failed to pick images: $e');
     }
   }
 
@@ -1046,9 +1037,7 @@ class TestBarcodeController extends GetxController {
   void removeTrfFile(int index) {
     if (index >= 0 && index < selectedTrfFiles.length) {
       selectedTrfFiles.removeAt(index);
-      SnackBarService.to.showMessage(
-        message: 'Image removed',
-      );
+      LiquidSnack.quick('Image removed');
     }
   }
 
@@ -1074,16 +1063,12 @@ class TestBarcodeController extends GetxController {
           facilityId.value; // Get facility code from controller
 
       if (barcode.isEmpty) {
-        SnackBarService.to.showMessage(
-          message: 'Barcode is required to upload TRF files',
-        );
+        LiquidSnack.warning('Barcode is required to upload TRF files');
         return false;
       }
 
       if (facilityCode.isEmpty) {
-        SnackBarService.to.showMessage(
-          message: 'Facility code is required to upload TRF files',
-        );
+        LiquidSnack.warning('Facility code is required to upload TRF files');
         return false;
       }
 
@@ -1108,28 +1093,21 @@ class TestBarcodeController extends GetxController {
       final totalFiles = result['totalFiles'] as int;
 
       if (successCount == totalFiles) {
-        SnackBarService.to.showMessage(
-          message: 'All TRF files uploaded successfully',
-        );
+        LiquidSnack.success('All TRF files uploaded successfully');
         return true;
       } else if (successCount > 0) {
-        SnackBarService.to.showMessage(
-          message:
-              '$successCount/$totalFiles files uploaded. ${failedFiles.length} failed.',
+        LiquidSnack.warning(
+          '$successCount/$totalFiles files uploaded. ${failedFiles.length} failed.',
         );
         return true; // Partial success
       } else {
-        SnackBarService.to.showMessage(
-          message: 'Failed to upload TRF files',
-        );
+        LiquidSnack.error('Failed to upload TRF files');
         return false;
       }
     } catch (e, stackTrace) {
       kPrint('❌ Error uploading TRF files: $e');
       kPrint('   Stack trace: $stackTrace');
-      SnackBarService.to.showMessage(
-        message: 'Error uploading TRF files',
-      );
+      LiquidSnack.error('Error uploading TRF files');
       return false;
     } finally {
       isUploadingTrf.value = false;

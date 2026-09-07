@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../../constants/app_strings.dart';
-import '../../../../../services/snackbar_service.dart';
 import '../../../../../theme/app_colors.dart';
+import '../../../../../utils/ui_designs/liquid_snackbar.dart'
+    hide SnackPosition;
 import '../../controller/patient_registration_controller.dart';
 
 class NavigationButtons extends StatelessWidget {
@@ -84,8 +85,8 @@ class NavigationButtons extends StatelessWidget {
                                 onPressed: () {
                                   Get.back();
                                   controller.resetForm();
-                                  SnackBarService.to.showMessage(
-                                    message: AppStrings.formResetSuccess,
+                                  LiquidSnack.success(
+                                    AppStrings.formResetSuccess,
                                   );
                                 },
                                 child: const Text(AppStrings.reset),
@@ -238,8 +239,8 @@ class NavigationButtons extends StatelessWidget {
                                 onPressed: () {
                                   Get.back();
                                   controller.resetForm();
-                                  SnackBarService.to.showMessage(
-                                    message: AppStrings.formResetSuccess,
+                                  LiquidSnack.success(
+                                    AppStrings.formResetSuccess,
                                   );
                                 },
                                 child:  const Text(AppStrings.reset),

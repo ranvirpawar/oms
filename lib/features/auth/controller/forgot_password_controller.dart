@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../service/forgot_password_service.dart';
+import '../../../utils/ui_designs/liquid_snackbar.dart';
 
 
 class ForgotPasswordController extends GetxController {
@@ -156,14 +157,10 @@ class ForgotPasswordController extends GetxController {
     required String message,
     required bool isError,
   }) {
-    Get.snackbar(
-      title,
-      message,
-      backgroundColor: isError ? Colors.redAccent : Colors.green,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.TOP,
-      margin: const EdgeInsets.all(16),
-      borderRadius: 12,
-    );
+    if (isError) {
+      LiquidSnack.error(message, title: title);
+    } else {
+      LiquidSnack.success(message, title: title);
+    }
   }
 }

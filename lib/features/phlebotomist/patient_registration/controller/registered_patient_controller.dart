@@ -4,7 +4,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:lifenity_connect/services/snackbar_service.dart';
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart'
+    hide SnackPosition;
 
 import '../models/registered_patient_model.dart';
 import '../service/patient_registration_service.dart';
@@ -197,14 +198,9 @@ class RegisteredPatientController extends GetxController {
         Get.back();
 
         fetchPatients();
-        SnackBarService.to.showSnack(
-          message: 'Patient updated successfully',
-          title: 'Success',
-        );
+        LiquidSnack.success('Patient updated successfully');
       } else {
-        SnackBarService.to.showMessage(
-          message: 'Update failed. Please try again.',
-        );
+        LiquidSnack.error('Update failed. Please try again.');
       }
     } catch (e) {
       // SnackBarService.to.showMessage(
@@ -356,10 +352,7 @@ class RegisteredPatientController extends GetxController {
         isOpdVerified.value = !exists;
 
         if (exists) {
-          SnackBarService.to.showMessage(
-            message: 'OPD number already exists!',
-            position: SnackPosition.TOP,
-          );
+          LiquidSnack.warning('OPD number already exists!');
         }
       } catch (e) {
         isOpdVerified.value = false;

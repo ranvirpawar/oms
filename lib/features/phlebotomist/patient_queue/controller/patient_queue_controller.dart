@@ -8,6 +8,7 @@ import '../../sample_collection/model/sample_collection_models.dart';
 import '../../sample_collection/service/sample_collection_service.dart';
 import '../model/patient_queue_model.dart';
 import '../service/patient_queue_service.dart';
+import '../../../../utils/ui_designs/liquid_snackbar.dart' hide SnackPosition;
 
 /// Filter options surfaced via the summary bar at the top of the screen.
 enum QueueFilter { all, homeVisit, clinicVisit, rescheduled }
@@ -227,17 +228,12 @@ class PatientQueueController extends GetxController {
         loadState.value = QueueLoadState.empty;
         errorMessage.value = '';
       } else {
-        Get.snackbar(
-          'Refresh failed',
-          e.message,
-          snackPosition: SnackPosition.BOTTOM,
-        );
+        LiquidSnack.error(e.message, title: 'Refresh failed');
       }
     } catch (_) {
-      Get.snackbar(
-        'Refresh failed',
+      LiquidSnack.error(
         'Please check your connection and try again.',
-        snackPosition: SnackPosition.BOTTOM,
+        title: 'Refresh failed',
       );
     } finally {
       isRefreshing.value = false;
@@ -275,31 +271,17 @@ class PatientQueueController extends GetxController {
         updatedBy: int.tryParse(empId.value) ?? 0,
       );
       if (success) {
-        Get.snackbar(
-          'Visit accepted',
-          '',
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 2),
-        );
+        LiquidSnack.quick('Visit accepted');
         await fetchPatients(); // refresh from server
       } else {
-        Get.snackbar(
-          'Action failed',
-          'Please try again.',
-          snackPosition: SnackPosition.BOTTOM,
-        );
+        LiquidSnack.error('Please try again.', title: 'Action failed');
       }
     } on PatientQueueException catch (e) {
-      Get.snackbar(
-        'Action failed',
-        e.message,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      LiquidSnack.error(e.message, title: 'Action failed');
     } catch (_) {
-      Get.snackbar(
-        'Action failed',
+      LiquidSnack.error(
         'Please check your connection and try again.',
-        snackPosition: SnackPosition.BOTTOM,
+        title: 'Action failed',
       );
     } finally {
       processingIds.remove(patient.id);
@@ -314,10 +296,9 @@ class PatientQueueController extends GetxController {
     try {
       final position = await _getCurrentPosition();
       if (position == null) {
-        Get.snackbar(
-          'Location required',
+        LiquidSnack.warning(
           'Please enable location access to start the route.',
-          snackPosition: SnackPosition.BOTTOM,
+          title: 'Location required',
         );
         return;
       }
@@ -331,31 +312,17 @@ class PatientQueueController extends GetxController {
         createdBy: int.tryParse(empId.value) ?? 0,
       );
       if (success) {
-        Get.snackbar(
-          'Route started',
-          '',
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 2),
-        );
+        LiquidSnack.quick('Route started');
         await fetchPatients();
       } else {
-        Get.snackbar(
-          'Action failed',
-          'Please try again.',
-          snackPosition: SnackPosition.BOTTOM,
-        );
+        LiquidSnack.error('Please try again.', title: 'Action failed');
       }
     } on LocationTrackingException catch (e) {
-      Get.snackbar(
-        'Action failed',
-        e.message,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      LiquidSnack.error(e.message, title: 'Action failed');
     } catch (_) {
-      Get.snackbar(
-        'Action failed',
+      LiquidSnack.error(
         'Please check your connection and try again.',
-        snackPosition: SnackPosition.BOTTOM,
+        title: 'Action failed',
       );
     } finally {
       processingIds.remove(patient.id);
@@ -391,25 +358,18 @@ class PatientQueueController extends GetxController {
     if (processingIds.contains(patient.id)) return;
     processingIds.add(patient.id);
     try {
-      await _sampleCollectionService.resubmitToDisha(orderId: patient.orderId);
-      Get.snackbar(
-        'Synced to LIS',
+      await _sampleCollectionService.resubmitToDisha(orderId: patient.orderId,userId: empId.value);
+      LiquidSnack.success(
         'Order ${patient.orderId} was pushed to Disha successfully.',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 3),
+        title: 'Synced to LIS',
       );
       await fetchPatients(); // refresh from server
     } on SampleCollectionException catch (e) {
-      Get.snackbar(
-        'Sync failed',
-        e.message,
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      LiquidSnack.error(e.message, title: 'Sync failed');
     } catch (_) {
-      Get.snackbar(
-        'Sync failed',
+      LiquidSnack.error(
         'Please check your connection and try again.',
-        snackPosition: SnackPosition.BOTTOM,
+        title: 'Sync failed',
       );
     } finally {
       processingIds.remove(patient.id);
@@ -457,26 +417,16 @@ class PatientQueueController extends GetxController {
       final success = await action();
 
       if (success) {
-        Get.snackbar(
-          successMessage,
-          '',
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 2),
-        );
+        LiquidSnack.quick(successMessage);
 
         await fetchPatients();
       } else {
-        Get.snackbar(
-          'Action failed',
-          'Please try again.',
-          snackPosition: SnackPosition.BOTTOM,
-        );
+        LiquidSnack.error('Please try again.', title: 'Action failed');
       }
     } catch (_) {
-      Get.snackbar(
-        'Action failed',
+      LiquidSnack.error(
         'Please check your connection and try again.',
-        snackPosition: SnackPosition.BOTTOM,
+        title: 'Action failed',
       );
     } finally {
       processingIds.remove(patientId);

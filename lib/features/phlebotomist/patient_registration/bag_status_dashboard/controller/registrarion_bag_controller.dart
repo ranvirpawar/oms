@@ -173,7 +173,7 @@ class BagRegistrationController extends GetxController {
     } catch (e) {
       errorMessage.value = e.toString();
       if (showFeedback) {
-        Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
+        LiquidSnack.error(e.toString());
       }
     } finally {
       isLoading.value = false;
@@ -216,10 +216,8 @@ class BagRegistrationController extends GetxController {
       if (hasOpenBag) {
         final closed = await _closeBagSilently(activeBag!);
         if (!closed) {
-          Get.snackbar(
-            'Failed',
+          LiquidSnack.error(
             'Could not close the existing open bag. Please try again.',
-            snackPosition: SnackPosition.BOTTOM,
           );
           return false;
         }
@@ -251,12 +249,11 @@ class BagRegistrationController extends GetxController {
         return true;
       }
 
-      Get.snackbar('Failed', response['message'] ?? 'Could not open bag',
-          snackPosition: SnackPosition.BOTTOM);
+      LiquidSnack.error(response['message'] ?? 'Could not open bag');
       return false;
     } catch (e) {
       errorMessage.value = e.toString();
-      Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      LiquidSnack.error(e.toString());
       return false;
     } finally {
       isLoading.value = false;
@@ -308,14 +305,12 @@ class BagRegistrationController extends GetxController {
       if (response['status'] == 'Success') {
         _updateSessionStatus(session, 1);
         bagDetailsMap.remove(session.bagId);
-        Get.snackbar('Success', 'Bag closed successfully!',
-            snackPosition: SnackPosition.BOTTOM);
+        LiquidSnack.success('Bag closed successfully!');
       } else {
-        Get.snackbar('Failed', response['message'] ?? 'Could not close bag',
-            snackPosition: SnackPosition.BOTTOM);
+        LiquidSnack.error(response['message'] ?? 'Could not close bag');
       }
     } catch (e) {
-      Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      LiquidSnack.error(e.toString());
     } finally {
       isLoading.value = false;
     }
@@ -339,10 +334,8 @@ class BagRegistrationController extends GetxController {
       if (hasOpenBag && activeBag!.bagId != session.bagId) {
         final closed = await _closeBagSilently(activeBag!);
         if (!closed) {
-          Get.snackbar(
-            'Failed',
+          LiquidSnack.error(
             'Could not close the existing open bag. Please try again.',
-            snackPosition: SnackPosition.BOTTOM,
           );
           return;
         }
@@ -359,14 +352,12 @@ class BagRegistrationController extends GetxController {
         await _loadBagDetails(
           allSessions.firstWhere((s) => s.sessionID == session.sessionID),
         );
-        LiquidSnack.success('Bag reopened successfully!'
-           );
+        LiquidSnack.success('Bag reopened successfully!');
       } else {
-        Get.snackbar('Failed', response['message'] ?? 'Could not reopen bag',
-            snackPosition: SnackPosition.BOTTOM);
+        LiquidSnack.error(response['message'] ?? 'Could not reopen bag');
       }
     } catch (e) {
-      Get.snackbar('Error', e.toString(), snackPosition: SnackPosition.BOTTOM);
+      LiquidSnack.error(e.toString());
     } finally {
       isLoading.value = false;
     }

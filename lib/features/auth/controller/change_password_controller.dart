@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../services/auth_manager.dart';
-import '../../../services/snackbar_service.dart';
+import '../../../utils/ui_designs/liquid_snackbar.dart';
 import '../../dashboard/controller/user_model.dart';
 import '../service/change_password_service.dart';
 
@@ -99,9 +99,7 @@ class ChangePasswordController extends GetxController {
     if (!formKey.currentState!.validate()) return;
 
     if (_empCode == null) {
-      SnackBarService.to.showMessage(
-        message: 'Unable to identify user. Please re-login.',
-      );
+      LiquidSnack.error('Unable to identify user. Please re-login.');
       return;
     }
 
@@ -119,15 +117,7 @@ class ChangePasswordController extends GetxController {
 
         Get.back();
 
-        Get.snackbar(
-          'Success',
-          'Password updated successfully',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.TOP,
-          margin: const EdgeInsets.all(16),
-          borderRadius: 12,
-        );
+        LiquidSnack.success('Password updated successfully');
       }
     } catch (_) {
       // Error already shown by service

@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_registration/service/patient_registration_service.dart';
 import 'package:lifenity_connect/network/api_client.dart';
-import 'package:lifenity_connect/services/snackbar_service.dart';
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart'
+    hide SnackPosition;
 
 import '../models/tests_model.dart';
 class TestSelectionController extends GetxController {
@@ -204,8 +205,7 @@ class TestSelectionController extends GetxController {
             '📋 Master basic: ${allMasterBasic.length} | advance: ${allMasterAdvance.length}');
       } else {
         // HMIS fetch failed – still show all master tests, just no auto-select
-        SnackBarService.to.showMessage(
-          message:
+        LiquidSnack.error(
           hmisResponse['message'] ?? 'Failed to load HMIS patient tests',
         );
         basicTests.assignAll(allMasterBasic);
@@ -214,8 +214,7 @@ class TestSelectionController extends GetxController {
 
       _groupTestsByLabCategory();
     } catch (e) {
-      SnackBarService.to
-          .showMessage(message: 'Failed to load tests: $e');
+      LiquidSnack.error('Failed to load tests: $e');
     } finally {
       isLoadingTests.value = false;
     }
@@ -247,7 +246,7 @@ class TestSelectionController extends GetxController {
       advanceTests.assignAll(advanceTestsList);
       _groupTestsByLabCategory();
     } catch (e) {
-      SnackBarService.to.showMessage(message: 'Failed to load tests: $e');
+      LiquidSnack.error('Failed to load tests: $e');
     } finally {
       isLoadingTests.value = false;
     }

@@ -62,7 +62,7 @@ class BagRegistrationDashboard extends StatelessWidget {
       backgroundColor: const Color(0xFFF0F4F8),
       appBar: CustomAppBar(
         title: AppStrings.bagStatusDashboard,
-        actions: [
+       /* actions: [
           Semantics(
             label: 'View collected orders',
             button: true,
@@ -80,7 +80,7 @@ class BagRegistrationDashboard extends StatelessWidget {
               },
             ),
           ),
-        ],
+        ],*/
       ),
       floatingActionButton: Obx(
             () => controller.isLoading.value

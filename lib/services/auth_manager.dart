@@ -16,6 +16,7 @@ enum UserRole {
   phlebotomist('Phlebotomist'),
   runnerBoy('Runner Boy'),
   labTechnician('Lab Technician'),
+  labAccession('Lab accession'),
   connector('Connector'),
   teamLead('Team Lead'),
   medicalOfficer('Medical Officer'),

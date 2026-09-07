@@ -8,6 +8,8 @@ import 'package:lifenity_connect/network/api_client.dart';
 import 'package:lifenity_connect/network/app_urls.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:get/get.dart' hide FormData, MultipartFile;
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart'
+    hide SnackPosition;
 import '../../../../utils/helper_functions/helper_methods.dart';
 import '../models/beneficiary_consent_model.dart';
 import '../models/center_name_model.dart';
@@ -167,8 +169,9 @@ class PatientRegistrationService {
         final output = data['output'] as List;
         return output.map((e) => ReferenceDoctor.fromJson(e)).toList();
       } else {
-        Get.snackbar(
-            'Error', data['message'] ?? 'Failed to load reference doctors');
+        LiquidSnack.error(
+          data['message'] ?? 'Failed to load reference doctors',
+        );
         return [];
       }
     } catch (e) {
@@ -927,12 +930,13 @@ class PatientRegistrationService {
         final output = data['output'] as List;
         return output.map((e) => ReferenceDoctor.fromJson(e)).toList();
       } else {
-        Get.snackbar(
-            'Error', data['message'] ?? 'Failed to load reference doctors');
+        LiquidSnack.error(
+          data['message'] ?? 'Failed to load reference doctors',
+        );
         return [];
       }
     } catch (e) {
-      Get.snackbar('Error', 'Something went wrong: $e');
+      LiquidSnack.error('Something went wrong: $e');
       return [];
     }
   }

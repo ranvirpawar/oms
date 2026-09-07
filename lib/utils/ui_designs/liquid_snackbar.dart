@@ -116,7 +116,8 @@ class LiquidSnack {
     String? title,
     SnackVariant variant = SnackVariant.neutral,
     SnackPosition position = SnackPosition.bottom,
-    Duration duration = const Duration(seconds: 3),
+    // Project rule: snackbars must never stay on screen longer than 2s.
+    Duration duration = const Duration(seconds: 2),
     String? actionLabel,
     VoidCallback? onAction,
     VoidCallback? onDismiss,
@@ -201,7 +202,7 @@ class LiquidSnack {
     message: message,
     title: title,
     variant: SnackVariant.error,
-    duration: const Duration(seconds: 4),
+    duration: const Duration(seconds: 2),
   );
 
   static Future<void> warning(String message, {String? title}) => show(
@@ -221,7 +222,7 @@ class LiquidSnack {
     required String actionLabel,
     required VoidCallback onAction,
     SnackVariant variant = SnackVariant.neutral,
-    Duration duration = const Duration(seconds: 5),
+    Duration duration = const Duration(seconds: 2),
   }) =>
       show(
         message: message,

@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
-import 'package:lifenity_connect/services/snackbar_service.dart';
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
 
 import '../../../network/api_client.dart';
 import '../../../network/app_urls.dart';
@@ -36,8 +36,7 @@ class LoginService {
         );
       }
     } catch (e) {
-      SnackBarService.to
-          .showMessage(message: 'Something went wrong please try later');
+      LiquidSnack.error('Something went wrong please try later');
       rethrow;
     }
   }
@@ -74,8 +73,7 @@ class LoginService {
       }
     } catch (e) {
       kPrint('Error verifying OTP: $e');
-      SnackBarService.to
-          .showMessage(message: 'Something went wrong please try later');
+      LiquidSnack.error('Something went wrong please try later');
       rethrow;
     }
   }
@@ -142,8 +140,7 @@ class LoginService {
         return false;
       }
     } catch (e) {
-      SnackBarService.to
-          .showMessage(message: 'Something went wrong please try later');
+      LiquidSnack.error('Something went wrong please try later');
       rethrow;
     }
   }
@@ -187,8 +184,9 @@ class LoginService {
       final needsUpdate = _isVersionGreater(latestVersionStr, versionCode);
 
       if (needsUpdate) {
-        SnackBarService.to.showMessage(
-          message: data['message'] ?? 'New version available',
+        LiquidSnack.info(
+          data['message'] ?? 'New version available',
+          title: 'Update available',
         );
       }
 

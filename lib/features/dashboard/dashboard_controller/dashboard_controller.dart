@@ -183,6 +183,7 @@ class DashboardController extends GetxController {
       case UserRole.connector:
         return _connectorCards();
       case UserRole.labTechnician:
+      case UserRole.labAccession:
         return _labTechnicianCards();
 
       default:

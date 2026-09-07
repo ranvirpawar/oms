@@ -8,6 +8,7 @@ import 'package:lifenity_connect/network/app_urls.dart';
 import 'package:lifenity_connect/services/auth_manager.dart';
 import 'package:lifenity_connect/theme/app_theme.dart';
 import 'package:lifenity_connect/theme/theme_provider.dart';
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
 
 import 'features/dashboard/dashboard_controller/dashboard_controller.dart';
 
@@ -36,6 +37,7 @@ class MyApp extends StatelessWidget {
         title: AppStrings.appName,
         debugShowCheckedModeBanner: false,
         theme: ThemeProvider.to.lightTheme,
+        navigatorKey: LiquidSnack.navigatorKey,
         navigatorObservers: [DashboardRouteObserver.instance],
       
         home: SplashScreen(),

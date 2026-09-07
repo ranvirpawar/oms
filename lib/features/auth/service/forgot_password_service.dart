@@ -2,7 +2,7 @@ import 'package:get/get.dart';
 
 import '../../../network/api_client.dart';
 import '../../../network/app_urls.dart';
-import '../../../services/snackbar_service.dart';
+import '../../../utils/ui_designs/liquid_snackbar.dart';
 
 
 class ForgotPasswordService {
@@ -22,15 +22,11 @@ class ForgotPasswordService {
       if (data['status'] == 'Success') {
         return true;
       } else {
-        SnackBarService.to.showMessage(
-          message: data['message'] ?? 'Could not send OTP',
-        );
+        LiquidSnack.error(data['message'] ?? 'Could not send OTP');
         return false;
       }
     } catch (e) {
-      SnackBarService.to.showMessage(
-        message: 'Something went wrong. Please try later.',
-      );
+      LiquidSnack.error('Something went wrong. Please try later.');
       rethrow;
     }
   }
@@ -57,15 +53,11 @@ class ForgotPasswordService {
       if (data['status'] == 'Success') {
         return true;
       } else {
-        SnackBarService.to.showMessage(
-          message: data['message'] ?? 'Reset failed. Check your OTP.',
-        );
+        LiquidSnack.error(data['message'] ?? 'Reset failed. Check your OTP.');
         return false;
       }
     } catch (e) {
-      SnackBarService.to.showMessage(
-        message: 'Something went wrong. Please try later.',
-      );
+      LiquidSnack.error('Something went wrong. Please try later.');
       rethrow;
     }
   }

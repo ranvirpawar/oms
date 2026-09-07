@@ -119,6 +119,7 @@ class AppAssets {
   static const String completedToday = 'assets/images/completed-today.png';
   static const String inTransit = 'assets/images/in-transit.png';
   static const String pickupAwaiting = 'assets/images/pickup-awaiting.png';
+  static const String splashScreen = 'assets/images/splash-screen.png';
 
 
 

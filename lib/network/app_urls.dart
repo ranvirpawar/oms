@@ -371,8 +371,12 @@ class AppUrls {
   static String get locationTracking =>
       '$_asmxBase/UserSampleOrderLocationTracking';
 
-   static const String dishaSampleCollectionSync =
-       '/api/SampleCollection/Recolled_DishaSampleCollection_API/{orderId}';
+   static  String dishaSampleCollectionSync =
+       '$_asmxBase/orders/{orderId}/Recolled_DishaSampleCollection_API';
+
+
+
+
 
   // -------------------------
   // API Endpoints (.ashx)

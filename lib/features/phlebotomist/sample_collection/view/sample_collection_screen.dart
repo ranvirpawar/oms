@@ -29,8 +29,8 @@ class SampleCollectionScreen extends GetView<SampleCollectionController> {
               const SizedBox(height: 14),
               // No outer Obx needed anymore — _ProgressSummary observes its
               // own reactive counts internally (see fix below).
-              _ProgressSummary(controller: controller),
-              const SizedBox(height: 14),
+             /* _ProgressSummary(controller: controller),
+              const SizedBox(height: 14),*/
               Obx(
                 () => Column(
                   children: [

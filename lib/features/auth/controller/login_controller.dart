@@ -12,7 +12,7 @@ import 'package:get/get.dart';
 import '../../../componenents/otp_boxes_input.dart';
 import '../../../network/session_coordinator.dart';
 import '../../../services/auth_manager.dart';
-import '../../../services/snackbar_service.dart';
+import '../../../utils/ui_designs/liquid_snackbar.dart';
 import '../service/login_service.dart';
 
 import 'dart:async';
@@ -91,6 +91,10 @@ class LoginController extends GetxController with CodeAutoFill {
   final Map<String, Map<String, String>> betaUsers = {
     'Phlebotomist': {'user': '7070707070', 'pass': '123456'},
     'Runnerboy': {'user': '9604249812', 'pass': '123456'},
+    'Lab Accession': {'user': '7767876692', 'pass': '123456'},
+    'Runnerboy-  Renuka': {'user': '9604249812', 'pass': '123456'},
+    'Runnerboy-  Renuka2': {'user': '9665253245', 'pass': '123456'},
+    // 'Team Lead': {'user': '9975020260', 'pass': '123456'},
     // 'Team Lead': {'user': '9975020260', 'pass': '123456'},
     // 'Lab Accession': {'user': '9975020298', 'pass': '1234567'},
     // 'Connector': {'user': '8007758869', 'pass': '123456'},
@@ -223,10 +227,10 @@ class LoginController extends GetxController with CodeAutoFill {
         _startResendCooldown();
         await _startSmsListener();
       } else {
-        SnackBarService.to.showMessage(message: loginResponse.message);
+        LiquidSnack.error(loginResponse.message, title: 'Login failed');
       }
     } catch (e) {
-      SnackBarService.to.showMessage(message: _cleanError(e));
+      LiquidSnack.error(_cleanError(e), title: 'Login failed');
     } finally {
       isLoading.value = false;
     }
@@ -309,12 +313,12 @@ class LoginController extends GetxController with CodeAutoFill {
         _resetOtpState();
         _startResendCooldown();
         await _startSmsListener();
-        SnackBarService.to.showMessage(message: 'A new code has been sent.');
+        LiquidSnack.success('A new code has been sent.');
       } else {
-        SnackBarService.to.showMessage(message: loginResponse.message);
+        LiquidSnack.error(loginResponse.message, title: 'Login failed');
       }
     } catch (e) {
-      SnackBarService.to.showMessage(message: _cleanError(e));
+      LiquidSnack.error(_cleanError(e), title: 'Login failed');
     } finally {
       isResendingOtp.value = false;
     }
