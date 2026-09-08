@@ -222,12 +222,18 @@ class RouteManager {
     Get.to(() => const HandoverBagView(), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 
-/// [isCollectionTrue] opens the queue in "collection mode" (the bag
+  /// [isCollectionTrue] opens the queue in "collection mode" (the bag
   /// registration dashboard's Collect action): only orders whose patients
   /// have already Arrived are listed, since a bag can only collect samples
   /// for patients that are physically present.
   static void navigateToPatientQueue({bool isCollectionTrue = false}) {
-    Get.to(() => const PatientQueueView(), binding: PatientQueueBinding(),arguments: {'isCollectionMode': isCollectionTrue}, transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
+    Get.to(
+      () => const PatientQueueView(),
+      binding: PatientQueueBinding(),
+      arguments: {'isCollectionMode': isCollectionTrue},
+      transition: Transition.circularReveal,
+      duration: const Duration(milliseconds: 200),
+    );
   }
 
   static void navigateToSampleCollection(AssignedPatient patient) {
