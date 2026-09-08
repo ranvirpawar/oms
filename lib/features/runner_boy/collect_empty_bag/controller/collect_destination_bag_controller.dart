@@ -5,8 +5,8 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../componenents/success_checked_animation_dialouge.dart';
 import '../../../../routes/route_manager.dart';
-import '../../../../services/snackbar_service.dart';
 import '../../../../services/user_service.dart';
+import '../../../../utils/ui_designs/liquid_snackbar.dart';
 import '../../../auth/model/login_response_model.dart';
 import '../service/bag_service.dart';
 
@@ -94,7 +94,7 @@ class CollectDestinationBagController extends GetxController {
   void onManualSubmit() {
     final barcode = manualBarcodeController.text.trim();
     if (barcode.isEmpty) {
-      SnackBarService.to.showMessage(message: 'Enter a valid barcode');
+      LiquidSnack.warning('Enter a valid barcode');
       return;
     }
     manualInputFocusNode.unfocus();
@@ -105,13 +105,13 @@ class CollectDestinationBagController extends GetxController {
   // ── Collect button pressed → call InsertStartQRCodeBagEvent ───────────────
   Future<void> collectDestinationBag() async {
     if (scannedBarcode.value.isEmpty) {
-      SnackBarService.to.showMessage(message: 'Please scan a destination bag first');
+      LiquidSnack.warning('Please scan a destination bag first');
       return;
     }
 
     final uid = int.tryParse(userId.value);
     if (uid == null) {
-      SnackBarService.to.showMessage(message: 'User session invalid, please re-login');
+      LiquidSnack.error('User session invalid, please re-login');
       return;
     }
 
@@ -148,9 +148,7 @@ class CollectDestinationBagController extends GetxController {
       );
     } catch (e) {
       final msg = e.toString().replaceAll('Exception: ', '');
-      SnackBarService.to.showMessage(
-        message: msg.isEmpty ? 'Collection failed' : msg,
-      );
+      LiquidSnack.error(msg.isEmpty ? 'Collection failed' : msg);
     } finally {
       isSubmitting.value = false;
     }

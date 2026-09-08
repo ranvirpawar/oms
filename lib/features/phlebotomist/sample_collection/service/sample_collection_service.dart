@@ -1,15 +1,13 @@
-
-
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 
 import '../../../../network/api_client.dart';
+import '../../../../network/app_error.dart';
 import '../../../../network/app_urls.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
 import '../model/sample_collection_models.dart';
-
-
 
 class SampleCollectionService {
   final APIClient _apiClient = Get.find<APIClient>();
@@ -104,7 +102,10 @@ class SampleCollectionService {
         'CreatedBy': int.tryParse(userId) ?? 0,
       };
 
-      final response = await _apiClient.post(AppUrls.sendOTPToPatient, data: body);
+      final response = await _apiClient.post(
+        AppUrls.sendOTPToPatient,
+        data: body,
+      );
       final Map<String, dynamic> respBody = response.body;
       kPrint('Send OTP response: $respBody');
 
@@ -137,7 +138,10 @@ class SampleCollectionService {
         'VerifyBy': int.tryParse(userId) ?? 0,
       };
 
-      final response = await _apiClient.post(AppUrls.verifyPatientOTP, data: body);
+      final response = await _apiClient.post(
+        AppUrls.verifyPatientOTP,
+        data: body,
+      );
       final Map<String, dynamic> respBody = response.body;
       kPrint('Verify OTP response: $respBody');
 
@@ -190,14 +194,16 @@ class SampleCollectionService {
             ? rawStatus
             : int.tryParse(rawStatus?.toString() ?? '');
 
-        isLisSuccess = statusCode != null && statusCode >= 200 && statusCode < 300;
+        isLisSuccess =
+            statusCode != null && statusCode >= 200 && statusCode < 300;
         dishaMessage = dishaResultRaw['message'] as String?;
       } else if (dishaResultRaw is String) {
         // Legacy shape: dishaResult itself is a plain string. Fall back to
         // the old top-level "Dishstatuss" field to judge success/failure.
         dishaMessage = dishaResultRaw;
-        final topLevelDishStatus =
-        (respBody['Dishstatuss'] as String?)?.trim().toLowerCase();
+        final topLevelDishStatus = (respBody['Dishstatuss'] as String?)
+            ?.trim()
+            .toLowerCase();
         isLisSuccess = topLevelDishStatus != 'fail insert disha';
       } else {
         // No dishaResult at all — nothing to flag, let the top-level
@@ -228,6 +234,39 @@ class SampleCollectionService {
       return true;
     } on SampleCollectionException {
       rethrow;
+    } on ServerError catch (e) {
+      /// http 500 catch it here
+      /* body    : {OrderID: ORD-CL3-20260907-09, UserID: 17, OrderStatusCode: COLLECTED, bagId: 37, SessionID: 15, TubeCount: 1, Notes: , CollectedAt: 2026-09-07T12:34:24.147985Z, SampleCollectionDetails: [{SampleTypeID: 2, BarcodeNo: Ac24242}], SampleCollectionComplications: [{ComplicationID: 1, Status: true}, {ComplicationID: 2, Status: false}, {ComplicationID: 3, Status: true}, {ComplicationID: 4, Status: false}, {ComplicationID: 5, Status: true}, {ComplicationID: 6, Status: false}], IncompleteTests: []}
+   headers : {Content-Type: application/json, Authorization: Bearer ***}
+       status  : 500 (744ms)
+   response: {Dishstatuss: Fail Insert Disha, status: Fail, message: DISHA registration succeeded, but saving DISHA details failed, dishaResult: Response: }*/
+
+      Map<String, dynamic>? respBody;
+      final raw = e.cause is DioException
+          ? (e.cause as DioException).response?.data
+          : null;
+      if (raw is String) {
+        try {
+          respBody = jsonDecode(raw) as Map<String, dynamic>;
+        } catch (_) {}
+      } else if (raw is Map<String, dynamic>) {
+        respBody = raw;
+      }
+
+      final dishaResultRaw = respBody?['dishaResult'];
+      final topLevelDishStatus = (respBody?['Dishstatuss'] as String?)
+          ?.trim()
+          .toLowerCase();
+      final looksLikeDishaFailure =
+          dishaResultRaw != null || topLevelDishStatus == 'fail insert disha';
+
+      if (looksLikeDishaFailure) {
+        throw SampleCollectionException(
+          (respBody?['message'] as String?) ?? e.message,
+          isLisSyncFailure: true,
+        );
+      }
+      rethrow; // genuine server error unrelated to Disha — keep old behavior
     } catch (e) {
       kPrint(e.toString());
       throw SampleCollectionException(
@@ -237,19 +276,16 @@ class SampleCollectionService {
     }
   }
 
-
-
-
-  Future<bool> resubmitToDisha({required String orderId, required String userId}) async {
+  Future<bool> resubmitToDisha({
+    required String orderId,
+    required String userId,
+  }) async {
     try {
       final url = AppUrls.dishaSampleCollectionSync.replaceFirst(
         '{orderId}',
         orderId,
       );
-      final reqBody = {
-        'orderId ' :orderId,
-        'userId': userId
-      };
+      final reqBody = {'orderId ': orderId, 'userId': userId};
       final response = await _apiClient.post(url, data: reqBody);
 
       final Map<String, dynamic> body = response.data is String
@@ -324,17 +360,16 @@ class SampleCollectionService {
       );
     }
   }
+
   /// Checks live availability of a barcode before it's accepted onto a sample.
   /// Returns true when the barcode is free to use, false when it's already
   /// taken (409 / FAILED). Throws on genuine network/parsing failure.
   Future<bool> checkBarcodeAvailability(String barcode) async {
     try {
-      final reqBody = {
-        'barcode': barcode,
-      };
+      final reqBody = {'barcode': barcode};
       final response = await _apiClient.post(
         AppUrls.checkBarcodeAvailability,
-        data: reqBody
+        data: reqBody,
       );
 
       final Map<String, dynamic> body = response.data is String

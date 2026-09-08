@@ -33,6 +33,7 @@ class RegistrationDetails {
   final String mobileNumber;
   final String clinicName;
   final DateTime? collectionDateTime;
+  final String? orderId;
 
   RegistrationDetails({
     required this.sampleCollectionOrderID,
@@ -46,6 +47,7 @@ class RegistrationDetails {
     required this.mobileNumber,
     required this.clinicName,
     required this.collectionDateTime,
+    this.orderId,
   });
 
   factory RegistrationDetails.fromJson(Map<String, dynamic> json) {
@@ -61,6 +63,7 @@ class RegistrationDetails {
       mobileNumber: (json['MobileNumber'] ?? '').toString(),
       clinicName: (json['ClinicName'] ?? '').toString(),
       collectionDateTime: DateTime.tryParse(json['CollectionDateTime'] ?? ''),
+      orderId: json['OrderID'] ?? '',
     );
   }
 }

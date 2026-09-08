@@ -6,8 +6,6 @@ import '../../../../../../theme/app_colors.dart';
 import '../../model/active_bag_model.dart';
 import 'dart:ui' as ui;
 
-
-
 /// One collected order (one patient) inside a QR bag, rendered as a
 /// compact, tappable card. Tapping opens [CollectedOrderDetailSheet] with
 /// the full, untruncated breakdown of tests, tubes, and barcodes.
@@ -72,16 +70,23 @@ class _CollectedOrderCardState extends State<CollectedOrderCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _IdentityRow(order: order, hasName: hasName),
-                    if (reg.clinicName.isNotEmpty || reg.address.isNotEmpty) ...[
+                    if (reg.clinicName.isNotEmpty ||
+                        reg.address.isNotEmpty) ...[
                       const SizedBox(height: 10),
                       _AddressRow(reg: reg),
                     ],
                     if (order.barcodes.isNotEmpty) ...[
                       const SizedBox(height: 10),
-                      _BarcodeRow(barcodes: order.barcodes, onViewAll: _openDetails),
+                      _BarcodeRow(
+                        barcodes: order.barcodes,
+                        onViewAll: _openDetails,
+                      ),
                     ],
                     const SizedBox(height: 10),
-                    _TestsAndTubesSummary(order: order, onTapDetails: _openDetails),
+                    _TestsAndTubesSummary(
+                      order: order,
+                      onTapDetails: _openDetails,
+                    ),
                     const SizedBox(height: 10),
                     _CollectedMetaRow(reg: reg),
                   ],
@@ -99,6 +104,7 @@ class _CollectedOrderCardState extends State<CollectedOrderCard> {
 
 class _Ribbon extends StatelessWidget {
   final bool isHomeVisit;
+
   const _Ribbon({required this.isHomeVisit});
 
   @override
@@ -121,7 +127,9 @@ class _Ribbon extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    isHomeVisit ? Icons.home_outlined : Icons.local_hospital_outlined,
+                    isHomeVisit
+                        ? Icons.home_outlined
+                        : Icons.local_hospital_outlined,
                     size: 14,
                     color: Colors.white,
                   ),
@@ -149,11 +157,19 @@ class _Ribbon extends StatelessWidget {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.check_circle_rounded, size: 13, color: AppColors.tealText),
+                  Icon(
+                    Icons.check_circle_rounded,
+                    size: 13,
+                    color: AppColors.tealText,
+                  ),
                   SizedBox(width: 4),
                   Text(
                     'Collected',
-                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: AppColors.tealText),
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.tealText,
+                    ),
                   ),
                 ],
               ),
@@ -170,6 +186,7 @@ class _Ribbon extends StatelessWidget {
 class _IdentityRow extends StatelessWidget {
   final PatientOrder order;
   final bool hasName;
+
   const _IdentityRow({required this.order, required this.hasName});
 
   static const _unknownColor = Color(0xFFFC8181);
@@ -178,7 +195,8 @@ class _IdentityRow extends StatelessWidget {
     final parts = name.trim().split(RegExp(r'\s+'));
     if (parts.isEmpty || parts.first.isEmpty) return '?';
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
+    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
+        .toUpperCase();
   }
 
   @override
@@ -191,7 +209,9 @@ class _IdentityRow extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 18,
-          backgroundColor: hasName ? AppColors.primary100 : _unknownColor.withOpacity(0.15),
+          backgroundColor: hasName
+              ? AppColors.primary100
+              : _unknownColor.withOpacity(0.15),
           child: Text(
             _initials(name),
             style: TextStyle(
@@ -223,14 +243,21 @@ class _IdentityRow extends StatelessWidget {
                   if (!hasName)
                     Container(
                       margin: const EdgeInsets.only(left: 6),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: _unknownColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Text(
                         'Unknown',
-                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _unknownColor),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: _unknownColor,
+                        ),
                       ),
                     ),
                 ],
@@ -239,11 +266,16 @@ class _IdentityRow extends StatelessWidget {
               Text(
                 [
                   if (reg.age.isNotEmpty) 'Age: ${reg.age}',
-                  'ID: ORD${reg.sampleCollectionOrderID}',
-                ].join('  ·  '),
-                maxLines: 1,
+                  'ID: ${reg.orderId}',
+                ].join('\n'),
+
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12, color: AppColors.textTertiary, fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textTertiary,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
@@ -257,22 +289,34 @@ class _IdentityRow extends StatelessWidget {
 
 class _AddressRow extends StatelessWidget {
   final RegistrationDetails reg;
+
   const _AddressRow({required this.reg});
 
   @override
   Widget build(BuildContext context) {
-    final text = [reg.clinicName, reg.address].where((s) => s.isNotEmpty).join(', ');
+    final text = [
+      reg.clinicName,
+      reg.address,
+    ].where((s) => s.isNotEmpty).join(', ');
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textQuaternary),
+        const Icon(
+          Icons.location_on_outlined,
+          size: 14,
+          color: AppColors.textQuaternary,
+        ),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
             text,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 12, color: AppColors.textTertiary, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textTertiary,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ],
@@ -285,6 +329,7 @@ class _AddressRow extends StatelessWidget {
 class _BarcodeRow extends StatelessWidget {
   final List<BarcodeDetail> barcodes;
   final VoidCallback onViewAll;
+
   const _BarcodeRow({required this.barcodes, required this.onViewAll});
 
   static const int _maxShown = 3;
@@ -311,7 +356,11 @@ class _BarcodeRow extends StatelessWidget {
               ),
               child: Text(
                 '+$remaining more',
-                style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: AppColors.primary800),
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary800,
+                ),
               ),
             ),
           ),
@@ -322,6 +371,7 @@ class _BarcodeRow extends StatelessWidget {
 
 class _BarcodeChip extends StatelessWidget {
   final String code;
+
   const _BarcodeChip({required this.code});
 
   @override
@@ -336,7 +386,11 @@ class _BarcodeChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.qr_code_2_rounded, size: 13, color: Color(0xFF4299E1)),
+          const Icon(
+            Icons.qr_code_2_rounded,
+            size: 13,
+            color: Color(0xFF4299E1),
+          ),
           const SizedBox(width: 4),
           Text(
             code,
@@ -358,7 +412,11 @@ class _BarcodeChip extends StatelessWidget {
 class _TestsAndTubesSummary extends StatelessWidget {
   final PatientOrder order;
   final VoidCallback onTapDetails;
-  const _TestsAndTubesSummary({required this.order, required this.onTapDetails});
+
+  const _TestsAndTubesSummary({
+    required this.order,
+    required this.onTapDetails,
+  });
 
   static const _rowStyle = TextStyle(
     fontSize: 12,
@@ -388,8 +446,12 @@ class _TestsAndTubesSummary extends StatelessWidget {
         // subtract icon + horizontal padding used inside each row (~44px)
         final innerWidth = constraints.maxWidth - 44;
 
-        final testsOverflow = testsText.isNotEmpty && _overflowsOneLine(testsText, _rowStyle, innerWidth);
-        final tubesOverflow = tubesText.isNotEmpty && _overflowsOneLine(tubesText, _rowStyle, innerWidth);
+        final testsOverflow =
+            testsText.isNotEmpty &&
+            _overflowsOneLine(testsText, _rowStyle, innerWidth);
+        final tubesOverflow =
+            tubesText.isNotEmpty &&
+            _overflowsOneLine(tubesText, _rowStyle, innerWidth);
 
         if (testsOverflow || tubesOverflow) {
           return GestureDetector(
@@ -403,15 +465,27 @@ class _TestsAndTubesSummary extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.science_outlined, size: 15, color: AppColors.textTertiary),
+                  const Icon(
+                    Icons.science_outlined,
+                    size: 15,
+                    color: AppColors.textTertiary,
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       '${order.tests.length} test${order.tests.length == 1 ? '' : 's'} · tap to view details',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.textQuaternary),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 16,
+                    color: AppColors.textQuaternary,
+                  ),
                 ],
               ),
             ),
@@ -422,10 +496,21 @@ class _TestsAndTubesSummary extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (testsText.isNotEmpty)
-              _row(Icons.science_outlined, AppColors.redText, AppColors.redLight, testsText),
-            if (testsText.isNotEmpty && tubesText.isNotEmpty) const SizedBox(height: 8),
+              _row(
+                Icons.science_outlined,
+                AppColors.redText,
+                AppColors.redLight,
+                testsText,
+              ),
+            if (testsText.isNotEmpty && tubesText.isNotEmpty)
+              const SizedBox(height: 8),
             if (tubesText.isNotEmpty)
-              _row(Icons.vaccines_outlined, AppColors.purpleText, AppColors.purpleLight, tubesText),
+              _row(
+                Icons.vaccines_outlined,
+                AppColors.purpleText,
+                AppColors.purpleLight,
+                tubesText,
+              ),
           ],
         );
       },
@@ -436,13 +521,23 @@ class _TestsAndTubesSummary extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(color: bg.withOpacity(0.4), borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(
+        color: bg.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 15, color: iconColor),
           const SizedBox(width: 6),
-          Expanded(child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: _rowStyle)),
+          Expanded(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: _rowStyle,
+            ),
+          ),
         ],
       ),
     );
@@ -453,6 +548,7 @@ class _TestsAndTubesSummary extends StatelessWidget {
 
 class _CollectedMetaRow extends StatelessWidget {
   final RegistrationDetails reg;
+
   const _CollectedMetaRow({required this.reg});
 
   String get _formatted {
@@ -465,10 +561,17 @@ class _CollectedMetaRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      decoration: BoxDecoration(color: AppColors.grayLight, borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(
+        color: AppColors.grayLight,
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_outline_rounded, size: 16, color: AppColors.tealText),
+          const Icon(
+            Icons.check_circle_outline_rounded,
+            size: 16,
+            color: AppColors.tealText,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -476,14 +579,22 @@ class _CollectedMetaRow extends StatelessWidget {
               children: [
                 const Text(
                   'Collected On',
-                  style: TextStyle(fontSize: 10.5, color: AppColors.textQuaternary, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    color: AppColors.textQuaternary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   _formatted,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ],
             ),
@@ -498,6 +609,7 @@ class _CollectedMetaRow extends StatelessWidget {
 
 class CollectedOrderDetailSheet extends StatelessWidget {
   final PatientOrder order;
+
   const CollectedOrderDetailSheet({super.key, required this.order});
 
   String _initials(String name) {
@@ -505,7 +617,8 @@ class CollectedOrderDetailSheet extends StatelessWidget {
     if (trimmed.isEmpty) return '?';
     final parts = trimmed.split(RegExp(r'\s+'));
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
+    return (parts.first.substring(0, 1) + parts.last.substring(0, 1))
+        .toUpperCase();
   }
 
   Map<String, int> _tubeCounts() {
@@ -547,14 +660,17 @@ class CollectedOrderDetailSheet extends StatelessWidget {
                       children: [
                         CircleAvatar(
                           radius: 22,
-                          backgroundColor:
-                          hasName ? AppColors.primary100 : const Color(0xFFFC8181).withOpacity(0.15),
+                          backgroundColor: hasName
+                              ? AppColors.primary100
+                              : const Color(0xFFFC8181).withOpacity(0.15),
                           child: Text(
                             _initials(hasName ? reg.patientName : '?'),
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 16,
-                              color: hasName ? AppColors.primary800 : const Color(0xFFFC8181),
+                              color: hasName
+                                  ? AppColors.primary800
+                                  : const Color(0xFFFC8181),
                             ),
                           ),
                         ),
@@ -564,8 +680,14 @@ class CollectedOrderDetailSheet extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                hasName ? reg.patientName.trim() : 'Unidentified Patient',
-                                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                                hasName
+                                    ? reg.patientName.trim()
+                                    : 'Unidentified Patient',
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
                               ),
                               const SizedBox(height: 2),
                               Text(
@@ -574,7 +696,11 @@ class CollectedOrderDetailSheet extends StatelessWidget {
                                   if (reg.gender.isNotEmpty) reg.gender,
                                   'ID: ORD${reg.sampleCollectionOrderID}',
                                 ].join('  ·  '),
-                                style: const TextStyle(fontSize: 12.5, color: AppColors.textTertiary, fontWeight: FontWeight.w500),
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  color: AppColors.textTertiary,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ],
                           ),
@@ -590,7 +716,9 @@ class CollectedOrderDetailSheet extends StatelessWidget {
                       iconColor: AppColors.tealText,
                       label: 'Collected on',
                       value: reg.collectionDateTime != null
-                          ? DateFormat('dd MMM yyyy · hh:mm a').format(reg.collectionDateTime!)
+                          ? DateFormat(
+                              'dd MMM yyyy · hh:mm a',
+                            ).format(reg.collectionDateTime!)
                           : 'Not recorded',
                     ),
                     const SizedBox(height: 8),
@@ -611,13 +739,17 @@ class CollectedOrderDetailSheet extends StatelessWidget {
                         value: reg.mobileNumber,
                       ),
                     ],
-                    if (reg.clinicName.isNotEmpty || reg.address.isNotEmpty) ...[
+                    if (reg.clinicName.isNotEmpty ||
+                        reg.address.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       _InfoTile(
                         icon: Icons.location_on_outlined,
                         iconColor: AppColors.blue,
                         label: 'Location',
-                        value: [reg.clinicName, reg.address].where((s) => s.isNotEmpty).join(', '),
+                        value: [
+                          reg.clinicName,
+                          reg.address,
+                        ].where((s) => s.isNotEmpty).join(', '),
                       ),
                     ],
 
@@ -628,7 +760,9 @@ class CollectedOrderDetailSheet extends StatelessWidget {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: order.barcodes.map((b) => _BarcodeChip(code: b.barcodeNo)).toList(),
+                        children: order.barcodes
+                            .map((b) => _BarcodeChip(code: b.barcodeNo))
+                            .toList(),
                       ),
                     ],
 
@@ -637,12 +771,14 @@ class CollectedOrderDetailSheet extends StatelessWidget {
                       _SectionLabel('Tests (${order.tests.length})'),
                       const SizedBox(height: 8),
                       ...order.tests.map(
-                            (t) => Padding(
+                        (t) => Padding(
                           padding: const EdgeInsets.only(bottom: 8),
                           child: _InfoTile(
                             icon: Icons.science_outlined,
                             iconColor: AppColors.redText,
-                            label: t.sampleTypeName.isNotEmpty ? t.sampleTypeName : 'Sample',
+                            label: t.sampleTypeName.isNotEmpty
+                                ? t.sampleTypeName
+                                : 'Sample',
                             value: t.testName,
                           ),
                         ),
@@ -656,8 +792,9 @@ class CollectedOrderDetailSheet extends StatelessWidget {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children:
-                        _tubeCounts().entries.map((e) => _TubePill(label: e.key, count: e.value)).toList(),
+                        children: _tubeCounts().entries
+                            .map((e) => _TubePill(label: e.key, count: e.value))
+                            .toList(),
                       ),
                     ],
                   ],
@@ -673,6 +810,7 @@ class CollectedOrderDetailSheet extends StatelessWidget {
 
 class _SectionLabel extends StatelessWidget {
   final String text;
+
   const _SectionLabel(this.text);
 
   @override
@@ -694,14 +832,23 @@ class _InfoTile extends StatelessWidget {
   final Color iconColor;
   final String label;
   final String value;
-  const _InfoTile({required this.icon, required this.iconColor, required this.label, required this.value});
+
+  const _InfoTile({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(color: AppColors.grayLight, borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(
+        color: AppColors.grayLight,
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -711,9 +858,23 @@ class _InfoTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(fontSize: 10.5, color: AppColors.textQuaternary, fontWeight: FontWeight.w600)),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    color: AppColors.textQuaternary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -726,6 +887,7 @@ class _InfoTile extends StatelessWidget {
 class _TubePill extends StatelessWidget {
   final String label;
   final int count;
+
   const _TubePill({required this.label, required this.count});
 
   @override
@@ -739,9 +901,20 @@ class _TubePill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.vaccines_outlined, size: 14, color: AppColors.purpleText),
+          const Icon(
+            Icons.vaccines_outlined,
+            size: 14,
+            color: AppColors.purpleText,
+          ),
           const SizedBox(width: 6),
-          Text('$count× $label', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.purpleText)),
+          Text(
+            '$count× $label',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppColors.purpleText,
+            ),
+          ),
         ],
       ),
     );

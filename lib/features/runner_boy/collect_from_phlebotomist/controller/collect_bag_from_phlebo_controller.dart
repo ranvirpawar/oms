@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../services/user_service.dart';
+import '../../../../utils/ui_designs/liquid_snackbar.dart';
 import '../../../auth/model/login_response_model.dart';
 import '../model/qr_bag_detail.dart';
 import '../service/collect_bag_service.dart';
@@ -348,24 +349,10 @@ class CollectBagFromPhlebotomistController extends GetxController {
   // ── Snackbars ─────────────────────────────────────────────────────────────
 
   void _showSuccessSnackbar(String message) {
-    Get.snackbar('Success', message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green.shade100,
-        colorText: Colors.green.shade900,
-        duration: const Duration(seconds: 2),
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-        icon: const Icon(Icons.check_circle, color: Colors.green));
+    LiquidSnack.success(message, title: 'Success');
   }
 
   void _showErrorSnackbar(String message) {
-    Get.snackbar('Error', message,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.shade100,
-        colorText: Colors.red.shade900,
-        duration: const Duration(seconds: 3),
-        margin: const EdgeInsets.all(16),
-        borderRadius: 12,
-        icon: const Icon(Icons.error, color: Colors.red));
+    LiquidSnack.error(message, title: 'Error');
   }
 }

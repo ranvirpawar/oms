@@ -32,15 +32,15 @@ class OtpVerificationScreen extends GetView<SampleCollectionController> {
             const Icon(Icons.sms_outlined, size: 48, color: AppColors.blue),
             const SizedBox(height: 16),
             const Text(
-              'Enter the 4-digit OTP',
+              'OTP Verification',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'OTP sent to the patient\'s registered number to confirm sample collection.',
+            Text(
+              'Enter OTP sent on ${controller.maskedPatientMobileNumber}',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 12.5, color: AppColors.textTertiary),
+              style: const TextStyle(fontSize: 12.5, color: AppColors.textTertiary),
             ),
             const SizedBox(height: 28),
             // Patient sample-collection OTP must NOT auto-detect, so SMS

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../../../services/user_service.dart';
+import '../../../../utils/ui_designs/liquid_snackbar.dart';
 import '../../../auth/model/login_response_model.dart';
 import '../../handover_to_connector/model/connector_model.dart';
 import '../model/collected_bag_model.dart';
@@ -195,20 +196,20 @@ class CollectedBagsController extends GetxController {
         submissionState.value = SubmissionState.success;
 
         _showSnackbar(
-          '✓ Success',
+          'Success',
           '$successCount bag(s) submitted to $label successfully',
         );
       } else if (successCount > 0) {
         submissionState.value = SubmissionState.success;
         _showSnackbar(
-          '⚠️ Partial Success',
+          'Partial Success',
           '$successCount submitted, ${submissionErrors.length} failed',
           isWarning: true,
         );
       } else {
         submissionState.value = SubmissionState.error;
         _showSnackbar(
-          '✗ Failed',
+          'Failed',
           'All submissions failed. Please try again.',
           isError: true,
         );
@@ -222,7 +223,7 @@ class CollectedBagsController extends GetxController {
     } catch (e) {
       submissionState.value = SubmissionState.error;
       errorMessage.value = e.toString().replaceAll('Exception: ', '');
-      _showSnackbar('✗ Error', errorMessage.value, isError: true);
+      _showSnackbar('Error', errorMessage.value, isError: true);
       submissionState.value = SubmissionState.idle;
     }
   }
@@ -233,24 +234,13 @@ class CollectedBagsController extends GetxController {
     bool isError = false,
     bool isWarning = false,
   }) {
-    Color bg = Colors.green.shade100;
-    Color text = Colors.green.shade900;
     if (isError) {
-      bg = Colors.red.shade100;
-      text = Colors.red.shade900;
+      LiquidSnack.error(message, title: title);
     } else if (isWarning) {
-      bg = Colors.orange.shade100;
-      text = Colors.orange.shade900;
+      LiquidSnack.warning(message, title: title);
+    } else {
+      LiquidSnack.success(message, title: title);
     }
-
-    Get.snackbar(
-      title,
-      message,
-      backgroundColor: bg,
-      colorText: text,
-      snackPosition: SnackPosition.TOP,
-      duration: const Duration(seconds: 3),
-    );
   }
 
   void reset() {

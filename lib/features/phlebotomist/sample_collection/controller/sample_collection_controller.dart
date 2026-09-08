@@ -182,6 +182,13 @@ class SampleCollectionController extends GetxController {
   final RxInt resendSecondsLeft = 0.obs;
   Timer? _resendTimer;
 
+  /// Patient's mobile number masked so only the first two and last two digits
+  /// are visible — e.g. `7512345689` → `75****89`. Shown on the OTP screen so
+  /// the full number is never exposed. Falls back to '' until [orderDetails]
+  /// is loaded.
+  String get maskedPatientMobileNumber =>
+      HelperMethods.maskMobileMiddle(orderDetails.value?.mobileNumber ?? '');
+
   // ---- Complications ---------------------------------------------------
   final RxList<ComplicationOption> complicationOptions =
       <ComplicationOption>[].obs;

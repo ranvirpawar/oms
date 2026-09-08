@@ -659,7 +659,7 @@ final dummyPatientList = {
       "SlotStartTime": "08:00:00",
       "SlotEndTime": "08:30:00",
       "DistanceInKM": 0.003,
-      "FastingRequired": "Fasting Not Required",
+      "FastingRequired": "Fasting Required",
       "IsRoute": "End",
       "OrderStatusID": 5,
       "OrderStatus": "Arrived",
