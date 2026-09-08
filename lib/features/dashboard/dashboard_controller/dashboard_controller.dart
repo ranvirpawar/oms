@@ -9,7 +9,9 @@ import '../../../constants/app_strings.dart';
 import '../../../routes/route_manager.dart';
 import '../../../utils/helper_functions/helper_methods.dart';
 import '../../runner_boy/collected_sample_bags/service/collected_bags_service.dart';
+import '../model/dashboard_summary_model.dart';
 import '../model/notice_model.dart';
+import '../service/dashboard_service.dart';
 import '../view/widget/dashboard_tile_card.dart';
 import 'package:flutter/material.dart';
 
@@ -43,21 +45,9 @@ class DashboardController extends GetxController {
   /// "Visit soon" reminders, etc). TODO: populate from a real
   /// notifications/orders API instead of the placeholder list below.
   final RxList<DashboardNotice> notices = <DashboardNotice>[
-    const DashboardNotice(
-      icon: Icons.person_add_alt_1_rounded,
-      message: 'New patient assigned — Rahul Sharma, Bavdhan',
-      color: Color(0xFF3B82F6),
-    ),
-    const DashboardNotice(
-      icon: Icons.schedule_rounded,
-      message: 'Scheduled collection at 4:30 PM — please visit soon',
-      color: Color(0xFFF59E0B),
-    ),
-    const DashboardNotice(
-      icon: Icons.local_shipping_rounded,
-      message: '3 bags pending handover to the lab',
-      color: Color(0xFF8B5CF6),
-    ),
+    const DashboardNotice(icon: Icons.person_add_alt_1_rounded, message: 'New patient assigned — Rahul Sharma, Bavdhan', color: Color(0xFF3B82F6)),
+    const DashboardNotice(icon: Icons.schedule_rounded, message: 'Scheduled collection at 4:30 PM — please visit soon', color: Color(0xFFF59E0B)),
+    const DashboardNotice(icon: Icons.local_shipping_rounded, message: '3 bags pending handover to the lab', color: Color(0xFF8B5CF6)),
   ].obs;
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -135,8 +125,7 @@ class DashboardController extends GetxController {
 
   // ── Bag Count ─────────────────────────────────────────────────────────────────
 
-  bool get _shouldTrackBags =>
-      const [UserRole.runnerBoy, UserRole.connector].contains(userRole.value);
+  bool get _shouldTrackBags => const [UserRole.runnerBoy, UserRole.connector].contains(userRole.value);
 
   Future<void> _fetchCollectedBagsCount() async {
     if (!_shouldTrackBags) return;
@@ -150,9 +139,7 @@ class DashboardController extends GetxController {
         return;
       }
 
-      final response = await _bagsService.getCollectedQRBagDetails(
-        user.empCode,
-      );
+      final response = await _bagsService.getCollectedQRBagDetails(user.empCode);
 
       if (response.isSuccess && response.output != null) {
         collectedBagsCount.value = response.output!.length;
@@ -192,7 +179,6 @@ class DashboardController extends GetxController {
 
   List<DashboardTileCard> _phlebotomistCards() => [
     const DashboardTileCard(
-
       title: AppStrings.collectSample,
       icon: AppAssets.sampleCollection,
       // backgroundImage: AppAssets.sampleRecollectionCard,
@@ -206,7 +192,6 @@ class DashboardController extends GetxController {
       borderColor: Colors.orange,
       onTap: RouteManager.navigateToPatientQueue,
     ),
-
 
     const DashboardTileCard(
       title: AppStrings.sampleRecollection,
@@ -225,91 +210,33 @@ class DashboardController extends GetxController {
   ];
 
   List<DashboardTileCard> _runnerBoyCards() => [
-    const DashboardTileCard(
-      title: AppStrings.collectDestinationBag,
-      icon: AppAssets.backPackIcon,
-      onTap: RouteManager.navigateToCollectEmptyBag,
-    ),
-    const DashboardTileCard(
-      title: 'Collect Bag From Phlebotomist',
-      icon: AppAssets.bagFilledWithSamples,
-      onTap: RouteManager.navigateToCollectBagsFromPhlebotomist,
-    ),
-    const DashboardTileCard(
-      title: AppStrings.collectedSampleBags,
-      icon: AppAssets.bagsCollected,
-      onTap: RouteManager.navigateToCollectedBags,
-    ),
-    const DashboardTileCard(
-      title: AppStrings.bagStatus,
-      icon: AppAssets.bagStatus,
-      onTap: RouteManager.navigateToBagStatus,
-    ),
-    const DashboardTileCard(
-      title: AppStrings.samplePickup,
-      icon: AppAssets.bagFilledWithSamples,
-      onTap: RouteManager.navigateToSamplePickupDashboard,
-    ),
+    const DashboardTileCard(title: AppStrings.collectDestinationBag, icon: AppAssets.backPackIcon, onTap: RouteManager.navigateToCollectEmptyBag),
+    const DashboardTileCard(title: 'Collect Bag From Phlebotomist', icon: AppAssets.bagFilledWithSamples, onTap: RouteManager.navigateToCollectBagsFromPhlebotomist),
+    const DashboardTileCard(title: AppStrings.collectedSampleBags, icon: AppAssets.bagsCollected, onTap: RouteManager.navigateToCollectedBags),
+    const DashboardTileCard(title: AppStrings.bagStatus, icon: AppAssets.bagStatus, onTap: RouteManager.navigateToBagStatus),
+    const DashboardTileCard(title: AppStrings.samplePickup, icon: AppAssets.bagFilledWithSamples, onTap: RouteManager.navigateToSamplePickupDashboard),
   ];
 
   List<DashboardTileCard> _connectorCards() => [
-    const DashboardTileCard(
-      title: AppStrings.collectDestinationBag,
-      icon: AppAssets.backPackIcon,
-      onTap: RouteManager.navigateToCollectEmptyBag,
-    ),
-    const DashboardTileCard(
-      title: 'Collect Bag From Phlebotomist',
-      icon: AppAssets.bagFilledWithSamples,
-      onTap: RouteManager.navigateToCollectBagsFromPhlebotomist,
-    ),
-    const DashboardTileCard(
-      title: AppStrings.collectedSampleBags,
-      icon: AppAssets.bagsCollected,
-      onTap: RouteManager.navigateToCollectedBags,
-    ),
-    const DashboardTileCard(
-      title: AppStrings.bagStatus,
-      icon: AppAssets.bagStatus,
-      onTap: RouteManager.navigateToBagStatus,
-    ),
-    const DashboardTileCard(
-      title: AppStrings.samplePickup,
-      icon: AppAssets.bagFilledWithSamples,
-      onTap: RouteManager.navigateToSamplePickupDashboard,
-    ),
+    const DashboardTileCard(title: AppStrings.collectDestinationBag, icon: AppAssets.backPackIcon, onTap: RouteManager.navigateToCollectEmptyBag),
+    const DashboardTileCard(title: 'Collect Bag From Phlebotomist', icon: AppAssets.bagFilledWithSamples, onTap: RouteManager.navigateToCollectBagsFromPhlebotomist),
+    const DashboardTileCard(title: AppStrings.collectedSampleBags, icon: AppAssets.bagsCollected, onTap: RouteManager.navigateToCollectedBags),
+    const DashboardTileCard(title: AppStrings.bagStatus, icon: AppAssets.bagStatus, onTap: RouteManager.navigateToBagStatus),
+    const DashboardTileCard(title: AppStrings.samplePickup, icon: AppAssets.bagFilledWithSamples, onTap: RouteManager.navigateToSamplePickupDashboard),
   ];
 
   List<DashboardTileCard> _labTechnicianCards() => [
-    const DashboardTileCard(
-      title: AppStrings.acceptSampleInLab,
-      icon: AppAssets.bagAcceptedInLab,
-      onTap: RouteManager.navigateToSampleAccept,
-    ),
-    const DashboardTileCard(
-      title: AppStrings.acceptBagInLab,
-      icon: AppAssets.bagAcceptedInLab,
-      onTap: RouteManager.navigateToAcceptBagInLaboratory,
-    ),
+    const DashboardTileCard(title: AppStrings.acceptSampleInLab, icon: AppAssets.bagAcceptedInLab, onTap: RouteManager.navigateToSampleAccept),
+    const DashboardTileCard(title: AppStrings.acceptBagInLab, icon: AppAssets.bagAcceptedInLab, onTap: RouteManager.navigateToAcceptBagInLaboratory),
     /* DashboardTileCard(
       title: AppStrings.handOverToInventory,
       icon: AppAssets.bagInventory,
       onTap: RouteManager.navigateToHandOverBagToInventory,
     ),*/
-    const DashboardTileCard(
-      title: AppStrings.bagStatus,
-      icon: AppAssets.bagStatus,
-      onTap: RouteManager.navigateToBagStatus,
-    ),
+    const DashboardTileCard(title: AppStrings.bagStatus, icon: AppAssets.bagStatus, onTap: RouteManager.navigateToBagStatus),
   ];
 
-  List<DashboardTileCard> _defaultCards() => [
-    DashboardTileCard(
-      title: 'Please Connect with support team',
-      icon: AppAssets.deliveryBoyIcon,
-      onTap: () {},
-    ),
-  ];
+  List<DashboardTileCard> _defaultCards() => [DashboardTileCard(title: 'Please Connect with support team', icon: AppAssets.deliveryBoyIcon, onTap: () {})];
 
   /// Call this to signal a rebuild-triggered refresh
   void onDashboardBuild() {
@@ -321,25 +248,63 @@ class DashboardController extends GetxController {
 
   final RxInt refreshTick = 0.obs;
 
+  final DashboardStatsService _dashboardStatsService = DashboardStatsService();
+
   void tickRefresh() => refreshTick.value++;
+
   /// Fetches the "orders board" numbers shown in the header stat strip.
   /// TODO: wire to real API — this only shows the phlebotomist's own counts.
   Future<void> _fetchDashboardStats() async {
     try {
       isLoadingStats.value = true;
 
-      // ── Replace with real call, e.g.:
-      // final stats = await _dashboardStatsService.getStats(user.empCode);
-      // assignedPatientsCount.value = stats.assigned;
-      // testCollectedCount.value    = stats.collected;
-      // handoverCount.value         = stats.handedOver;
-      // pendingHandoverCount.value  = stats.pendingHandover;
+      final user = await _userService.getUser();
 
-      await Future.delayed(const Duration(milliseconds: 300)); // placeholder
-      assignedPatientsCount.value = 12;
-      testCollectedCount.value = 45;
-      handoverCount.value = 4;
-      pendingHandoverCount.value = 9;
+      if (user == null) {
+        kPrint('❌ getUser() null — cannot fetch dashboard stats');
+        return;
+      }
+
+      final PhleboDashboardSummary response = await _dashboardStatsService.fetchDashboardCount(userId: user.empCode.toString());
+
+      if (response.status.toLowerCase() != 'success') {
+        kPrint('❌ Dashboard API failed: ${response.message}');
+        return;
+      }
+
+      // Reset values
+      assignedPatientsCount.value = 0;
+      testCollectedCount.value = 0;
+      handoverCount.value = 0;
+      pendingHandoverCount.value = 0;
+
+      for (final item in response.output) {
+        switch (item.assignStatusName.toLowerCase().trim()) {
+          case 'assigned':
+            assignedPatientsCount.value = item.assignstatusCount;
+            break;
+
+          case 'sample collected':
+            testCollectedCount.value = item.assignstatusCount;
+            break;
+
+          case 'handovers':
+            handoverCount.value = item.assignstatusCount;
+            break;
+
+          case 'pending handovers':
+            pendingHandoverCount.value = item.assignstatusCount;
+            break;
+        }
+      }
+
+      kPrint(
+        'Dashboard Stats: '
+        'Assigned=${assignedPatientsCount.value}, '
+        'Collected=${testCollectedCount.value}, '
+        'Handovers=${handoverCount.value}, '
+        'Pending=${pendingHandoverCount.value}',
+      );
     } catch (e) {
       kPrint('❌ _fetchDashboardStats: $e');
     } finally {
@@ -378,6 +343,7 @@ class DashboardController extends GetxController {
       kPrint('❌ _fetchCurrentLocation: $e');
     }
   }
+
   Future<void> refreshLocation() => _fetchCurrentLocation();
   Future<void> _fetchNotices() async {
     // notices.value = await _notificationsService.getForToday();

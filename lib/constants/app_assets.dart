@@ -2,6 +2,7 @@ class AppAssets {
   AppAssets._();
 
   static const String lifenityLogo = 'assets/images/lifenity-logo.png';
+  static const String splashBg = 'assets/images/splash_bg.png';
 
   // icons
   static const String userIcon = 'assets/icons/user-square-rounded.svg';
@@ -38,12 +39,12 @@ class AppAssets {
   static const String lockIcons = 'assets/icons/lock-square-rounded.svg';
   static const String barcodeIcon = 'assets/icons/barcode.svg';
   static const String microscope = 'assets/icons/microscope.svg';
-  static const String labTechnician  = 'assets/icons/lab-tech.svg';
-  static const String medBackpack  = 'assets/icons/med-backpack.svg';
-  static const String medHandBag  = 'assets/icons/med-hand-bag.svg';
-  static const String rejectFileIcon  = 'assets/icons/reject-file.svg';
-  static const String forwardIcon  = 'assets/icons/forward.svg';
-  static const String backwardIcon  = 'assets/icons/backward.svg';
+  static const String labTechnician = 'assets/icons/lab-tech.svg';
+  static const String medBackpack = 'assets/icons/med-backpack.svg';
+  static const String medHandBag = 'assets/icons/med-hand-bag.svg';
+  static const String rejectFileIcon = 'assets/icons/reject-file.svg';
+  static const String forwardIcon = 'assets/icons/forward.svg';
+  static const String backwardIcon = 'assets/icons/backward.svg';
   static const String twoTestTubes = 'assets/icons/twoTestTubes.svg';
   static const String deliveryMan = 'assets/icons/delivery-man.svg';
   static const String whatsAppIcon = 'assets/icons/whatsappIcon.svg';
@@ -59,8 +60,6 @@ class AppAssets {
   static const String eyeView = 'assets/icons/eye_view.svg';
   static const String whatsapp = 'assets/icons/whatsapp.svg';
   static const String share = 'assets/icons/share.svg';
-
-
 
   /// dashboard icons'
   static const String deliveryBoyIcon = 'assets/images/delivery-boy.png';
@@ -97,14 +96,12 @@ class AppAssets {
   static const String sampleCollection = 'assets/images/sample-collection.png';
   static const String sampleRecollectionIcon = 'assets/images/sample-recollection.png';
 
-
   /// Dashboard cards
   static const String collectSampleCard = 'assets/cards/sample-collection.png';
-  static const String collectedBagsCard= 'assets/cards/collected-bags.png';
-  static const String sampleRecollectionCard= 'assets/cards/sample-recollection.png';
-  static const String assignedPatients= 'assets/cards/patient-queue.png';
-  static const String bagHistoryCard= 'assets/cards/bag-history.png';
-
+  static const String collectedBagsCard = 'assets/cards/collected-bags.png';
+  static const String sampleRecollectionCard = 'assets/cards/sample-recollection.png';
+  static const String assignedPatients = 'assets/cards/patient-queue.png';
+  static const String bagHistoryCard = 'assets/cards/bag-history.png';
 
   /// sample live tracking dashboard
   static const String bagOpenedIcon = 'assets/images/bag-opened-icon.jpg';
@@ -119,9 +116,6 @@ class AppAssets {
   static const String completedToday = 'assets/images/completed-today.png';
   static const String inTransit = 'assets/images/in-transit.png';
   static const String pickupAwaiting = 'assets/images/pickup-awaiting.png';
-
-
-
 
   // camp
   static const String medicalHeartNotepad = 'medical-file-heart.svg';

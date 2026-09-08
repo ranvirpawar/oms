@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
+import 'package:lifenity_connect/features/auth/model/login_response_model.dart';
 import 'package:lifenity_connect/features/auth/view/login_screen.dart';
+import 'package:lifenity_connect/features/auth/view/my_profile.dart';
 import 'package:lifenity_connect/features/cms_eho/view/consumption_dashboard.dart';
 import 'package:lifenity_connect/features/dashboard/view/dashboard_screen.dart';
 import 'package:lifenity_connect/features/lab_technician/passkey/view/passkey_view.dart';
@@ -26,6 +28,8 @@ import 'package:lifenity_connect/features/team_lead/visit_details/view/visit_det
 import 'package:lifenity_connect/features/team_lead/zero_sample_calendar/view/zero_calendar_view.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/binding/sample_collection_binding.dart';
 
+import '../features/auth/binding/profile_binding.dart';
+import '../features/auth/model/profile_model.dart';
 import '../features/dashboard/dashboard_controller/dashboard_controller.dart';
 import '../features/lab_technician/accept_handover_bag/view/accept_bag_in_lab_view.dart';
 import '../features/lab_technician/accept_handover_bag/view/handover_bag_view.dart';
@@ -50,11 +54,7 @@ class RouteManager {
   }
 
   static void redirectToLogin() {
-    Get.offAll(
-      () => const LoginScreenView(),
-      binding: LoginBinding(),
-      transition: Transition.fadeIn,
-    );
+    Get.offAll(() => const LoginScreenView(), binding: LoginBinding(), transition: Transition.fadeIn);
   }
 
   static void redirectToForgotPassword() {}
@@ -62,27 +62,14 @@ class RouteManager {
   static void redirectToSignUp() {}
 
   static void navigateToPatientRegistration(String bagId) {
-    Get.to(
-      () => PatientRegistrationPage(),
-      arguments: {'bagId': bagId},
-      transition: Transition.rightToLeft,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => PatientRegistrationPage(), arguments: {'bagId': bagId}, transition: Transition.rightToLeft, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToBagStatusDashboard({isBack = false}) {
     if (isBack) {
-      Get.off(
-        () => const BagRegistrationDashboard(),
-        transition: Transition.rightToLeft,
-        duration: const Duration(milliseconds: 200),
-      );
+      Get.off(() => const BagRegistrationDashboard(), transition: Transition.rightToLeft, duration: const Duration(milliseconds: 200));
     } else {
-      Get.to(
-        () => const BagRegistrationDashboard(),
-        transition: Transition.rightToLeft,
-        duration: const Duration(milliseconds: 200),
-      );
+      Get.to(() => const BagRegistrationDashboard(), transition: Transition.rightToLeft, duration: const Duration(milliseconds: 200));
     }
   }
 
@@ -102,27 +89,15 @@ class RouteManager {
   }
 
   static void navigateToSampleAccept() {
-    Get.to(
-      () => const SampleAcceptView(),
-      transition: Transition.rightToLeft,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => const SampleAcceptView(), transition: Transition.rightToLeft, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToSamplePickupDashboard() {
-    Get.to(
-      () => SamplePickupEntryView(),
-      transition: Transition.rightToLeft,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => SamplePickupEntryView(), transition: Transition.rightToLeft, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToPatientReport() {
-    Get.to(
-      () => PatientReportView(),
-      transition: Transition.rightToLeft,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => PatientReportView(), transition: Transition.rightToLeft, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToSampleRecollection([bool isRefresh = false]) {
@@ -147,56 +122,31 @@ class RouteManager {
     );
   }
 
-  static void navigateToPatientRegistrationList({
-    required dynamic facilityData,
-    required DateTime fromDate,
-    DateTime? toDate,
-  }) {
+  static void navigateToPatientRegistrationList({required dynamic facilityData, required DateTime fromDate, DateTime? toDate}) {
     Get.to(
       () => const PatientRegistrationList(),
-      arguments: {
-        'facilityId': facilityData.facilityId,
-        'facilityName': facilityData.facilityName,
-        'fromDate': fromDate,
-        'toDate': toDate ?? fromDate,
-      },
+      arguments: {'facilityId': facilityData.facilityId, 'facilityName': facilityData.facilityName, 'fromDate': fromDate, 'toDate': toDate ?? fromDate},
       transition: Transition.rightToLeft,
       duration: const Duration(milliseconds: 200),
     );
   }
 
   static void navigateToAcceptBag() {
-    Get.to(
-      () => AcceptBagView(),
-      transition: Transition.rightToLeft,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => AcceptBagView(), transition: Transition.rightToLeft, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToBagStatus() {
-    Get.to(
-      () => const BagStatusPage(),
-      transition: Transition.rightToLeft,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => const BagStatusPage(), transition: Transition.rightToLeft, duration: const Duration(milliseconds: 200));
   }
 
   /*------------------ Team Lead --------------------- */
 
   static void navigateToSampleRemark() {
-    Get.to(
-      () => SampleRemarkView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => SampleRemarkView(), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToZeroSampleCalendar() {
-    Get.to(
-      () => ZeroSampleCalendarView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => ZeroSampleCalendarView(), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToVisitDetails() {
@@ -208,145 +158,85 @@ class RouteManager {
   }
 
   static void navigateTOTLDashboard() {
-    Get.to(
-      () => SummaryDashboard(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => SummaryDashboard(), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToTestAnalysisDashboard() {
-    Get.to(
-      () => TestAnalysisDashboard(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => TestAnalysisDashboard(), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToPerformanceDashboard() {
-    Get.to(
-      () => PerformanceDashboard(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => PerformanceDashboard(), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 
   // route to consumption dashboard
   static void navigateToConsumptionDashboard() {
-    Get.to(
-      () => const ConsumptionDashboard(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => const ConsumptionDashboard(), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToInvoiceTracking() {
-    Get.to(
-      () => InvoiceTrackingView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => InvoiceTrackingView(), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToSampleLiveTracking() {
-    Get.to(
-      () => const LiveTrackingView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => const LiveTrackingView(), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToMergeBarcode() {
-    Get.to(
-      () => MergeBarcodeView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => MergeBarcodeView(), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 
   /// runner boy
   ///  Collect Empty Bag
   /*------------------Runner Boy Routes --------------------*/
   static void navigateToCollectEmptyBag() {
-    Get.to(
-      () => const CollectDestinationBagView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => const CollectDestinationBagView(), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToHandoverPhlebotomist() {
-    Get.to(
-      () => HandoverPhlebotomistView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => HandoverPhlebotomistView(), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToHandoverConnector() {
-    Get.to(
-      () => const HandoverConnectorView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => const HandoverConnectorView(), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToHandoverT0RunnerBoy() {
-    Get.to(
-      () => const HandoverConnectorView(isHandOverToRunnerBoy: true),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => const HandoverConnectorView(isHandOverToRunnerBoy: true), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToCollectedBags() {
-    Get.to(
-      () => CollectedBagsView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => CollectedBagsView(), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToCollectBagsFromPhlebotomist() {
-    Get.to(
-      () => CollectBagFromPhlebotomistView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => CollectBagFromPhlebotomistView(), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 
   /*------------------------ Lab Accession ----------------------*/
   static void navigateToAcceptBagInLaboratory() {
-    Get.to(
-      () => const AcceptBagInLabView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => const AcceptBagInLabView(), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToHandOverBagToInventory() {
-    Get.to(
-      () => const HandoverBagView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => const HandoverBagView(), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
+
   static void navigateToPatientQueue() {
-    Get.to(
-      () => const PatientQueueView(),
-      binding: PatientQueueBinding(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
+    Get.to(() => const PatientQueueView(), binding: PatientQueueBinding(), transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 
   static void navigateToSampleCollection(AssignedPatient patient) {
     Get.to(
-          () => const OrderConfirmationScreen(),
+      () => const OrderConfirmationScreen(),
       binding: SampleCollectionBinding(),
       arguments: {'assignedPatient': patient},
       transition: Transition.circularReveal,
       duration: const Duration(milliseconds: 200),
     );
+  }
+
+  static void navigateToProfilePage(ProfileData? user) {
+    Get.to(() => ProfileScreen(), binding: ProfileBinding(), arguments: {'loggedInUser': user}, transition: Transition.circularReveal, duration: const Duration(milliseconds: 200));
   }
 }
