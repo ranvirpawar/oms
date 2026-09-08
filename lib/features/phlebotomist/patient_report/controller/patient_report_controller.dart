@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 import 'package:intl/intl.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_report/service/patient_report_service.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_report/view/in_app_report_view.dart';
 import 'package:lifenity_connect/services/snackbar_service.dart';
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../services/auth_manager.dart';
@@ -366,10 +367,10 @@ class PatientReportController extends GetxController {
       if (await canLaunchUrl(whatsappUri)) {
         await launchUrl(whatsappUri);
       } else {
-        Get.snackbar('Error', 'WhatsApp not installed or cannot open');
+        LiquidSnack.error('WhatsApp not installed or cannot open');
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to send WhatsApp message');
+      LiquidSnack.error('Failed to send WhatsApp message');
     } finally {}
   }
 

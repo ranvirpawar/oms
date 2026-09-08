@@ -246,16 +246,14 @@ class PatientCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Expanded(
-                child: QueueInfoChip(
-                  icon: Icons.event_outlined,
-                  iconColor: AppColors.purple,
-                  label: 'Slot',
-                  value: patient.slotDateTime != null
-                      ? '${DateFormat('dd MMM').format(patient.slotDateTime!)} • '
-                      '${DateFormat('hh:mm a').format(patient.slotDateTime!)}'
-                      : 'Not set',
-                ),
+              QueueInfoChip(
+                icon: Icons.event_outlined,
+                iconColor: AppColors.purple,
+                label: 'Slot',
+                value: patient.slotDateTime != null
+                    ? '${DateFormat('dd MMM').format(patient.slotDateTime!)} • '
+                    '${DateFormat('hh:mm a').format(patient.slotDateTime!)}'
+                    : 'Not set',
               ),
               if (patient.isFastingRequired) ...[
                 const SizedBox(width: 6),

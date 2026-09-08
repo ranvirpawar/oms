@@ -1,7 +1,8 @@
 import 'package:flutter/cupertino.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 import 'package:lifenity_connect/features/auth/model/profile_model.dart';
 import 'package:lifenity_connect/services/auth_manager.dart';
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
 
 class ProfileController extends GetxController {
   ProfileData user; // not final, so we can reassign
@@ -57,6 +58,6 @@ class ProfileController extends GetxController {
     // Persist via AuthManager (make sure this method saves the full object)
     await authManager.saveUserProfileToStorage(user);
 
-    Get.snackbar('Success', 'Profile updated successfully');
+    LiquidSnack.success('Profile updated successfully');
   }
 }

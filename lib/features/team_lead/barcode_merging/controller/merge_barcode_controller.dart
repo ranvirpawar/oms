@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../utils/helper_functions/helper_methods.dart';
+import '../../../../utils/ui_designs/liquid_snackbar.dart';
 
 import '../service/merge_barcode_service.dart';
 import '../model/merge_test_patient_model.dart';
@@ -182,27 +183,11 @@ class MergeBarcodeController extends GetxController {
         glucoseOrderId: glucosePatient.value!.orderId,
       );
 
-      Get.snackbar(
-        'Merged',
-        message,
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.green.shade600,
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
-        icon: const Icon(Icons.check_circle, color: Colors.white),
-      );
+      LiquidSnack.success(message, title: 'Merged');
       _resetAll();
     } catch (e) {
       final msg = e.toString().replaceFirst('Exception: ', '');
-      Get.snackbar(
-        'Merge failed',
-        msg,
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.red.shade600,
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
-        icon: const Icon(Icons.error_outline, color: Colors.white),
-      );
+      LiquidSnack.error(msg, title: 'Merge failed');
       kPrint('[MergeBarcodeController] mergeBarcodes error: $e');
     } finally {
       isMerging.value = false;

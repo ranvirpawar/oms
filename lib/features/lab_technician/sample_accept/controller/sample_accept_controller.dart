@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 import 'package:lifenity_connect/features/auth/model/login_response_model.dart';
 import 'package:lifenity_connect/features/lab_technician/sample_accept/view/accept_in_lab_view.dart';
-import 'package:lifenity_connect/services/snackbar_service.dart';
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
 
 import '../../../../services/user_service.dart';
 import '../../../../theme/app_colors.dart';
@@ -119,13 +119,7 @@ class SampleAcceptController extends GetxController {
       originalList.assignAll(resources); // 🔥 THIS WAS MISSING
     } catch (e) {
       debugPrint('❌ Error loading resources: $e');
-      Get.snackbar(
-        'Error',
-        'Failed to load resources data',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.red.withOpacity(0.7),
-        colorText: Colors.white,
-      );
+      LiquidSnack.error('Failed to load resources data');
     } finally {
       isLoading.value = false;
     }
@@ -133,9 +127,7 @@ class SampleAcceptController extends GetxController {
 
   void onResourceTap(ResourcesData resource) {
     if (resource.visitedFacility == 0) {
-      SnackBarService.to.showMessage(
-          message: 'No data available acceptance',
-          duration: const Duration(seconds: 1));
+      LiquidSnack.warning('No data available acceptance');
     } else {
       Get.to(() => AcceptInLabView(
             resource: resource,

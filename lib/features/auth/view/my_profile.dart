@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
+
 class ProfileScreen extends StatefulWidget {
   @override
   _ProfileScreenState createState() => _ProfileScreenState();
@@ -100,7 +102,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               onPressed: () {
                 if (_formKey.currentState!.validate()) {
                   // Save logic here
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Profile updated!')));
+                  LiquidSnack.success('Profile updated!');
                 }
               },
               child: Text('Save & Update'),

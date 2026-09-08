@@ -475,7 +475,7 @@ class _DenyRemarkBottomSheetState extends State<DenyRemarkBottomSheet> {
                       return ElevatedButton(
                         onPressed: isLoading.value ? null : () async {
                           if (widget.controller.selectedDenyRemark.value == null) {
-                            Get.snackbar('Error', 'Please select a deny remark.');
+                            LiquidSnack.warning('Please select a deny remark.');
                             return;
                           }
                           isLoading.value = true;
@@ -491,7 +491,7 @@ class _DenyRemarkBottomSheetState extends State<DenyRemarkBottomSheet> {
                           } catch (e) {
                             isLoading.value = false;
                             setDialogState(() {});  // Force rebuild to hide spinner
-                            Get.snackbar('Error', 'Failed to deny: $e');  // Context-free snackbar
+                            LiquidSnack.error('Failed to deny: $e');
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -650,7 +650,7 @@ class _DenyRemarkBottomSheetState extends State<DenyRemarkBottomSheet> {
             child: ElevatedButton(
               onPressed: () {
                 if (widget.controller.selectedDenyRemark.value == null) {
-                  Get.snackbar('Error', 'Please select a deny remark.');
+                  LiquidSnack.warning('Please select a deny remark.');
                   return;
                 }
                 // Don't close sheet here; show dialog while sheet is open

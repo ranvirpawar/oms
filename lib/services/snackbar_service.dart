@@ -1,93 +1,70 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 
-import '../theme/app_colors.dart';
+import '../utils/ui_designs/liquid_snackbar.dart';
 
-/// A centralized service for showing in-app messages (snackbars, dialogs) using GetX.
+/// Centralized in-app messaging facade.
+///
+/// Every method renders through the **Liquid Glass** snackbar system
+/// ([LiquidSnack]) — a modern glass card/pill with a per-variant icon and
+/// fixed WCAG-compliant contrast — instead of the legacy GetX snackbar UI.
+/// Call sites keep the same API; only the visual layer changed.
 class SnackBarService {
   // Make this a singleton
   SnackBarService._();
   static final SnackBarService to = SnackBarService._();
 
-  /// Show a simple snackbar at bottom
+  /// Show a simple glass snackbar at bottom.
+  ///
+  /// `isError` picks the red error card, otherwise the green success card.
   void showSnack({
     required String title,
     required String message,
     Color? backgroundColor,
     Color? titleColor,
     Color? messageColor,
-    SnackPosition position = SnackPosition.BOTTOM,
+    SnackPosition position = SnackPosition.bottom,
     Duration duration = const Duration(seconds: 1),
     bool isError = false,
   }) {
-    Get.snackbar(
-      title,
-      message,
-      snackPosition: position,
-      backgroundColor:
-          backgroundColor ?? (isError ? Colors.redAccent : Colors.green),
-      colorText: messageColor ?? Colors.white,
-      titleText: titleColor != null
-          ? Text(title,
-              style: TextStyle(color: titleColor, fontWeight: FontWeight.bold))
-          : null,
-      margin: const EdgeInsets.all(12),
-      borderRadius: 8,
-      duration: duration,
-    );
+    if (isError) {
+      LiquidSnack.error(message, title: title);
+    } else {
+      LiquidSnack.success(message, title: title);
+    }
   }
 
-  /// Show a snackbar with only a message (no title)
+  /// Minimal glass pill for a short neutral message.
+  ///
+  /// Pass [variant] when the message is clearly a success/warning/error so the
+  /// card gets the matching icon + color.
   void showMessage({
     required String message,
     Color? backgroundColor,
     Color? messageColor,
-    SnackPosition position = SnackPosition.BOTTOM,
+    SnackPosition position = SnackPosition.bottom,
     Duration duration = const Duration(seconds: 1),
+    SnackVariant variant = SnackVariant.neutral,
   }) {
-    Get.rawSnackbar(
-      messageText: Text(
-        message,
-        style: TextStyle(color: messageColor ?? Colors.white),
-      ),
-      backgroundColor: backgroundColor ?? AppColors.tertiary900,
-      snackPosition: position,
-      duration: duration,
-      borderRadius: 8,
-      margin: const EdgeInsets.all(12),
-      animationDuration: Duration.zero,
-      forwardAnimationCurve: Curves.linear,
-      reverseAnimationCurve: Curves.linear,
-    );
+    if (variant == SnackVariant.neutral) {
+      LiquidSnack.quick(message, position: position, duration: duration);
+    } else {
+      LiquidSnack.show(
+        message: message,
+        variant: variant,
+        position: position,
+        duration: duration,
+      );
+    }
   }
   void quickNotify({
     required String message,
     Color? backgroundColor,
     Color? messageColor,
-    SnackPosition position = SnackPosition.BOTTOM,
+    SnackPosition position = SnackPosition.bottom,
     Duration duration = const Duration(seconds: 1),
   }) {
-    Get.rawSnackbar(
-      messageText: Text(
-        message,
-        style: TextStyle(
-          color: messageColor ?? Colors.white,
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      backgroundColor: backgroundColor ?? AppColors.tertiary900,
-      snackPosition: position,
-      duration: duration,
-      borderRadius: 8,
-      margin: const EdgeInsets.all(12),
-      snackStyle: SnackStyle.FLOATING,
-
-      // 👇 This kills the slide/animation
-      animationDuration: Duration.zero,
-      forwardAnimationCurve: Curves.linear,
-      reverseAnimationCurve: Curves.linear,
-    );
+    LiquidSnack.quick(message, position: position, duration: duration);
   }
 
   /// Show a confirmation dialog
@@ -129,26 +106,14 @@ class SnackBarService {
     required VoidCallback onAction,
     Color? backgroundColor,
     Color? messageColor,
-    SnackPosition position = SnackPosition.BOTTOM,
+    SnackPosition position = SnackPosition.bottom,
     Duration duration = const Duration(seconds: 4),
   }) {
-    Get.rawSnackbar(
-      messageText: Text(
-        message,
-        style: TextStyle(color: messageColor ?? Colors.white),
-      ),
-      mainButton: TextButton(
-        onPressed: onAction,
-        child: Text(
-          actionLabel,
-          style: const TextStyle(color: Colors.yellow),
-        ),
-      ),
-      backgroundColor: backgroundColor ?? AppColors.primary600,
-      snackPosition: position,
+    LiquidSnack.withAction(
+      message: message,
+      actionLabel: actionLabel,
+      onAction: onAction,
       duration: duration,
-      borderRadius: 8,
-      margin: const EdgeInsets.all(12),
     );
   }
   void showQuickNotification({
@@ -157,64 +122,16 @@ class SnackBarService {
     Color? textColor,
     Duration duration = const Duration(milliseconds: 800),
   }) {
-    // Use Get.overlayContext to avoid requiring BuildContext
-    if (Get.overlayContext == null) return;
-
-    final overlay = Overlay.of(Get.overlayContext!);
-    late OverlayEntry overlayEntry;
-
-    // Get screen size from Get.overlayContext
-    final screenSize = MediaQuery.of(Get.overlayContext!).size;
-
-    overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-
-        left: (screenSize.width -100) / 2, // Assuming ~160px width for pop-up
-        bottom: 30,
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            // width: 160, // Fixed width for consistent centering
-            decoration: BoxDecoration(
-              color: backgroundColor ?? Colors.grey[800]!.withOpacity(0.85),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: textColor ?? Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    // Insert the overlay
-    overlay.insert(overlayEntry);
-
-    // Remove after duration
-    Future.delayed(duration, () {
-      overlayEntry.remove();
-    });
+    LiquidSnack.quick(message, duration: duration);
   }
 
-  /// Show a quick "Coming Soon" notification at screen center
+  /// Show a quick "Coming Soon" notification
   void showComingSoonNotification({
     Color? backgroundColor,
     Color? textColor,
     Duration duration = const Duration(milliseconds: 800),
   }) {
-    showQuickNotification(
-      message: 'Coming Soon',
-      backgroundColor: backgroundColor ?? Colors.grey[800]!.withOpacity(0.85),
-      textColor: textColor ?? Colors.white,
-      duration: duration,
-    );
+    LiquidSnack.info('Coming Soon');
   }
 }
 

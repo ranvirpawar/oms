@@ -1,10 +1,11 @@
 // controllers/handover_phlebotomist_controller.dart
 
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../services/user_service.dart';
+import '../../../../utils/ui_designs/liquid_snackbar.dart';
 import '../../../auth/model/login_response_model.dart';
 import '../model/bag_transaction_model.dart';
 
@@ -87,13 +88,7 @@ class HandoverPhlebotomistController extends GetxController {
       }
     } catch (e) {
       errorMessage.value = e.toString().replaceAll('Exception: ', '');
-      Get.snackbar(
-        '✗ Error',
-        errorMessage.value,
-        backgroundColor: Colors.red.shade100,
-        colorText: Colors.red.shade900,
-        snackPosition: SnackPosition.TOP,
-      );
+      LiquidSnack.error(errorMessage.value);
       debugPrint('❌ Error fetching phlebotomist list: $e');
     } finally {
       isLoading.value = false;
@@ -113,13 +108,7 @@ class HandoverPhlebotomistController extends GetxController {
   // Start scanning
   void startScanning() {
     if (selectedPhlebotomist.value == null) {
-      Get.snackbar(
-        '⚠️ Required',
-        'Please select a phlebotomist first',
-        backgroundColor: Colors.orange.shade100,
-        colorText: Colors.orange.shade900,
-        snackPosition: SnackPosition.TOP,
-      );
+      LiquidSnack.warning('Please select a phlebotomist first');
       return;
     }
 
@@ -148,24 +137,12 @@ class HandoverPhlebotomistController extends GetxController {
   void processManualBarcode() {
     final barcode = barcodeController.text.trim();
     if (barcode.isEmpty) {
-      Get.snackbar(
-        '✗ Error',
-        'Please enter a barcode',
-        backgroundColor: Colors.red.shade100,
-        colorText: Colors.red.shade900,
-        snackPosition: SnackPosition.TOP,
-      );
+      LiquidSnack.warning('Please enter a barcode');
       return;
     }
 
     if (selectedPhlebotomist.value == null) {
-      Get.snackbar(
-        '⚠️ Required',
-        'Please select a phlebotomist first',
-        backgroundColor: Colors.orange.shade100,
-        colorText: Colors.orange.shade900,
-        snackPosition: SnackPosition.TOP,
-      );
+      LiquidSnack.warning('Please select a phlebotomist first');
       return;
     }
 
@@ -214,14 +191,7 @@ class HandoverPhlebotomistController extends GetxController {
       handoverState.value = HandoverState.error;
       errorMessage.value = e.toString().replaceAll('Exception: ', '');
 
-      Get.snackbar(
-        '✗ Error',
-        errorMessage.value,
-        backgroundColor: Colors.red.shade100,
-        colorText: Colors.red.shade900,
-        snackPosition: SnackPosition.TOP,
-        duration: const Duration(seconds: 1),
-      );
+      LiquidSnack.error(errorMessage.value);
 
       debugPrint('❌ Error fetching bag transaction: $e');
     }
@@ -241,13 +211,7 @@ class HandoverPhlebotomistController extends GetxController {
   // Perform handover
   Future<void> performHandover() async {
     if (!canHandover()) {
-      Get.snackbar(
-        '⚠️ Required',
-        'Please select phlebotomist and scan at least one bag',
-        backgroundColor: Colors.orange.shade100,
-        colorText: Colors.orange.shade900,
-        snackPosition: SnackPosition.TOP,
-      );
+      LiquidSnack.warning('Please select phlebotomist and scan at least one bag');
       return;
     }
 
@@ -296,13 +260,8 @@ class HandoverPhlebotomistController extends GetxController {
       // Success!
       handoverState.value = HandoverState.success;
 
-      Get.snackbar(
-        '✓ Success',
+      LiquidSnack.success(
         'Successfully handed over $totalBags bag(s) to ${selectedPhlebotomist.value!.userName}',
-        backgroundColor: Colors.green.shade100,
-        colorText: Colors.green.shade900,
-        snackPosition: SnackPosition.TOP,
-        duration: const Duration(seconds: 3),
       );
 
       // Navigate back after delay
@@ -313,14 +272,7 @@ class HandoverPhlebotomistController extends GetxController {
       handoverState.value = HandoverState.error;
       errorMessage.value = e.toString().replaceAll('Exception: ', '');
 
-      Get.snackbar(
-        '✗ Handover Failed',
-        errorMessage.value,
-        backgroundColor: Colors.red.shade100,
-        colorText: Colors.red.shade900,
-        snackPosition: SnackPosition.TOP,
-        duration: const Duration(seconds: 3),
-      );
+      LiquidSnack.error(errorMessage.value);
 
       debugPrint('❌ Error performing handover: $e');
     }

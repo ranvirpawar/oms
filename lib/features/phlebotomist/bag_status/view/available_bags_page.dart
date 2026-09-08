@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 
 import '../../../../theme/app_colors.dart';
+import '../../../../utils/ui_designs/liquid_snackbar.dart';
 import '../controller/bag_status_controller.dart';
 
 
@@ -134,13 +135,7 @@ class AvailableBagsPage extends StatelessWidget {
                               onTap: () {
                                 // Copy on tap
                                 Clipboard.setData(ClipboardData(text: bag.bagcode));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Copied ${bag.bagcode}'),
-                                    duration: const Duration(milliseconds: 800),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
+                                LiquidSnack.quick('Copied ${bag.bagcode}');
                               },
                             ),
                             

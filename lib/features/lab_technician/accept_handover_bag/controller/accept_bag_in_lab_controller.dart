@@ -1,11 +1,11 @@
 // lib/features/lab_technician/accept_bag_in_lab/controller/accept_bag_in_lab_controller.dart
 
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-import '../../../../services/snackbar_service.dart';
 import '../../../../services/user_service.dart';
+import '../../../../utils/ui_designs/liquid_snackbar.dart';
 import '../../../auth/model/login_response_model.dart';
 import '../model/bag_details_extended_model.dart';
 import '../model/bag_model_new.dart';
@@ -149,7 +149,7 @@ class AcceptBagInLabController extends GetxController {
             ? step1.message
             : 'Bag not found or cannot be collected';
         debugPrint('⚠️ [Flow] Step 1 failed: $msg');
-        SnackBarService.to.showMessage(message: msg);
+        LiquidSnack.warning(msg);
         Future.delayed(const Duration(seconds: 3), resetScanner);
         return;
       }
@@ -193,25 +193,14 @@ class AcceptBagInLabController extends GetxController {
 
       debugPrint('✅ [Flow] All detail steps complete.');
 
-      Get.snackbar(
-        'Bag Scanned',
+      LiquidSnack.success(
         'Session #${firstResult.sessionID} — ${firstResult.tubecount} tubes',
-        backgroundColor: Colors.green.withOpacity(0.85),
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
-        duration: const Duration(seconds: 2),
-        icon: const Icon(Icons.check_circle, color: Colors.white),
+        title: 'Bag Scanned',
       );
       bagDetailsLoading.value = false;
     } catch (e) {
       debugPrint('❌ [Flow] Error: $e');
-      Get.snackbar(
-        'Error',
-        'Failed to process bag: $e',
-        backgroundColor: Colors.red.withOpacity(0.85),
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
-      );
+      LiquidSnack.error('Failed to process bag: $e');
       bagDetailsLoading.value = false;
       resetScanner();
     } finally {
@@ -223,13 +212,7 @@ class AcceptBagInLabController extends GetxController {
   // ─── Step 3: Accept Bag ────────────────────────────────────────────────────
   Future<void> acceptBag() async {
     if (scanResult.value == null) {
-      Get.snackbar(
-        'No Bag',
-        'Please scan a bag first',
-        backgroundColor: Colors.orange.withOpacity(0.85),
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
-      );
+      LiquidSnack.warning('Please scan a bag first');
       return;
     }
 
@@ -247,16 +230,11 @@ class AcceptBagInLabController extends GetxController {
 
       if (response.status == 'Success') {
         debugPrint('🎉 [Flow] Step 3 success. Bag accepted!');
-        Get.snackbar(
-          'Accepted!',
+        LiquidSnack.success(
           response.message.isNotEmpty
               ? response.message
               : 'Bag accepted successfully',
-          backgroundColor: Colors.green.withOpacity(0.85),
-          colorText: Colors.white,
-          snackPosition: SnackPosition.TOP,
-          duration: const Duration(seconds: 2),
-          icon: const Icon(Icons.inventory_2, color: Colors.white),
+          title: 'Accepted',
         );
         await Future.delayed(const Duration(seconds: 1));
         resetScanner();
@@ -268,13 +246,7 @@ class AcceptBagInLabController extends GetxController {
       }
     } catch (e) {
       debugPrint('❌ [Flow] Accept error: $e');
-      Get.snackbar(
-        'Error',
-        'Failed to accept bag: $e',
-        backgroundColor: Colors.red.withOpacity(0.85),
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
-      );
+      LiquidSnack.error('Failed to accept bag: $e');
     } finally {
       isSubmitting.value = false;
     }

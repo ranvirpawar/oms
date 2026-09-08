@@ -1,12 +1,12 @@
 // lib/controllers/handover_connector_controller.dart
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:lifenity_connect/services/snackbar_service.dart';
+import 'package:get/get.dart' hide SnackPosition;
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import 'package:geolocator/geolocator.dart';
 
 import '../../../../services/user_service.dart';
+import '../../../../utils/ui_designs/liquid_snackbar.dart';
 import '../../../auth/model/login_response_model.dart';
 import '../../handover_to_phlebo/model/bag_transaction_model.dart';
 import '../model/connector_model.dart';
@@ -121,8 +121,7 @@ class HandoverConnectorController extends GetxController {
       connectorList.assignAll(list);
     } catch (e) {
       errorMessage.value = e.toString().replaceAll('Exception: ', '');
-      Get.snackbar('Error', errorMessage.value,
-          backgroundColor: Colors.red.shade100, colorText: Colors.red.shade900);
+      LiquidSnack.error(errorMessage.value);
     } finally {
       isLoading(false);
     }
@@ -135,9 +134,7 @@ class HandoverConnectorController extends GetxController {
   // -----------------------------------------------------------------
   void startScanning() {
     if (selectedConnector.value == null) {
-      Get.snackbar('Required', 'Select a connector first',
-          backgroundColor: Colors.orange.shade100,
-          colorText: Colors.orange.shade900);
+      LiquidSnack.warning('Select a connector first');
       return;
     }
     isScanning(true);
@@ -165,14 +162,11 @@ class HandoverConnectorController extends GetxController {
   void processManualBarcode() {
     final code = barcodeController.text.trim();
     if (code.isEmpty) {
-      Get.snackbar('Error', 'Enter a barcode',
-          backgroundColor: Colors.red.shade100, colorText: Colors.red.shade900);
+      LiquidSnack.warning('Enter a barcode');
       return;
     }
     if (selectedConnector.value == null) {
-      Get.snackbar('Required', 'Select a connector first',
-          backgroundColor: Colors.orange.shade100,
-          colorText: Colors.orange.shade900);
+      LiquidSnack.warning('Select a connector first');
       return;
     }
     fetchBagTransaction(code);
@@ -209,26 +203,19 @@ class HandoverConnectorController extends GetxController {
       scannedBags.add(bag);
       handoverState(HandoverState.idle);
 
-      Get.snackbar('Bag Added', 'Bag ${bag.bagcode} added',
-          backgroundColor: Colors.green.shade100,
-          colorText: Colors.green.shade900,
-          duration: const Duration(seconds: 2));
+      LiquidSnack.success('Bag ${bag.bagcode} added');
 
       barcodeController.clear();
       scannedBarcode.value = '';
     } catch (e) {
       handoverState(HandoverState.error);
-      SnackBarService.to.showMessage(
-          message: 'Bag is already assigned ', duration: const Duration(seconds: 2));
+      LiquidSnack.error('Bag is already assigned');
     }
   }
 
   void removeBag(BagTransaction bag) {
     scannedBags.remove(bag);
-    Get.snackbar('Removed', 'Bag ${bag.bagcode} removed',
-        backgroundColor: Colors.grey.shade200,
-        colorText: Colors.grey.shade900,
-        duration: const Duration(seconds: 2));
+    LiquidSnack.info('Bag ${bag.bagcode} removed');
   }
 
   // -----------------------------------------------------------------
@@ -243,9 +230,7 @@ class HandoverConnectorController extends GetxController {
   // -----------------------------------------------------------------
   Future<void> performHandover() async {
     if (!canHandover()) {
-      Get.snackbar('Required', 'Select connector & scan at least one bag',
-          backgroundColor: Colors.orange.shade100,
-          colorText: Colors.orange.shade900);
+      LiquidSnack.warning('Select connector & scan at least one bag');
       return;
     }
 
@@ -291,12 +276,8 @@ class HandoverConnectorController extends GetxController {
       }
 
       handoverState(HandoverState.success);
-      Get.snackbar(
-        'Success',
+      LiquidSnack.success(
         'Handed over $total bag(s) to ${selectedConnector.value!.userName}',
-        backgroundColor: Colors.green.shade100,
-        colorText: Colors.green.shade900,
-        duration: const Duration(seconds: 3),
       );
 
       await Future.delayed(const Duration(seconds: 2));
@@ -304,10 +285,7 @@ class HandoverConnectorController extends GetxController {
     } catch (e) {
       handoverState(HandoverState.error);
       errorMessage.value = e.toString().replaceAll('Exception: ', '');
-      Get.snackbar('Handover Failed', errorMessage.value,
-          backgroundColor: Colors.red.shade100,
-          colorText: Colors.red.shade900,
-          duration: const Duration(seconds: 4));
+      LiquidSnack.error(errorMessage.value);
     } finally {
       isLoading.value = false;
     }

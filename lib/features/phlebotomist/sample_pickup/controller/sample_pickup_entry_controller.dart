@@ -4,12 +4,13 @@ import 'package:get/get.dart' hide FormData, MultipartFile;
 import 'package:intl/intl.dart';
 import 'package:lifenity_connect/features/auth/model/login_response_model.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_pickup/service/sample_pickup_service.dart';
-import 'package:lifenity_connect/services/snackbar_service.dart';
 import 'package:lifenity_connect/services/user_service.dart';
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
 import '../../../../network/api_client.dart';
 import '../../../../network/app_urls.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
+import '../../../../utils/ui_designs/liquid_snackbar.dart';
 import '../model/phlebo_sample_pickup.dart';
 import 'package:signature/signature.dart';
 import 'package:path_provider/path_provider.dart';
@@ -180,13 +181,7 @@ class SamplePickUpEntryViewController extends GetxController
       workList.value = [];
 
       // Show error snackbar to user
-      Get.snackbar(
-        'Error',
-        'Failed to load daily work list',
-        backgroundColor: AppColors.error,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
-      );
+      LiquidSnack.error('Failed to load daily work list');
     } finally {
       isLoading.value = false;
     }
@@ -226,13 +221,13 @@ class SamplePickUpEntryViewController extends GetxController
   Future<String?> _saveSignature() async {
     try {
       if (signatureController.isEmpty) {
-        Get.snackbar('Error', 'Please provide a signature');
+        LiquidSnack.warning('Please provide a signature');
         return null;
       }
 
       final signatureBytes = await signatureController.toPngBytes();
       if (signatureBytes == null) {
-        Get.snackbar('Error', 'Failed to capture signature');
+        LiquidSnack.error('Failed to capture signature');
         return null;
       }
 
@@ -244,7 +239,7 @@ class SamplePickUpEntryViewController extends GetxController
       return filePath;
     } catch (e) {
       debugPrint('❌ Error saving signature: $e');
-      Get.snackbar('Error', 'Failed to save signature');
+      LiquidSnack.error('Failed to save signature');
       return null;
     }
   }
@@ -288,25 +283,25 @@ class SamplePickUpEntryViewController extends GetxController
               print('✅ WorkID: $workId');
               return workId;
             } else {
-              Get.snackbar('Error', 'No WorkID returned in response');
+              LiquidSnack.error('No WorkID returned in response');
               return null;
             }
           } else {
-            Get.snackbar('Error', responseData['message'] ?? 'Failed to upload signature');
+            LiquidSnack.error(responseData['message'] ?? 'Failed to upload signature');
             return null;
           }
         } catch (e) {
           print('❌ Error parsing response: $e');
-          Get.snackbar('Error', 'Invalid response format: $e');
+          LiquidSnack.error('Invalid response format: $e');
           return null;
         }
       } else {
-        Get.snackbar('Error', 'Failed to upload signature: HTTP ${response.statusCode}');
+        LiquidSnack.error('Failed to upload signature: HTTP ${response.statusCode}');
         return null;
       }
     } catch (e) {
       print('❌ Error uploading signature: $e');
-      Get.snackbar('Error', 'Failed to upload signature: $e');
+      LiquidSnack.error('Failed to upload signature: $e');
       return null;
     } finally {
       isLoading.value = false;
@@ -388,18 +383,18 @@ class SamplePickUpEntryViewController extends GetxController
             await getFacilityWiseDataForPickup();
 
           } else {
-            Get.snackbar('Error', message ?? 'Failed to submit data');
+            LiquidSnack.error(message ?? 'Failed to submit data');
           }
         } catch (e) {
           debugPrint('❌ Error parsing response: $e');
-          Get.snackbar('Error', 'Invalid response format: $e');
+          LiquidSnack.error('Invalid response format: $e');
         }
       } else {
-        Get.snackbar('Error', 'Failed to submit counts: HTTP ${response.statusCode}');
+        LiquidSnack.error('Failed to submit counts: HTTP ${response.statusCode}');
       }
     } catch (e) {
       debugPrint('❌ Error submitting counts: $e');
-      Get.snackbar('Error', 'Failed to submit counts: $e');
+      LiquidSnack.error('Failed to submit counts: $e');
     } finally {
       isLoading.value = false;
     }
@@ -452,30 +447,26 @@ class SamplePickUpEntryViewController extends GetxController
             return workId;
           }
 
-          Get.snackbar('Error', 'No WorkID returned in response');
+          LiquidSnack.error('No WorkID returned in response');
 
           return null;
         }
 
-        Get.snackbar(
-          'Error',
+        LiquidSnack.error(
           responseData['message']?.toString() ?? 'Failed to upload signature',
         );
 
         return null;
       }
 
-      Get.snackbar(
-        'Error',
-        'Failed to upload signature: HTTP ${response.statusCode}',
-      );
+      LiquidSnack.error('Failed to upload signature: HTTP ${response.statusCode}');
 
       return null;
     } catch (e, stackTrace) {
       debugPrint('❌ Error uploading signature: $e');
       debugPrintStack(stackTrace: stackTrace);
 
-      Get.snackbar('Error', 'Failed to upload signature: $e');
+      LiquidSnack.error('Failed to upload signature: $e');
 
       return null;
     } finally {
@@ -532,10 +523,7 @@ class SamplePickUpEntryViewController extends GetxController
       HelperMethods.printLongString('⬅️ Body: $responseData');
 
       if (response.statusCode != 200) {
-        Get.snackbar(
-          'Error',
-          'Failed to submit counts: HTTP ${response.statusCode}',
-        );
+        LiquidSnack.error('Failed to submit counts: HTTP ${response.statusCode}');
         return;
       }
 
@@ -544,9 +532,9 @@ class SamplePickUpEntryViewController extends GetxController
       final message = responseData['message']?.toString();
 
       if (status == 'success') {
-        SnackBarService.to.showMessage(
-          message: 'Sample Pick-up entry saved successfully',
-          backgroundColor: AppColors.tertiary,
+        LiquidSnack.success(
+           'Sample Pick-up entry saved successfully',
+
         );
 
         // Clear form data
@@ -560,13 +548,13 @@ class SamplePickUpEntryViewController extends GetxController
         // Refresh facility data
         await getFacilityWiseDataForPickup();
       } else {
-        Get.snackbar('Error', message ?? 'Failed to submit data');
+        LiquidSnack.error(message ?? 'Failed to submit data');
       }
     } catch (e, stackTrace) {
       debugPrint('❌ Error submitting counts: $e');
       debugPrintStack(stackTrace: stackTrace);
 
-      Get.snackbar('Error', 'Failed to submit counts: $e');
+      LiquidSnack.error('Failed to submit counts: $e');
     } finally {
       isLoading.value = false;
     }
@@ -574,7 +562,7 @@ class SamplePickUpEntryViewController extends GetxController
 
   Future<void> submitData() async {
     if (selectedFacility.value == null) {
-      Get.snackbar('Error', 'Please select a facility');
+      LiquidSnack.warning('Please select a facility');
       return;
     }
 
@@ -589,7 +577,7 @@ class SamplePickUpEntryViewController extends GetxController
 
   Future<void> submitToLab() async {
     if (selectedLabFacilities.isEmpty) {
-      Get.snackbar('Error', 'Please select at least one facility');
+      LiquidSnack.warning('Please select at least one facility');
       return;
     }
 
@@ -606,7 +594,7 @@ class SamplePickUpEntryViewController extends GetxController
           .toList();
 
       if (validFacilities.isEmpty) {
-        Get.snackbar('Error', 'You have already submitted the samples to lab');
+        LiquidSnack.error('You have already submitted the samples to lab');
         return;
       }*/
 
@@ -635,8 +623,8 @@ class SamplePickUpEntryViewController extends GetxController
       final message = response['message']?.toString() ?? '';
 
       if (status == 'success') {
-        SnackBarService.to.showMessage(
-          message: 'Samples submitted to lab successfully!',
+       LiquidSnack.success(
+        'Samples submitted to lab successfully!',
         );
 
         /*Get.snackbar(
@@ -652,23 +640,13 @@ class SamplePickUpEntryViewController extends GetxController
         selectedLabFacilities.clear();
         await getSubmitToLabFacilityData();
       } else {
-        Get.snackbar(
-          'Error',
+        LiquidSnack.error(
           message.isNotEmpty ? message : 'Failed to submit samples to lab',
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
         );
       }
     } catch (e) {
       debugPrint('❌ Error submitting to lab: $e');
-      Get.snackbar(
-        'Error',
-        'Failed to submit to lab. Please try again.',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
+      LiquidSnack.error('Failed to submit to lab. Please try again.');
     } finally {
       isLoading.value = false;
     }

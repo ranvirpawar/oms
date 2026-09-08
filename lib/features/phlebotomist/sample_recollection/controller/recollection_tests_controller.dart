@@ -380,7 +380,7 @@ class RecollectTestsController extends GetxController {
         SnackBarService.to.showMessage(
           message: 'Recollection accepted successfully',
           backgroundColor: Colors.green,
-          position: SnackPosition.TOP,
+
         );
 
         // Clear selections after successful acceptance

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 import 'package:lifenity_connect/features/auth/model/login_response_model.dart';
 
 import '../../../../services/auth_manager.dart';
 import '../../../../services/user_service.dart';
 import '../../../../theme/app_colors.dart';
+import '../../../../utils/ui_designs/liquid_snackbar.dart';
 import '../model/work_item_model.dart';
 import '../service/sample_pickup_service.dart';
 
@@ -72,13 +73,7 @@ class SamplePickupController extends GetxController {
       workList.value = [];
 
       // Show error snackbar to user
-      Get.snackbar(
-        'Error',
-        'Failed to load daily work list',
-        backgroundColor: AppColors.error,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
-      );
+      LiquidSnack.error('Failed to load daily work list');
     } finally {
       isLoading.value = false;
     }
@@ -124,13 +119,7 @@ class SamplePickupController extends GetxController {
   void submitToLab() {
     if (selectedFacility.value != null) {
       // Implement submit to lab functionality
-      Get.snackbar(
-        'Success',
-        'Sample submitted to lab successfully',
-        backgroundColor: AppColors.success,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
-      );
+      LiquidSnack.success('Sample submitted to lab successfully');
     }
   }
 }

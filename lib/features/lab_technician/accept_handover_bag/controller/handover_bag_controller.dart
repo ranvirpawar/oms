@@ -1,14 +1,14 @@
 // lib/controllers/handover_bag_controller.dart
 
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 import 'package:lifenity_connect/features/lab_technician/accept_handover_bag/service/lab_accession_api_service_old.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:lifenity_connect/features/lab_technician/accept_handover_bag/model/bag_model.dart';
 
 import '../../../../services/location_service.dart';
-import '../../../../services/snackbar_service.dart';
 import '../../../../services/user_service.dart';
+import '../../../../utils/ui_designs/liquid_snackbar.dart';
 import '../../../auth/model/login_response_model.dart';
 class HandoverBagController extends GetxController {
   final LabAccessionService _apiService = LabAccessionService();
@@ -106,23 +106,15 @@ class HandoverBagController extends GetxController {
       if (response.status == 'Success' && response.output?.isNotEmpty == true) {
         bagDetails.value = response.output!.first;
 
-        Get.snackbar(
-          'Success',
-          'Bag scanned successfully',
-          backgroundColor: Colors.green.withOpacity(0.8),
-          colorText: Colors.white,
-          snackPosition: SnackPosition.TOP,
-          duration: const Duration(seconds: 2),
-        );
+        LiquidSnack.success('Bag scanned successfully');
       } else {
         final msg = response.message.isNotEmpty ? response.message : 'Invalid or already handed over bag';
-        SnackBarService.to.showMessage(message: msg);
+        LiquidSnack.warning(msg);
         Future.delayed(const Duration(seconds: 4), resetScanner);
       }
     } catch (e) {
       debugPrint('Error fetching bag: $e');
-      Get.snackbar('Error', 'Failed to load bag details',
-          backgroundColor: Colors.red.withOpacity(0.8), colorText: Colors.white);
+      LiquidSnack.error('Failed to load bag details');
       resetScanner();
     } finally {
       isLoading.value = false;
@@ -131,8 +123,7 @@ class HandoverBagController extends GetxController {
 
   Future<void> handoverBag() async {
     if (bagDetails.value == null) {
-      Get.snackbar('Error', 'Please scan a valid bag first',
-          backgroundColor: Colors.orange.withOpacity(0.8), colorText: Colors.white);
+      LiquidSnack.warning('Please scan a valid bag first');
       return;
     }
 
@@ -151,10 +142,7 @@ class HandoverBagController extends GetxController {
       );
 
       if (response.status == 'Success') {
-        Get.snackbar('Success', 'Bag handed over to inventory!',
-            backgroundColor: Colors.green.withOpacity(0.8),
-            colorText: Colors.white,
-            duration: const Duration(seconds: 2));
+        LiquidSnack.success('Bag handed over to inventory!');
 
         await Future.delayed(const Duration(seconds: 1));
         resetScanner();
@@ -162,8 +150,7 @@ class HandoverBagController extends GetxController {
         throw Exception(response.message);
       }
     } catch (e) {
-      Get.snackbar('Error', 'Handover failed: $e',
-          backgroundColor: Colors.red.withOpacity(0.8), colorText: Colors.white);
+      LiquidSnack.error('Handover failed: $e');
     } finally {
       isSubmitting.value = false;
     }

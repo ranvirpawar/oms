@@ -7,9 +7,11 @@ import '../../../../../constants/app_assets.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../controller/patient_report_controller.dart';
 import '../../model/patiet_report_data.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 
 import 'package:flutter_svg/flutter_svg.dart';
+
+import '../../../../../utils/ui_designs/liquid_snackbar.dart';
 
 enum ConsentState { idle, loading, granted, notGranted }
 
@@ -519,9 +521,7 @@ class _WhatsAppShareSheetState extends State<WhatsAppShareSheet> {
   void _onSendConsentTapped() {
     final number = _activeNumber;
     if (number.length != 10) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a valid 10-digit mobile number')),
-      );
+      LiquidSnack.warning('Enter a valid 10-digit mobile number');
       return;
     }
     _controller.sendConsent(number);

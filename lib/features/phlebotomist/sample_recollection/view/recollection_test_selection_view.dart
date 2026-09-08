@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 import 'package:lifenity_connect/componenents/info_row_widget.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_recollection/controller/recollection_tests_controller.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_recollection/model/rejected_tests_model.dart';
@@ -10,6 +10,7 @@ import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 import '../../../../constants/app_assets.dart';
 import '../../../../constants/app_strings.dart';
 import '../../../../theme/app_colors.dart';
+import '../../../../utils/ui_designs/liquid_snackbar.dart';
 import 'widget/deny_recollection_sheet.dart';
 
 class RecollectionTestSelectionView extends StatelessWidget {
@@ -473,11 +474,11 @@ class RecollectionTestSelectionView extends StatelessWidget {
           if (controller.selectedTests.isEmpty) {
             // Show snackbar in main view's context (safe here)
             // Assuming SnackBarService uses Get.snackbar or main Scaffold
-            Get.snackbar('Error', 'Please select at least one test to deny.');
+            LiquidSnack.warning('Please select at least one test to deny.');
             return;
           }
           if (controller.denyRemarkList.isEmpty) {
-            Get.snackbar('Error', 'No deny remarks available.');
+            LiquidSnack.warning('No deny remarks available.');
             return;
           }
           Get.bottomSheet(DenyRemarkBottomSheet(controller: controller));
