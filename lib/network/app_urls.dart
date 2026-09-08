@@ -393,4 +393,6 @@ class AppUrls {
   static String get uploadTrfImage => '${_ashxBase}AddTrfPhoto';
 
   static String get addConsentPhoto => '${_ashxBase}AddConsentPhoto';
+
+  static String get dashboardCount => '$_asmxBase/phlebo/dashboard-summary';
 }
