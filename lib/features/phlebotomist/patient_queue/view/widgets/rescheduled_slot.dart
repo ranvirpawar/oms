@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/visit_type_badge.dart';
 
@@ -79,8 +80,8 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
     final today = DateTime.now();
     // Next 3 days, starting tomorrow — no same-day reschedule.
     _dates = List.generate(
-      3,
-          (i) => DateTime(today.year, today.month, today.day + i + 1),
+      7,
+          (i) => DateTime(today.year, today.month, today.day + i  ),
     );
     // Preselect the first day so its slots start loading immediately.
     _selectedDate = _dates.first;
@@ -362,66 +363,47 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
   Widget _buildDateStrip() {
     return SizedBox(
       height: 74,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: _dates.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final date = _dates[index];
-          final isSelected = _selectedDate != null &&
-              _selectedDate!.year == date.year &&
-              _selectedDate!.month == date.month &&
-              _selectedDate!.day == date.day;
+      child: Row(
+        children: [
+          Expanded(
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _dates.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final date = _dates[index];
+                final isSelected = _selectedDate != null &&
+                    _selectedDate!.year == date.year &&
+                    _selectedDate!.month == date.month &&
+                    _selectedDate!.day == date.day;
 
-          return GestureDetector(
-            onTap: () => _selectDate(date),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 0),
-              width: 56,
-              decoration: BoxDecoration(
-                gradient: isSelected ? AppColors.accentGradient : null,
-                color: isSelected ? null : AppColors.grayLight,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isSelected ? Colors.transparent : AppColors.border,
-                ),
-              ),
-              alignment: Alignment.center,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    DateFormat('EEE').format(date).toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white70 : AppColors.textTertiary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    DateFormat('d').format(date),
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      color: isSelected ? Colors.white : AppColors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    DateFormat('MMM').format(date),
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white70 : AppColors.textTertiary,
-                    ),
-                  ),
-                ],
-              ),
+                return _DateChip(
+                  date: date,
+                  isSelected: isSelected,
+                  onTap: () => _selectDate(date),
+                );
+              },
             ),
-          );
-        },
+          ),
+          const SizedBox(width: 8),
+          _CalendarButton(onTap: _openCalendarPicker),
+        ],
       ),
     );
+  }
+
+  Future<void> _openCalendarPicker() async {
+    HapticFeedback.selectionClick();
+    final picked = await showModalBottomSheet<DateTime>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+
+      builder: (_) => _CalendarSheet(initialDate: _selectedDate ?? DateTime.now()),
+    );
+    if (picked != null) {
+      _selectDate(picked);
+    }
   }
 
   Widget _buildSlotGrid() {
@@ -706,6 +688,187 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
               : const SizedBox.shrink(),
         ),
       ],
+    );
+  }
+}class _DateChip extends StatefulWidget {
+  final DateTime date;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _DateChip({
+    required this.date,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  State<_DateChip> createState() => _DateChipState();
+}
+
+class _DateChipState extends State<_DateChip> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = widget.isSelected;
+
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        HapticFeedback.selectionClick();
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          width: 56,
+          decoration: BoxDecoration(
+            gradient: isSelected ? AppColors.accentGradient : null,
+            color: isSelected ? null : AppColors.grayLight,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected ? Colors.transparent : AppColors.border,
+            ),
+            boxShadow: isSelected
+                ? [
+              BoxShadow(
+                color: AppColors.accent.withOpacity(0.28),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ]
+                : null,
+          ),
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                DateFormat('EEE').format(widget.date).toUpperCase(),
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white70 : AppColors.textTertiary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                DateFormat('d').format(widget.date),
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: isSelected ? Colors.white : AppColors.textPrimary,
+                ),
+              ),
+              Text(
+                DateFormat('MMM').format(widget.date),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white70 : AppColors.textTertiary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CalendarButton extends StatefulWidget {
+  final VoidCallback onTap;
+  const _CalendarButton({required this.onTap});
+
+  @override
+  State<_CalendarButton> createState() => _CalendarButtonState();
+}
+
+class _CalendarButtonState extends State<_CalendarButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+        child: Container(
+          width: 56,
+          height: 74,
+          decoration: BoxDecoration(
+            color: AppColors.grayLight,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border),
+          ),
+          alignment: Alignment.center,
+          child: Icon(
+            Icons.calendar_month_rounded,
+            size: 22,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+class _CalendarSheet extends StatelessWidget {
+  final DateTime initialDate;
+  const _CalendarSheet({required this.initialDate});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.only(top: 40),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: Theme.of(context).colorScheme.copyWith(
+                  primary: AppColors.accent,
+                ),
+              ),
+              child: CalendarDatePicker(
+                initialDate: initialDate,
+                firstDate: DateTime.now(),
+                lastDate: DateTime.now().add(const Duration(days: 30)),
+                onDateChanged: (date) => Navigator.of(context).pop(date),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
