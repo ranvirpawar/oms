@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lifenity_connect/features/dashboard/dashboard_controller/dashboard_controller.dart';
@@ -5,9 +7,12 @@ import 'package:lifenity_connect/features/dashboard/view/widget/dashboard_header
 import 'package:lifenity_connect/features/dashboard/view/widget/dashboard_tile_card.dart';
 import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
 import 'package:lifenity_connect/utils/widgets/app_drawer.dart';
+import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 
 import '../../../constants/app_strings.dart';
+import '../../../theme/app_colors.dart';
 import '../../../utils/widgets/liw.dart';
+
 // dashboard_screen.dart
 //
 // Revamped dashboard: fixed (non-scrolling) app bar + availability pill,
@@ -119,8 +124,18 @@ class _DashboardScreenState extends State<DashboardScreen>
     final now = DateTime.now();
     const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${weekdays[now.weekday - 1]}, ${now.day} ${months[now.month - 1]} ${now.year}';
   }
@@ -132,13 +147,17 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: _bg,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60), // adjust to your content height
+        child: _buildAppBar(),
+      ),
       drawer: CustomDrawer(controller: controller),
       body: SafeArea(
         child: Column(
           children: [
             // Fixed header — never scrolls away.
-            _buildAppBar(),
-            const SizedBox(height: 14),
+            // _buildAppBar(),
+            const SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 18),
               child: _buildAvailabilityPill(),
@@ -184,9 +203,73 @@ class _DashboardScreenState extends State<DashboardScreen>
       ),
     );
   }
-
-  // ── App bar ──────────────────────────────────────────────────────────
   Widget _buildAppBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
+      decoration: const BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(25),
+          bottomRight: Radius.circular(25),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Row(
+          children: [
+            _GlassIconButton(
+              icon: Icons.menu_rounded,
+              onTap: () => _scaffoldKey.currentState?.openDrawer(),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Obx(
+                        () => Text(
+                      _greetingTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _todayLabel,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withOpacity(0.75),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            _GlassIconButton(
+              icon: Icons.notifications_none_rounded,
+              showDot: true,
+              onTap: () => LiquidSnack.info('comming soon'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+ /* Widget _buildAppBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 6, 18, 0),
       child: Row(
@@ -201,7 +284,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Obx(
-                      () => Text(
+                  () => Text(
                     _greetingTitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -236,7 +319,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         ],
       ),
     );
-  }
+  }*/
 
   // ── Availability pill (existing behaviour, fixed position) ────────────
   Widget _buildAvailabilityPill() {
@@ -298,8 +381,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                   height: 16,
                   color: Colors.black.withOpacity(0.1),
                 ),
-                const Icon(Icons.location_on_rounded,
-                    color: Color(0xFF3B82F6), size: 18),
+                const Icon(
+                  Icons.location_on_rounded,
+                  color: Color(0xFF3B82F6),
+                  size: 18,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
@@ -350,11 +436,13 @@ class _DashboardScreenState extends State<DashboardScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             Obx(
-                  () => _DropdownAction(
+              () => _DropdownAction(
                 icon: controller.isAvailable.value
                     ? Icons.pause_circle_outline_rounded
                     : Icons.play_circle_outline_rounded,
-                label: controller.isAvailable.value ? 'Go offline' : 'Go online',
+                label: controller.isAvailable.value
+                    ? 'Go offline'
+                    : 'Go online',
                 onTap: () {
                   controller.toggleAvailability();
                   _removeDropdown();
@@ -380,7 +468,10 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget _buildStatsCard() {
     final items = <_MetricData>[
       _MetricData(
-        value: controller.assignedPatientsCount.value.toString().padLeft(2, '0'),
+        value: controller.assignedPatientsCount.value.toString().padLeft(
+          2,
+          '0',
+        ),
         label: 'Assigned\nPatients',
         icon: Icons.people_alt_rounded,
         dot: const Color(0xFF3B82F6),
@@ -483,39 +574,40 @@ class _DashboardGrid extends StatelessWidget {
       ),
       itemBuilder: (context, index) {
         final card = cards[index];
-        final isBagCard = card.title == AppStrings.collectedSampleBags ||
+        final isBagCard =
+            card.title == AppStrings.collectedSampleBags ||
             card.title == 'Collected Bags';
 
         final tile = isBagCard
             ? Obx(() {
-          final count = controller.collectedBagsCount.value;
-          final banner = count > 0
-              ? '🧪  $count ${count == 1 ? 'bag' : 'bags'} with you  •  Submit to lab or hand over'
-              : null;
-          return DashboardTileCard(
-            variant: DashboardTileVariant.grid,
-            title: card.title,
-            icon: card.icon,
-            onTap: card.onTap,
-            borderColor: card.borderColor,
-            backgroundImage: card.backgroundImage,
-            isNetworkImage: card.isNetworkImage,
-            labelBandFraction: card.labelBandFraction,
-            bannerText: banner,
-          );
-        })
+                final count = controller.collectedBagsCount.value;
+                final banner = count > 0
+                    ? '🧪  $count ${count == 1 ? 'bag' : 'bags'} with you  •  Submit to lab or hand over'
+                    : null;
+                return DashboardTileCard(
+                  variant: DashboardTileVariant.grid,
+                  title: card.title,
+                  icon: card.icon,
+                  onTap: card.onTap,
+                  borderColor: card.borderColor,
+                  backgroundImage: card.backgroundImage,
+                  isNetworkImage: card.isNetworkImage,
+                  labelBandFraction: card.labelBandFraction,
+                  bannerText: banner,
+                );
+              })
             : DashboardTileCard(
-          variant: card.variant,
-          title: card.title,
-          icon: card.icon,
-          onTap: card.onTap,
-          borderColor: card.borderColor,
-          backgroundImage: card.backgroundImage,
-          isNetworkImage: card.isNetworkImage,
-          labelBandFraction: card.labelBandFraction,
-          bannerText: card.bannerText,
-          subtitle: card.subtitle,
-        );
+                variant: card.variant,
+                title: card.title,
+                icon: card.icon,
+                onTap: card.onTap,
+                borderColor: card.borderColor,
+                backgroundImage: card.backgroundImage,
+                isNetworkImage: card.isNetworkImage,
+                labelBandFraction: card.labelBandFraction,
+                bannerText: card.bannerText,
+                subtitle: card.subtitle,
+              );
 
         return _FadeSlideIn(index: index + 1, child: tile);
       },
@@ -566,6 +658,7 @@ class _MetricData {
 
 class _MetricCell extends StatelessWidget {
   final _MetricData data;
+
   const _MetricCell({required this.data});
 
   @override
@@ -582,7 +675,10 @@ class _MetricCell extends StatelessWidget {
               Container(
                 width: 7,
                 height: 7,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: data.dot),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: data.dot,
+                ),
               ),
               const SizedBox(width: 6),
               Text(
@@ -736,15 +832,19 @@ class _PressableScaleState extends State<_PressableScale> {
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTapDown: widget.onTap == null ? null : (_) => setState(() => _pressed = true),
+      onTapDown: widget.onTap == null
+          ? null
+          : (_) => setState(() => _pressed = true),
       onTapUp: widget.onTap == null
           ? null
           : (_) {
-        setState(() => _pressed = false);
-        HapticFeedback.lightImpact();
-        widget.onTap!();
-      },
-      onTapCancel: widget.onTap == null ? null : () => setState(() => _pressed = false),
+              setState(() => _pressed = false);
+              HapticFeedback.lightImpact();
+              widget.onTap!();
+            },
+      onTapCancel: widget.onTap == null
+          ? null
+          : () => setState(() => _pressed = false),
       child: AnimatedScale(
         scale: _pressed ? widget.scaleDown : 1.0,
         duration: const Duration(milliseconds: 100),
@@ -1142,3 +1242,78 @@ class _ShimmerGridState extends State<_ShimmerGrid>
     );
   }
 }*/
+
+// ── Glass icon button, matching CustomAppBar's frosted-glass surfaces ──
+class _GlassIconButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool showDot;
+
+  const _GlassIconButton({
+    required this.icon,
+    required this.onTap,
+    this.showDot = false,
+  });
+
+  @override
+  State<_GlassIconButton> createState() => _GlassIconButtonState();
+}
+
+class _GlassIconButtonState extends State<_GlassIconButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _pressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              width: 38,
+              height: 38,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                color: Colors.white.withOpacity(0.16),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.30),
+                  width: 1,
+                ),
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(widget.icon, color: Colors.white, size: 20),
+                  if (widget.showDot)
+                    Positioned(
+                      top: -1,
+                      right: -1,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFFFF5B5B),
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+// ── App bar ───────────────────
