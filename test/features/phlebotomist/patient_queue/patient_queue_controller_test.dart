@@ -155,6 +155,63 @@ void main() {
     // And the urgent accepted order is second.
     expect(controller.filteredPatients[1].orderId, 'ORD-URGENT');
   });
+  test('collection mode (bag registration) lists only Arrived orders',
+      () async {
+    final arrived = AssignedPatient.fromJson(_jsonFor(
+      orderId: 'ORD-ARRIVED',
+      status: 'Arrived',
+    ));
+    final assigned = AssignedPatient.fromJson(_jsonFor(
+      orderId: 'ORD-ASSIGNED',
+      status: 'Assigned',
+    ));
+    final accepted = AssignedPatient.fromJson(_jsonFor(
+      orderId: 'ORD-ACCEPTED',
+      status: 'Accepted',
+    ));
+
+    final controller = Get.put<PatientQueueController>(
+      PatientQueueController(
+        service: _FakePatientQueueService([arrived, assigned, accepted]),
+        isCollectionMode: true,
+      ),
+    );
+
+    await pumpEventQueue();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await pumpEventQueue();
+
+    expect(controller.filteredPatients, hasLength(1));
+    expect(controller.filteredPatients.first.orderId, 'ORD-ARRIVED');
+    expect(controller.filteredPatients.first.status, PatientStatus.arrived);
+    // Summary counts stay consistent with the narrowed list.
+    expect(controller.totalCount, 1);
+  });
+
+  test('normal queue entry (no collection mode) keeps every status visible',
+      () async {
+    final arrived = AssignedPatient.fromJson(_jsonFor(
+      orderId: 'ORD-ARRIVED',
+      status: 'Arrived',
+    ));
+    final assigned = AssignedPatient.fromJson(_jsonFor(
+      orderId: 'ORD-ASSIGNED',
+      status: 'Assigned',
+    ));
+
+    final controller = Get.put<PatientQueueController>(
+      PatientQueueController(
+        service: _FakePatientQueueService([arrived, assigned]),
+      ),
+    );
+
+    await pumpEventQueue();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await pumpEventQueue();
+
+    expect(controller.filteredPatients, hasLength(2));
+    expect(controller.totalCount, 2);
+  });
 
   testWidgets(
       'syncToLis resubmits the order to Disha with the right order id '

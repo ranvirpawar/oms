@@ -6,6 +6,7 @@ import 'package:lifenity_connect/features/dashboard/view/widget/dashboard_tile_c
 import 'package:lifenity_connect/utils/widgets/app_drawer.dart';
 
 import '../../../constants/app_strings.dart';
+import '../../../utils/widgets/liw.dart';
 
 class DashboardScreen extends StatelessWidget {
   DashboardScreen({super.key});
@@ -92,7 +93,8 @@ class DashboardScreen extends StatelessWidget {
               );
             }),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 250)),
+            const SliverToBoxAdapter(child: SizedBox(height: 500)),
+
           ],
         ),
       ),

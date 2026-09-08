@@ -115,6 +115,10 @@ class PatientQueueView extends GetView<PatientQueueController> {
                 final isFiltered =
                     controller.isSearching ||
                         controller.activeFilter.value != QueueFilter.all;
+                // Collection mode (bag registration entry point) narrows the
+                // queue to Arrived orders — explain that when it's empty.
+                final collectionEmpty =
+                    controller.isCollectionMode && !isFiltered;
                 return ListView(
                   // Wrapped in a scrollable so pull-to-refresh still works
                   // even when the filtered result is empty.
@@ -122,6 +126,12 @@ class PatientQueueView extends GetView<PatientQueueController> {
                   children: [
                     QueueEmptyState(
                       isFiltered: isFiltered,
+                      title: collectionEmpty ? 'No arrived patients' : null,
+                      subtitle: collectionEmpty
+                          ? "Only orders with status 'Arrived' can be "
+                              'collected into this bag. They will appear here '
+                              'once the patient is marked as arrived.'
+                          : null,
                       onClearFilter: isFiltered
                           ? () {
                         controller.setFilter(QueueFilter.all);

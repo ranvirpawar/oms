@@ -161,7 +161,18 @@ class BagRegistrationService {
       );
 
       kPrint('📥 Response (${result.statusCode}): ${result.data}');
-      return {
+
+      return result.data is Map<String, dynamic>
+          ? result.data as Map<String, dynamic>
+          : result.body;
+    } catch (e) {
+      kPrint('❌ Error in getRegistrationDetailsQRBag: $e');
+      throw Exception('Error: $e');
+    }
+  }
+}
+/*
+return {
         "status": "Success",
         "registrationDetails": [
           {
@@ -277,17 +288,7 @@ class BagRegistrationService {
           {"SampleCollectionOrderID": 119, "BarcodeNo": "Ac4518"},
           {"SampleCollectionOrderID": 119, "BarcodeNo": "Ac487458"},
         ],
-      };
-      return result.data is Map<String, dynamic>
-          ? result.data as Map<String, dynamic>
-          : result.body;
-    } catch (e) {
-      kPrint('❌ Error in getRegistrationDetailsQRBag: $e');
-      throw Exception('Error: $e');
-    }
-  }
-}
-
+      }; */
 /*class BagRegistrationService {
 
   /// API 1: Get currently open bag session for user

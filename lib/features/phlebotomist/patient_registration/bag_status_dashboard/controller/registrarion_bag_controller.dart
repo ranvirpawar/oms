@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_registration/bag_status_dashboard/service/bag_registration_service.dart';
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart' hide SnackPosition;
 
 import '../../../../../constants/bag_process_ids.dart';
 import '../../../../../services/user_service.dart';
@@ -245,8 +246,8 @@ class BagRegistrationController extends GetxController {
         allSessions.insert(0, newSession);
         await _loadBagDetails(newSession);
 
-        Get.snackbar('Success', 'Bag opened successfully!',
-            snackPosition: SnackPosition.BOTTOM);
+        LiquidSnack.success( 'Bag opened successfully!',
+            );
         return true;
       }
 
@@ -358,8 +359,8 @@ class BagRegistrationController extends GetxController {
         await _loadBagDetails(
           allSessions.firstWhere((s) => s.sessionID == session.sessionID),
         );
-        Get.snackbar('Success', 'Bag reopened successfully!',
-            snackPosition: SnackPosition.BOTTOM);
+        LiquidSnack.success('Bag reopened successfully!'
+           );
       } else {
         Get.snackbar('Failed', response['message'] ?? 'Could not reopen bag',
             snackPosition: SnackPosition.BOTTOM);

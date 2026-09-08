@@ -123,8 +123,162 @@ class _IncompleteTestsBottomSheetState extends State<IncompleteTestsBottomSheet>
     widget.onConfirm(result);
     Navigator.of(context).pop();
   }
-
   @override
+  Widget build(BuildContext context) {
+    final entry = widget.entry;
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.4,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (context, scrollController) {
+        // Compute this INSIDE the builder, and use it for content padding,
+        // not for shrinking the sheet's own layout constraints.
+        final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+        return Container(
+          decoration: const BoxDecoration(
+            color: AppColors.bgCard,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // ---- Fixed header ---- (unchanged)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 14),
+                        decoration: BoxDecoration(
+                          color: AppColors.border,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Which tests are affected?',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                          ),
+                        ),
+                        if (_selectedTestIds.isNotEmpty)
+                          TextButton(
+                            onPressed: () => _toggleAll(false),
+                            style: TextButton.styleFrom(foregroundColor: AppColors.redText),
+                            child: const Text('Clear all', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                          ),
+                      ],
+                    ),
+                    Text(
+                      '${entry.sampleType} • select every test this sample can\'t cover',
+                      style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+
+              // ---- Scrollable body ----
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  // Extra bottom padding = keyboard height, so a focused
+                  // "note" field scrolls fully clear of the keyboard.
+                  padding: EdgeInsets.fromLTRB(20, 14, 20, 14 + bottomInset),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => _toggleAll(!_allSelected),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: _allSelected ? AppColors.redLight.withOpacity(0.4) : AppColors.grayLight,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _allSelected ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                                size: 20,
+                                color: _allSelected ? AppColors.redText : AppColors.textMuted,
+                              ),
+                              const SizedBox(width: 10),
+                              const Expanded(
+                                child: Text(
+                                  "Couldn't collect this sample at all",
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Divider(height: 1),
+                      const SizedBox(height: 6),
+
+                      for (final test in entry.tests) ...[
+                        _TestRow(
+                          test: test,
+                          isSelected: _selectedTestIds.contains(test.testId),
+                          reason: _testReasons[test.testId],
+                          remarksController: _testRemarksControllers[test.testId],
+                          showApplyToAll: _selectedTestIds.length > 1,
+                          onToggle: () => _toggleTest(test.testId),
+                          onPickReason: () => _pickReason(test.testId),
+                          onApplyToAll: () => _applyReasonToAllSelected(test.testId),
+                        ),
+                        const SizedBox(height: 4),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+
+              // ---- Fixed footer, lifted above the keyboard ----
+              Padding(
+                padding: EdgeInsets.only(bottom: bottomInset),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                  decoration: const BoxDecoration(
+                    color: AppColors.bgCard,
+                    border: Border(top: BorderSide(color: AppColors.border)),
+                  ),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accent700,
+                        disabledBackgroundColor: AppColors.accent700.withOpacity(0.4),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        elevation: 0,
+                      ),
+                      onPressed: _canConfirm ? _confirm : null,
+                      child: Text(
+                        _selectedTestIds.isEmpty ? 'Confirm (no flags)' : 'Confirm',
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+ /* @override
   Widget build(BuildContext context) {
     final entry = widget.entry;
     return Padding(
@@ -272,7 +426,7 @@ class _IncompleteTestsBottomSheetState extends State<IncompleteTestsBottomSheet>
         },
       ),
     );
-  }
+  }*/
 }
 
 /// One test row: checkbox + name, and — only when checked — its own

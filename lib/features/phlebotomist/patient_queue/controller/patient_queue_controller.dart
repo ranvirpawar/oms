@@ -24,9 +24,16 @@ class PatientQueueController extends GetxController {
   PatientQueueController({
     PatientQueueService? service,
     SampleCollectionService? sampleCollectionService,
+    this.isCollectionMode = false,
   }) : _service = service ?? PatientQueueService(),
        _sampleCollectionService =
            sampleCollectionService ?? SampleCollectionService();
+
+  /// True when the queue was opened from the bag-registration dashboard's
+  /// "Collect" action. Bag collection is only possible for patients who
+  /// are physically present, so the queue is narrowed down to orders whose
+  /// status is [PatientStatus.arrived].
+  final bool isCollectionMode;
 
   /// Shared [SampleCollectionService] instance owned by this controller —
   /// reused by the queue's "Sync to LIS" action and the reject sheet so
@@ -68,10 +75,19 @@ class PatientQueueController extends GetxController {
   // Derived state
   // ---------------------------------------------------------------------
 
+  /// Base pool every view of the queue renders from. In collection mode
+  /// (bag registration entry point) only ARRIVED orders are eligible for
+  /// bag collection, so everything else is dropped up-front — filter
+  /// chips, search, summary counts and the list itself all operate on
+  /// this narrowed set.
+  Iterable<AssignedPatient> get _visiblePatients => isCollectionMode
+      ? _patients.where((p) => p.status == PatientStatus.arrived)
+      : _patients;
+
   /// Patients matching the active filter + search query, sorted so the
   /// most urgent / soonest / actionable items surface first.
   List<AssignedPatient> get filteredPatients {
-    Iterable<AssignedPatient> result = _patients;
+    Iterable<AssignedPatient> result = _visiblePatients;
 
     switch (activeFilter.value) {
       case QueueFilter.homeVisit:
@@ -131,16 +147,17 @@ class PatientQueueController extends GetxController {
     return list;
   }
 
-  int get totalCount => _patients.length;
+  int get totalCount => _visiblePatients.length;
 
   int get homeVisitCount =>
-      _patients.where((p) => p.visitType == VisitType.home).length;
+      _visiblePatients.where((p) => p.visitType == VisitType.home).length;
 
   int get clinicVisitCount =>
-      _patients.where((p) => p.visitType == VisitType.clinic).length;
+      _visiblePatients.where((p) => p.visitType == VisitType.clinic).length;
 
-  int get rescheduledCount =>
-      _patients.where((p) => p.status == PatientStatus.rescheduled).length;
+  int get rescheduledCount => _visiblePatients
+      .where((p) => p.status == PatientStatus.rescheduled)
+      .length;
 
   bool get isSearching => searchQuery.value.isNotEmpty;
 

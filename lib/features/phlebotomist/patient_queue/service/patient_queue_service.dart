@@ -51,7 +51,7 @@ class PatientQueueService {
       final isSuccess =
           (body['status'] as String?)?.toLowerCase() == 'success';
 
-      /*if (!isSuccess) {
+      if (!isSuccess) {
         final message = (body['message'] as String?)?.trim() ?? '';
         final output = body['output'];
 
@@ -63,11 +63,10 @@ class PatientQueueService {
         throw PatientQueueException(
           message.isEmpty ? 'Unable to load your patient queue.' : message,
         );
-      }*/
+      }
 
 
-      final output = dummyData['output'];
-      // final output = body['output'];
+      final output = body['output'];
 
 
 
@@ -242,7 +241,10 @@ final dummyPatientList = {
       'AssignStatusID': 1,
       'UserID': 17,
       'UserRosterID': 7,
-      'Status': 'Assigned',
+      // TEMP fixture (service is on dummy data): marked Arrived so the bag
+      // registration "Collect" → patient-queue (arrived-only) flow can be
+      // verified on device until the real API call is re-enabled.
+      'Status': 'Arrived',
       'Priority': null,
       'VisitType': 'Clinic',
       'Title': null,
@@ -407,7 +409,10 @@ final dummyPatientList = {
       'AssignStatusID': 1,
       'UserID': 17,
       'UserRosterID': 7,
-      'Status': 'Assigned',
+      // TEMP fixture (service is on dummy data): marked Arrived so the bag
+      // registration "Collect" → patient-queue (arrived-only) flow can be
+      // verified on device until the real API call is re-enabled.
+      'Status': 'Arrived',
       'Priority': null,
       'VisitType': 'Clinic',
       'Title': null,
