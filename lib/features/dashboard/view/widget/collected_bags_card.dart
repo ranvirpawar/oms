@@ -62,6 +62,7 @@ class CollectedBagsTileWithBanner extends StatelessWidget {
           // ── Card ─────────────────────────────────────────────────────────
           Expanded(
             child: DashboardTileCard(
+              variant: DashboardTileVariant.grid,
               title: AppStrings.collectedSampleBags,
               icon: AppAssets.bagsCollected,
               onTap: onTap,

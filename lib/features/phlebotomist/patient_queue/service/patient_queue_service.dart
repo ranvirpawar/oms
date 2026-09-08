@@ -59,7 +59,7 @@ class PatientQueueService {
 
       final isSuccess =
           (body['status'] as String?)?.toLowerCase() == 'success';
-
+/*
       if (!isSuccess) {
         final message = (body['message'] as String?)?.trim() ?? '';
         final output = body['output'];
@@ -72,11 +72,11 @@ class PatientQueueService {
         throw PatientQueueException(
           message.isEmpty ? 'Unable to load your patient queue.' : message,
         );
-      }
+      }*/
 
 
-      final output = body['output'];
-      // final output = dummyPatientList['output'];
+      // final output = body['output'];
+      final output = dummyPatientList['output'];
 
 
 

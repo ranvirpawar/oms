@@ -177,67 +177,103 @@ class DashboardController extends GetxController {
         return _defaultCards();
     }
   }
-
   List<DashboardTileCard> _phlebotomistCards() => [
-    const DashboardTileCard(
+    DashboardTileCard(
+      variant: DashboardTileVariant.modern,
       title: AppStrings.collectSample,
-      icon: AppAssets.sampleCollection,
-      // backgroundImage: AppAssets.sampleRecollectionCard,
-      borderColor: Colors.blue,
+      subtitle: 'Collect sample from patient',
+      icon: AppAssets.collectSampleIcon,
+      borderColor: const Color(0xFF3B82F6), // blue
       onTap: RouteManager.navigateToBagStatusDashboard,
     ),
-    const DashboardTileCard(
+    DashboardTileCard(
+      variant: DashboardTileVariant.modern,
       title: AppStrings.orderManagement,
-      icon: AppAssets.orderManagement,
-      // backgroundImage: AppAssets.assignedPatients,
-      borderColor: Colors.orange,
+      subtitle: 'View and manage assigned orders',
+      icon: AppAssets.manageOrderIcon,
+      borderColor: const Color(0xFF14B8A6), // teal
       onTap: RouteManager.navigateToPatientQueue,
     ),
-
-    const DashboardTileCard(
+    DashboardTileCard(
+      variant: DashboardTileVariant.modern,
       title: AppStrings.sampleRecollection,
-      icon: AppAssets.sampleRecollectionIcon,
-      // backgroundImage: AppAssets.sampleRecollectionCard,
+      subtitle: 'Handle recollection requests',
+      icon: AppAssets.sampleRecollectionIconOg,
       borderColor: Colors.purple,
       onTap: RouteManager.navigateToSampleRecollection,
     ),
-    const DashboardTileCard(
-      title: AppStrings.bagStatus,
-      icon: AppAssets.bagStatus,
-      // backgroundImage: AppAssets.bagHistoryCard,
-      borderColor: Colors.cyan,
+    DashboardTileCard(
+      variant: DashboardTileVariant.modern,
+      title: 'Bag\nHistory',
+      subtitle: 'View bag movement status',
+      icon: AppAssets.bagHistoryIcon,
+      borderColor: const Color(0xFF22C55E), // green
       onTap: RouteManager.navigateToBagStatus,
     ),
   ];
+  /*List<DashboardTileCard> _phlebotomistCards() => [
+     DashboardTileCard(
+       variant: DashboardTileVariant.grid,
+      title: AppStrings.collectSample,
+      icon: AppAssets.sampleCollection,
+
+
+      onTap: RouteManager.navigateToBagStatusDashboard,
+    ),
+     DashboardTileCard(
+       variant: DashboardTileVariant.grid,
+      title: AppStrings.orderManagement,
+      icon: AppAssets.orderManagement,
+
+
+      onTap: RouteManager.navigateToPatientQueue,
+    ),
+
+     DashboardTileCard(
+       variant: DashboardTileVariant.grid,
+      title: AppStrings.sampleRecollection,
+      icon: AppAssets.sampleRecollectionIcon,
+
+      borderColor: Colors.purple,
+      onTap: RouteManager.navigateToSampleRecollection,
+    ),
+     DashboardTileCard(
+       variant: DashboardTileVariant.grid,
+      title: AppStrings.bagStatus,
+      icon: AppAssets.bagStatus,
+
+      onTap: RouteManager.navigateToBagStatus,
+    ),
+  ];*/
 
   List<DashboardTileCard> _runnerBoyCards() => [
-    const DashboardTileCard(title: AppStrings.collectDestinationBag, icon: AppAssets.backPackIcon, onTap: RouteManager.navigateToCollectEmptyBag),
-    const DashboardTileCard(title: 'Collect Bag From Phlebotomist', icon: AppAssets.bagFilledWithSamples, onTap: RouteManager.navigateToCollectBagsFromPhlebotomist),
-    const DashboardTileCard(title: AppStrings.collectedSampleBags, icon: AppAssets.bagsCollected, onTap: RouteManager.navigateToCollectedBags),
-    const DashboardTileCard(title: AppStrings.bagStatus, icon: AppAssets.bagStatus, onTap: RouteManager.navigateToBagStatus),
-    const DashboardTileCard(title: AppStrings.samplePickup, icon: AppAssets.bagFilledWithSamples, onTap: RouteManager.navigateToSamplePickupDashboard),
+    DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.collectDestinationBag, icon: AppAssets.backPackIcon, onTap: RouteManager.navigateToCollectEmptyBag),
+     DashboardTileCard( variant: DashboardTileVariant.grid,title: 'Collect Bag From Phlebotomist', icon: AppAssets.bagFilledWithSamples, onTap: RouteManager.navigateToCollectBagsFromPhlebotomist),
+     DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.collectedSampleBags, icon: AppAssets.bagsCollected, onTap: RouteManager.navigateToCollectedBags),
+     DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.bagStatus, icon: AppAssets.bagStatus, onTap: RouteManager.navigateToBagStatus),
+     DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.samplePickup, icon: AppAssets.bagFilledWithSamples, onTap: RouteManager.navigateToSamplePickupDashboard),
   ];
 
   List<DashboardTileCard> _connectorCards() => [
-    const DashboardTileCard(title: AppStrings.collectDestinationBag, icon: AppAssets.backPackIcon, onTap: RouteManager.navigateToCollectEmptyBag),
-    const DashboardTileCard(title: 'Collect Bag From Phlebotomist', icon: AppAssets.bagFilledWithSamples, onTap: RouteManager.navigateToCollectBagsFromPhlebotomist),
-    const DashboardTileCard(title: AppStrings.collectedSampleBags, icon: AppAssets.bagsCollected, onTap: RouteManager.navigateToCollectedBags),
-    const DashboardTileCard(title: AppStrings.bagStatus, icon: AppAssets.bagStatus, onTap: RouteManager.navigateToBagStatus),
-    const DashboardTileCard(title: AppStrings.samplePickup, icon: AppAssets.bagFilledWithSamples, onTap: RouteManager.navigateToSamplePickupDashboard),
+     DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.collectDestinationBag, icon: AppAssets.backPackIcon, onTap: RouteManager.navigateToCollectEmptyBag),
+     DashboardTileCard( variant: DashboardTileVariant.grid,title: 'Collect Bag From Phlebotomist', icon: AppAssets.bagFilledWithSamples, onTap: RouteManager.navigateToCollectBagsFromPhlebotomist),
+     DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.collectedSampleBags, icon: AppAssets.bagsCollected, onTap: RouteManager.navigateToCollectedBags),
+     DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.bagStatus, icon: AppAssets.bagStatus, onTap: RouteManager.navigateToBagStatus),
+     DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.samplePickup, icon: AppAssets.bagFilledWithSamples, onTap: RouteManager.navigateToSamplePickupDashboard),
   ];
 
   List<DashboardTileCard> _labTechnicianCards() => [
-    const DashboardTileCard(title: AppStrings.acceptSampleInLab, icon: AppAssets.bagAcceptedInLab, onTap: RouteManager.navigateToSampleAccept),
-    const DashboardTileCard(title: AppStrings.acceptBagInLab, icon: AppAssets.bagAcceptedInLab, onTap: RouteManager.navigateToAcceptBagInLaboratory),
+     DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.acceptSampleInLab, icon: AppAssets.bagAcceptedInLab, onTap: RouteManager.navigateToSampleAccept),
+     DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.acceptBagInLab, icon: AppAssets.bagAcceptedInLab, onTap: RouteManager.navigateToAcceptBagInLaboratory),
     /* DashboardTileCard(
       title: AppStrings.handOverToInventory,
       icon: AppAssets.bagInventory,
       onTap: RouteManager.navigateToHandOverBagToInventory,
     ),*/
-    const DashboardTileCard(title: AppStrings.bagStatus, icon: AppAssets.bagStatus, onTap: RouteManager.navigateToBagStatus),
+     DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.bagStatus, icon: AppAssets.bagStatus, onTap: RouteManager.navigateToBagStatus),
   ];
 
-  List<DashboardTileCard> _defaultCards() => [DashboardTileCard(title: 'Please Connect with support team', icon: AppAssets.deliveryBoyIcon, onTap: () {})];
+  List<DashboardTileCard> _defaultCards() => [DashboardTileCard( variant: DashboardTileVariant.grid,title: 'Please Connect with support team', icon: AppAssets.deliveryBoyIcon, onTap: () {})];
 
   /// Call this to signal a rebuild-triggered refresh
   void onDashboardBuild() {

@@ -96,7 +96,7 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
       });
 
       LiquidSnack.error(
-        'Please try again before rejecting this assignment.',
+        'Please try again before rejecting this order.',
         title: 'Unable to load reasons',
       );
     }
@@ -143,7 +143,7 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
 
       LiquidSnack.error(
         'Something went wrong. Please try again.',
-        title: 'Unable to reject assignment',
+        title: 'Unable to reject order',
       );
     }
   }
@@ -195,7 +195,7 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
                       const SizedBox(height: 6),
 
                       const Text(
-                        'Select why you are unable to accept this assignment.',
+                        'Select why you are unable to accept this order.',
                         style: TextStyle(
                           fontSize: 11.5,
                           color: AppColors.textTertiary,
@@ -237,7 +237,7 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Reject Assignment',
+                  'Reject order',
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
@@ -334,7 +334,7 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
                 SizedBox(height: 4),
 
                 Text(
-                  'Rejecting this assignment will remove it from your queue. A rejection reason is required for tracking and operational follow-up.',
+                  'A rejection reason is required for tracking and operational follow-up.',
                   style: TextStyle(
                     fontSize: 11.5,
                     height: 1.45,
@@ -1010,7 +1010,7 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
                               const SizedBox(width: 8),
 
                               Text(
-                                'Reject Assignment',
+                                'Reject order',
                                 style: TextStyle(
                                   fontSize: 14.5,
                                   fontWeight: FontWeight.w700,

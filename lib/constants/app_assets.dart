@@ -98,10 +98,14 @@ class AppAssets {
 
   /// Dashboard cards
   static const String collectSampleCard = 'assets/cards/sample-collection.png';
+  static const String collectSampleIcon = 'assets/images/collect-sample-icon.png';
   static const String collectedBagsCard = 'assets/cards/collected-bags.png';
   static const String sampleRecollectionCard = 'assets/cards/sample-recollection.png';
   static const String assignedPatients = 'assets/cards/patient-queue.png';
+  static const String manageOrderIcon = 'assets/images/manage-order-icon.png';
   static const String bagHistoryCard = 'assets/cards/bag-history.png';
+  static const String bagHistoryIcon = 'assets/images/bag-history-icon.png';
+  static const String sampleRecollectionIconOg = 'assets/images/sample-recollection-icon.png';
 
   /// sample live tracking dashboard
   static const String bagOpenedIcon = 'assets/images/bag-opened-icon.jpg';

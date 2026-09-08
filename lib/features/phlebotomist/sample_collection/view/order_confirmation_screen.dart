@@ -4,12 +4,15 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/bag_context_card.dart';
+import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/order_summary_card.dart';
 import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -20,6 +23,562 @@ import '../controller/sample_collection_controller.dart';
 import '../model/sample_collection_models.dart';
 import 'widgets/active_bag_card.dart';
 import 'widgets/otp_verification_screen.dart';
+// order_confirmation_screen.dart
+
+class OrderConfirmationScreen extends GetView<SampleCollectionController> {
+  const OrderConfirmationScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.grayLight,
+      appBar: const CustomAppBar(title: 'Order Details'),
+      body: Obx(() {
+        if (!controller.isOrderAccepted) {
+          return _NotAcceptedView(patient: controller.assignedPatient);
+        }
+        // Accepted, but route hasn't started — don't wait on orderDetails,
+        // there's nothing loaded yet.
+        if (controller.needsToStartRoute) {
+          return _NeedsRouteStartView(patient: controller.assignedPatient);
+        }
+
+        // En route — full-screen live tile map with the destination pin,
+        // current GPS position, a floating expandable patient/test summary,
+        // and the "Arrived at Location" action.
+        if (controller.showRouteMap.value) {
+          return _RouteTrackingMap(controller: controller);
+        }
+
+        if (controller.isLoadingOrder.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (controller.orderLoadError.value.isNotEmpty) {
+          return _ErrorState(
+            message: controller.orderLoadError.value,
+            onRetry: controller.fetchOrderDetails,
+          );
+        }
+        final order = controller.orderDetails.value;
+        if (order == null) return const SizedBox.shrink();
+
+        return Stack(
+          children: [
+            ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+              children: [
+                // Bag context: which open bag this collection will be
+                // tagged to (or a prompt to open one).
+                BagContextBanner(controller: controller),
+                const SizedBox(height: 14),
+
+                OrderPatientSummaryCard.fromOrder(
+                  order: order,
+                  initiallyExpanded: true,
+                ),
+              ],
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: _ConfirmBar(controller: controller),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+}
+
+class _NotAcceptedView extends StatelessWidget {
+  final AssignedPatient patient;
+
+  const _NotAcceptedView({required this.patient});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        OrderPatientSummaryCard.fromAssignedPatient(
+          patient: patient,
+          initiallyExpanded: true,
+        ),
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.amberLight.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.amberBorder),
+          ),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.lock_clock_outlined,
+                size: 18,
+                color: AppColors.amberText,
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'You need to accept this order first in order to start the collection.',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ConfirmBar extends StatelessWidget {
+  final SampleCollectionController controller;
+
+  const _ConfirmBar({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.accent700,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(26),
+            ),
+            elevation: 0,
+          ),
+          onPressed: () {
+            controller.confirmAndCollect();
+            Get.to(() => const OtpVerificationScreen());
+          },
+          child: const Text(
+            'Confirm & Collect',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ErrorState({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 42,
+              color: AppColors.redText,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RouteTrackingMap extends StatefulWidget {
+  final SampleCollectionController controller;
+
+  const _RouteTrackingMap({required this.controller});
+
+  @override
+  State<_RouteTrackingMap> createState() => _RouteTrackingMapState();
+}
+
+class _RouteTrackingMapState extends State<_RouteTrackingMap> {
+  final MapController _mapController = MapController();
+  bool _hasFramedOnce = false;
+
+  SampleCollectionController get controller => widget.controller;
+
+  LatLng? get _destination {
+    final lat = controller.destinationLat, lng = controller.destinationLng;
+    if (lat == null || lng == null) return null;
+    return LatLng(lat, lng);
+  }
+
+  LatLng? get _current {
+    final pos = controller.currentPosition.value;
+    if (pos == null) return null;
+    return LatLng(pos.latitude, pos.longitude);
+  }
+
+  void _fitToRoute(LatLng current, LatLng destination) {
+    final bounds = LatLngBounds.fromPoints([current, destination]);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _mapController.fitCamera(
+        CameraFit.bounds(
+          bounds: bounds,
+          padding: const EdgeInsets.fromLTRB(60, 100, 60, 220),
+        ),
+      );
+    });
+  }
+
+  Future<void> _launchDirections(LatLng dest) async {
+    final uri = Platform.isIOS
+        ? Uri.parse(
+            'https://maps.apple.com/?daddr=${dest.latitude},${dest.longitude}',
+          )
+        : Uri.parse(
+            'google.navigation:q=${dest.latitude},${dest.longitude}&mode=d',
+          );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      await launchUrl(
+        Uri.parse(
+          'https://www.google.com/maps/dir/?api=1&destination=${dest.latitude},${dest.longitude}',
+        ),
+        mode: LaunchMode.externalApplication,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final current = _current;
+      final destination = _destination;
+
+      if (current != null && destination != null && !_hasFramedOnce) {
+        _hasFramedOnce = true;
+        _fitToRoute(current, destination);
+      }
+
+      return Stack(
+        children: [
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter:
+                  current ?? destination ?? const LatLng(19.8762, 75.3433),
+              initialZoom: 14,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.lifenity.connect',
+              ),
+              if (current != null && destination != null)
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: [current, destination],
+                      strokeWidth: 3.5,
+                      color: AppColors.blue,
+                      pattern: const StrokePattern.dotted(),
+                    ),
+                  ],
+                ),
+              MarkerLayer(
+                markers: [
+                  if (destination != null)
+                    Marker(
+                      point: destination,
+                      width: 40,
+                      height: 40,
+                      child: const Icon(
+                        Icons.location_on_rounded,
+                        color: AppColors.redText,
+                        size: 40,
+                      ),
+                    ),
+                  if (current != null)
+                    Marker(
+                      point: current,
+                      width: 26,
+                      height: 26,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.blue,
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.blue.withOpacity(0.4),
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+
+          // Floating, collapsible patient/test summary — replaces the old
+          // bare "On the way to X" pill. Collapsed it's the same compact
+          // pill (plus a test-count chip); tapping it expands in place to
+          // show instructions and the full test list without leaving the
+          // map or covering the bottom action sheet.
+          Positioned(
+            top: 12,
+            left: 12,
+            right: 12,
+            child: SafeArea(
+              bottom: false,
+              child: OrderPatientSummaryCard.fromAssignedPatient(
+                patient: controller.assignedPatient,
+                floating: true,
+              ),
+            ),
+          ),
+
+          // Bottom action sheet
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _RouteBottomSheet(
+              controller: controller,
+              onDirections: destination != null
+                  ? () => _launchDirections(destination)
+                  : null,
+            ),
+          ),
+        ],
+      );
+    });
+  }
+}
+
+class _RouteBottomSheet extends StatelessWidget {
+  final SampleCollectionController controller;
+  final VoidCallback? onDirections;
+
+  const _RouteBottomSheet({required this.controller, this.onDirections});
+
+  String _distanceLabel(double? meters) {
+    if (meters == null) return 'Locating…';
+    if (meters >= 1000) return '${(meters / 1000).toStringAsFixed(1)} km away';
+    return '${meters.toStringAsFixed(0)} m away';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 24),
+      decoration: const BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 16,
+            offset: Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Obx(() {
+        final distance = controller.distanceToPatientMeters;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _distanceLabel(distance),
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                Text(
+                  controller.assignedPatient.address ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: controller.routeProgress,
+                minHeight: 5,
+                backgroundColor: AppColors.grayLight,
+                valueColor: const AlwaysStoppedAnimation(AppColors.accent700),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onDirections,
+                    icon: const Icon(Icons.navigation_outlined, size: 18),
+                    label: const Text('Directions'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: 1,
+                  child: ElevatedButton(
+                    onPressed: controller.isMarkingArrived.value
+                        ? null
+                        : controller.markArrived,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accent700,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: controller.isMarkingArrived.value
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(Colors.white),
+                            ),
+                          )
+                        : const Text(
+                            'Arrived at Location',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      }),
+    );
+  }
+}
+
+/// Shown when the order is accepted but the phlebotomist hasn't started
+/// the route yet — nothing has been fetched, so this is purely informational.
+class _NeedsRouteStartView extends StatelessWidget {
+  final AssignedPatient patient;
+
+  const _NeedsRouteStartView({required this.patient});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        OrderPatientSummaryCard.fromAssignedPatient(
+          patient: patient,
+          initiallyExpanded: true,
+        ),
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.amberLight.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.amberBorder),
+          ),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.route_outlined, size: 18, color: AppColors.amberText),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'You need to start the route and mark yourself as '
+                  'arrived at the collection location before you can '
+                  'collect the sample.',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+// widgets/order_patient_summary_card.dart
+//
+
+/// One test row inside a sample group. `code` is optional (AssignedPatient's
+/// pre-fetch test list has none; the fetched order's TestInfo usually does).
+class SummaryTestItem {
+  final String name;
+  final String? code;
+
+  const SummaryTestItem(this.name, [this.code]);
+}
+
+/// One sample-type group (e.g. "Blood • 5 ml") with its tests.
+class SummarySampleGroup {
+  final String sampleType;
+  final String volume;
+  final List<SummaryTestItem> tests;
+
+  const SummarySampleGroup({
+    required this.sampleType,
+    this.volume = '',
+    required this.tests,
+  });
+}
+
+/*
 
 class OrderConfirmationScreen extends GetView<SampleCollectionController> {
   const OrderConfirmationScreen({super.key});
@@ -64,7 +623,7 @@ class OrderConfirmationScreen extends GetView<SampleCollectionController> {
               children: [
                 // Bag context: which open bag this collection will be
                 // tagged to (or a prompt to open one).
-                _BagContextBanner(controller: controller),
+                BagContextBanner(controller: controller),
                 const SizedBox(height: 14),
                 _PatientHeaderCard(order: order),
                 const SizedBox(height: 14),
@@ -262,10 +821,10 @@ class _NotAcceptedView extends StatelessWidget {
 
 /// Compact banner showing which open bag this collection is being tagged
 /// to, or a call-to-action when no bag is open.
-class _BagContextBanner extends StatelessWidget {
+class BagContextBanner extends StatelessWidget {
   final SampleCollectionController controller;
 
-  const _BagContextBanner({required this.controller});
+  const BagContextBanner({required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -1223,3 +1782,4 @@ class _NeedsRouteStartView extends StatelessWidget {
     );
   }
 }
+*/
