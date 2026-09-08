@@ -63,15 +63,6 @@ class ActiveBagCard extends StatelessWidget {
   }
 }
 
-// ─── Open-bag card ───────────────────────────────────────────────────────────
-//
-// Collapsed by default: shows only the bag identity header and the capacity
-// progress bar, so it stays out of the way on a screen the phlebotomist is
-// scanning/tapping through repeatedly. Tapping the header expands it in
-// place to reveal the used/vacant/capacity stats, any capacity notice, and
-// the bag-switch actions. State (expanded/collapsed) is purely visual, so it
-// lives in the widget's own State rather than the shared controller.
-
 class _OpenBagCard extends StatefulWidget {
   const _OpenBagCard({required this.controller, required this.session});
 

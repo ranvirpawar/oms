@@ -18,6 +18,7 @@ import '../../patient_queue/service/patient_queue_service.dart';
 import '../../patient_registration/bag_status_dashboard/controller/registrarion_bag_controller.dart';
 import '../../patient_registration/bag_status_dashboard/model/qr_bag_details.dart';
 import '../../patient_registration/bag_status_dashboard/model/qr_bag_session.dart';
+import '../model/barcode_formatter.dart';
 import '../model/sample_collection_models.dart';
 import '../service/sample_collection_service.dart';
 import '../view/widgets/barcode_scanner_sheet.dart';
@@ -33,44 +34,6 @@ class TestIncompleteInfo {
   final String remarks;
 
   TestIncompleteInfo({required this.reason, this.remarks = ''});
-}
-
-class SampleBarcodeEntry {
-  final int sampleTypeId;
-  final String sampleType;
-  final String volumeRequiredMl;
-  final List<TestInfo> tests;
-
-  final TextEditingController barcodeController = TextEditingController();
-  final Rx<SampleCollectionStatus> status = SampleCollectionStatus.pending.obs;
-
-  final RxMap<int, TestIncompleteInfo> testIncompleteMap =
-      <int, TestIncompleteInfo>{}.obs;
-
-  final RxBool isScanning = false.obs;
-
-  SampleBarcodeEntry({
-    required this.sampleTypeId,
-    required this.sampleType,
-    required this.volumeRequiredMl,
-    required this.tests,
-  });
-
-  bool get isCollected => status.value == SampleCollectionStatus.collected;
-
-  bool get isPending => status.value == SampleCollectionStatus.pending;
-
-  bool get isFullyUnusable =>
-      tests.isNotEmpty && testIncompleteMap.length == tests.length;
-
-  bool get hasPartialIncomplete =>
-      testIncompleteMap.isNotEmpty && !isFullyUnusable;
-
-  bool get isResolved => isCollected || isFullyUnusable;
-
-  void dispose() {
-    barcodeController.dispose();
-  }
 }
 
 enum SampleCollectionStatus { pending, collected, incomplete }
@@ -256,6 +219,15 @@ class SampleCollectionController extends GetxController {
   bool get allSamplesResolved =>
       sampleEntries.isNotEmpty && sampleEntries.every((e) => e.isResolved);
 
+  final RxBool complicationsExpanded = false.obs;
+
+  int get selectedComplicationsCount =>
+      complicationSelections.values.where((v) => v != null).length;
+
+  void toggleComplicationsExpanded() {
+    complicationsExpanded.value = !complicationsExpanded.value;
+  }
+
   @override
   void onInit() {
     super.onInit();
@@ -357,14 +329,18 @@ class SampleCollectionController extends GetxController {
           bagController.ensureSessionsLoaded(),
         ]);
       } else {
-        LiquidSnack.error('Unable to mark arrival. Please try again.',
-            title: 'Action failed');
+        LiquidSnack.error(
+          'Unable to mark arrival. Please try again.',
+          title: 'Action failed',
+        );
       }
     } on LocationTrackingException catch (e) {
       LiquidSnack.error(e.message, title: 'Action failed');
     } catch (_) {
-      LiquidSnack.error('Please check your connection and try again.',
-          title: 'Action failed');
+      LiquidSnack.error(
+        'Please check your connection and try again.',
+        title: 'Action failed',
+      );
     } finally {
       isMarkingArrived.value = false;
     }
@@ -518,40 +494,105 @@ class SampleCollectionController extends GetxController {
   // Barcode entry
   // ---------------------------------------------------------------------
 
+  static final RegExp _allowedChars = RegExp(r'^[A-Za-z0-9-]+$');
+
+  bool _isValidBarcodeFormat(String value) {
+    if (value.length < 14 || value.length > 20) return false;
+    if (!_allowedChars.hasMatch(value)) return false;
+    // Allow at most one hyphen
+    if (value.split('-').length > 2) return false;
+    return true;
+  }
+
   String getBarcodeLabel(SampleBarcodeEntry entry) {
     final vol = entry.volumeRequiredMl.trim();
     return vol.isEmpty ? entry.sampleType : '${entry.sampleType} ($vol)';
   }
 
-  void onBarcodeChanged(SampleBarcodeEntry entry, String value) {
+  void onBarcodeChanged(
+    SampleBarcodeEntry entry,
+    String value, {
+    bool immediate = false,
+  }) {
     final trimmed = value.trim();
-    if (_isDuplicateBarcode(entry, trimmed)) {
-      LiquidSnack.warning(
-        'This barcode is already used for another sample.',
-        title: 'Duplicate barcode',
-      );
+
+    if (trimmed.isEmpty) {
+      entry.barcodeStatus.value = BarcodeCheckStatus.idle;
+      entry.barcodeMessage.value = '';
+      _recomputeStatus(entry);
+      return;
     }
+
+    // 2. Format (length + chars + single '-')
+    if (!_isValidBarcodeFormat(trimmed)) {
+      entry.barcodeStatus.value = BarcodeCheckStatus.formatError;
+      entry.barcodeMessage.value =
+          'Must be 14–20 characters: letters, numbers and at most one "-".';
+      _recomputeStatus(entry);
+      return;
+    }
+
+    if (_isDuplicateBarcode(entry, trimmed)) {
+      entry.barcodeStatus.value = BarcodeCheckStatus.duplicate;
+      entry.barcodeMessage.value = 'Already used for another sample.';
+      _recomputeStatus(entry);
+      return;
+    }
+
+    entry.barcodeStatus.value = BarcodeCheckStatus.checking;
+    entry.barcodeMessage.value = '';
     _recomputeStatus(entry);
+
+    Future<void> check() => _checkBarcodeAvailability(entry, trimmed);
+    if (immediate) {
+      check();
+    } else {
+      entry.debounceBarcodeCheck(check);
+    }
+  }
+
+  Future<void> _checkBarcodeAvailability(
+    SampleBarcodeEntry entry,
+    String value,
+  ) async {
+    // Bail if the field moved on while we were debouncing/awaiting.
+    if (entry.barcodeController.text.trim() != value) return;
+
+    try {
+      final available = await _service.checkBarcodeAvailability(value);
+      if (entry.barcodeController.text.trim() != value) return; // stale
+      entry.barcodeStatus.value = available
+          ? BarcodeCheckStatus.available
+          : BarcodeCheckStatus.unavailable;
+      entry.barcodeMessage.value = available ? '' : 'Barcode already exists.';
+    } on SampleCollectionException catch (e) {
+      if (entry.barcodeController.text.trim() != value) return;
+      entry.barcodeStatus.value = BarcodeCheckStatus.unavailable;
+      entry.barcodeMessage.value = e.message;
+    } catch (e) {
+      if (entry.barcodeController.text.trim() != value) return;
+      kPrint(e.toString());
+      entry.barcodeStatus.value = BarcodeCheckStatus.error;
+      entry.barcodeMessage.value =
+          'Could not verify barcode. Check connection.';
+    } finally {
+      _recomputeStatus(entry);
+    }
   }
 
   void _processScanResult(SampleBarcodeEntry entry, String scannedCode) {
     final value = scannedCode.trim();
     entry.barcodeController.text = value;
     _closeScanner(entry);
-
-    if (_isDuplicateBarcode(entry, value)) {
-      LiquidSnack.warning(
-        'This barcode is already used for another sample.',
-        title: 'Duplicate barcode',
-      );
-    }
-    _recomputeStatus(entry);
+    // Scanning is a discrete action — verify immediately, no debounce.
+    onBarcodeChanged(entry, value, immediate: true);
   }
 
   void _recomputeStatus(SampleBarcodeEntry entry) {
     if (entry.isFullyUnusable) {
       entry.status.value = SampleCollectionStatus.incomplete;
-    } else if (entry.barcodeController.text.trim().isNotEmpty) {
+    } else if (entry.barcodeController.text.trim().isNotEmpty &&
+        entry.barcodeStatus.value == BarcodeCheckStatus.available) {
       entry.status.value = SampleCollectionStatus.collected;
     } else {
       entry.status.value = SampleCollectionStatus.pending;
@@ -653,7 +694,7 @@ class SampleCollectionController extends GetxController {
     }
     for (final entry in sampleEntries) {
       if (!entry.isResolved) {
-        return 'Please collect or resolve every sample.';
+        return 'Please collect all samples before submitting.';
       }
     }
     final seen = <String>{};
@@ -764,8 +805,10 @@ class SampleCollectionController extends GetxController {
       return null;
     } catch (e) {
       kPrint(e.toString());
-      LiquidSnack.error('Something went wrong. Please try again.',
-          title: 'Submission failed');
+      LiquidSnack.error(
+        'Something went wrong. Please try again.',
+        title: 'Submission failed',
+      );
       return null;
     } finally {
       isSubmitting.value = false;
@@ -807,13 +850,13 @@ class SampleCollectionController extends GetxController {
       isRetryingDisha.value = false;
     }
   }
+
   /// Runs a reschedule-style action with a shared loading flag + snackbar
   /// handling, so success/failure feedback is consistent across the flow.
   Future<bool> _runAction(
-
-      Future<bool> Function() action, {
-        required String successMessage,
-      }) async {
+    Future<bool> Function() action, {
+    required String successMessage,
+  }) async {
     isRescheduling.value = true;
     try {
       final success = await action();
@@ -821,8 +864,6 @@ class SampleCollectionController extends GetxController {
         LiquidSnack.success(successMessage, title: 'Success');
         RouteManager.redirectToHomeDashboard();
         RouteManager.navigateToPatientQueue();
-
-
       }
       return success;
     } on SampleCollectionException catch (e) {
@@ -830,8 +871,10 @@ class SampleCollectionController extends GetxController {
       return false;
     } catch (e) {
       kPrint(e.toString());
-      LiquidSnack.error('Something went wrong. Please try again.',
-          title: 'Action failed');
+      LiquidSnack.error(
+        'Something went wrong. Please try again.',
+        title: 'Action failed',
+      );
       return false;
     } finally {
       isRescheduling.value = false;
@@ -844,13 +887,13 @@ class SampleCollectionController extends GetxController {
   /// as `RescheduleReasoneID`. Returns whether the backend accepted the
   /// reschedule so the sheet can stay open on failure.
   Future<bool> reschedule(
-      AssignedPatient patient, {
-        required DateTime newDate,
-        required AvailableSlot slot,
-        required int rescheduleReasonId,
-      }) {
+    AssignedPatient patient, {
+    required DateTime newDate,
+    required AvailableSlot slot,
+    required int rescheduleReasonId,
+  }) {
     return _runAction(
-        () => _service.reschedule(
+      () => _service.reschedule(
         orderId: patient.orderId,
         userId: int.tryParse(empId.value) ?? 0,
         createdBy: int.tryParse(empId.value) ?? 0,

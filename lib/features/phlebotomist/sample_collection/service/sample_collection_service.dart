@@ -324,4 +324,43 @@ class SampleCollectionService {
       );
     }
   }
+  /// Checks live availability of a barcode before it's accepted onto a sample.
+  /// Returns true when the barcode is free to use, false when it's already
+  /// taken (409 / FAILED). Throws on genuine network/parsing failure.
+  Future<bool> checkBarcodeAvailability(String barcode) async {
+    try {
+      final reqBody = {
+        'barcode': barcode,
+      };
+      final response = await _apiClient.post(
+        AppUrls.checkBarcodeAvailability,
+        data: reqBody
+      );
+
+      final Map<String, dynamic> body = response.data is String
+          ? jsonDecode(response.data as String) as Map<String, dynamic>
+          : response.data as Map<String, dynamic>;
+
+      final statusCode = body['statusCode'] is int
+          ? body['statusCode'] as int
+          : int.tryParse(body['statusCode']?.toString() ?? '');
+      final status = (body['status'] as String?)?.trim().toUpperCase();
+
+      if (statusCode == 200 || status == 'SUCCESS') return true;
+      if (statusCode == 409 || status == 'FAILED') return false;
+
+      // Unexpected shape — treat as a soft failure with the server's message.
+      throw SampleCollectionException(
+        body['message'] as String? ?? 'Unable to verify barcode.',
+      );
+    } on SampleCollectionException {
+      rethrow;
+    } catch (e) {
+      kPrint(e.toString());
+      throw SampleCollectionException(
+        'Unable to verify barcode. Please check your connection and try again.',
+        isNetworkError: true,
+      );
+    }
+  }
 }

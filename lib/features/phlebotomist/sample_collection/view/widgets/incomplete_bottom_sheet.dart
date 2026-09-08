@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../../theme/app_colors.dart';
 import '../../controller/sample_collection_controller.dart';
+import '../../model/barcode_formatter.dart';
 import '../../model/sample_collection_models.dart';
 
 class IncompleteTestsBottomSheet extends StatefulWidget {

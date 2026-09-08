@@ -14,8 +14,18 @@ import '../../../../../theme/app_colors.dart';
 import '../../../../../utils/ui_designs/tap_menu.dart';
 import '../../controller/sample_collection_controller.dart';
 
+import '../../model/barcode_formatter.dart';
 import '../../model/sample_stype_style.dart';
 
+import 'barcode_input_field.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+
+import '../../../../../theme/app_colors.dart';
+import '../../../../../utils/ui_designs/tap_menu.dart';
+import '../../controller/sample_collection_controller.dart';
+import '../../model/sample_stype_style.dart';
 import 'barcode_input_field.dart';
 
 class SampleItemCard extends StatelessWidget {
@@ -37,11 +47,197 @@ class SampleItemCard extends StatelessWidget {
         SampleCollectionStatus.collected => AppColors.greenBorder,
         SampleCollectionStatus.incomplete => AppColors.redText,
         SampleCollectionStatus.pending => AppColors.border,
-      };/*final borderColor = switch (status) {
+      };
+
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.bgCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: borderColor,
+            width: status == SampleCollectionStatus.pending ? 1 : 1.4,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: style.color.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  alignment: Alignment.center,
+                  child: sampleTypeIcon(entry.sampleType, size: 17),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.sampleType,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      if (entry.volumeRequiredMl.trim().isNotEmpty)
+                        Text(
+                          '${entry.volumeRequiredMl.trim()} required',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: AppColors.textTertiary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (status == SampleCollectionStatus.incomplete)
+              _buildFullyUnusableBanner(context)
+            else ...[
+              BarcodeInputField(
+                entry: entry,
+                onScanTap: () => controller.openBarcodeScanner(entry),
+                onChanged: (value) => controller.onBarcodeChanged(entry, value),
+              ),
+              if (entry.hasPartialIncomplete) ...[
+                const SizedBox(height: 10),
+                _buildPartialBanner(context),
+              ],
+            ],
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildFullyUnusableBanner(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.redLight.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline_rounded, size: 16, color: AppColors.redText),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              "Couldn't collect — every test flagged.",
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+            ),
+          ),
+          TextButton(
+            onPressed: () => controller.undoAllIncomplete(entry),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: const Size(0, 32),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text('Undo', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPartialBanner(BuildContext context) {
+    final total = entry.tests.length;
+    final flagged = entry.testIncompleteMap.length;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.amberLight.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded, size: 16, color: AppColors.amberText),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '$flagged of $total test${total == 1 ? '' : 's'} marked unsuitable',
+              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+            ),
+          ),
+          TextButton(
+            onPressed: () => controller.openIncompleteTestsSheet(entry),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: const Size(0, 32),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text('Review', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Small direct-tap report action, replacing the old three-dot menu (which
+/// only ever held this single option).
+class _ReportIssueButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _ReportIssueButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: const Padding(
+          padding: EdgeInsets.all(10),
+          child: Icon(Icons.report_problem_outlined, size: 18, color: AppColors.textMuted),
+        ),
+      ),
+    );
+  }
+}
+/*class SampleItemCard extends StatelessWidget {
+  final SampleBarcodeEntry entry;
+  final SampleCollectionController controller;
+
+  const SampleItemCard({
+    super.key,
+    required this.entry,
+    required this.controller,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(() {
+      final status = entry.status.value;
+      final style = SampleTypeStyles.forType(entry.sampleType);
+      final borderColor = switch (status) {
         SampleCollectionStatus.collected => AppColors.greenBorder,
         SampleCollectionStatus.incomplete => AppColors.redText,
         SampleCollectionStatus.pending => AppColors.border,
-      };*/
+      };*//*final borderColor = switch (status) {
+        SampleCollectionStatus.collected => AppColors.greenBorder,
+        SampleCollectionStatus.incomplete => AppColors.redText,
+        SampleCollectionStatus.pending => AppColors.border,
+      };*//*
 
       return AnimatedContainer(
         duration: const Duration(milliseconds: 180),
@@ -252,7 +448,7 @@ class SampleItemCard extends StatelessWidget {
   //     ),
   //   );
   // }
-}
+}*/
 
 
 

@@ -372,12 +372,18 @@ class AppUrls {
 
   static String rescheduledSlots = '$_asmxBase/user/available-slots';
 
+  static String appointmentRescheduled =
+      '$_asmxBase/InsertSampleCollAppoinmentReschedule';
 
-  static String appointmentRescheduled = '$_asmxBase/InsertSampleCollAppoinmentReschedule';
+  static String appointmentRescheduledReason =
+      '$_asmxBase/GetRescheduleReasone';
 
-  static String appointmentRescheduledReason = '$_asmxBase/GetRescheduleReasone';
+  static String get checkBarcodeAvailability => '$_asmxBase/barcode/availability';
 
 
+  ///  dashboard
+
+  static String get dashboardCount => '$_asmxBase/phlebo/dashboard-summary';
 
   // -------------------------
   // API Endpoints (.ashx)
@@ -393,6 +399,4 @@ class AppUrls {
   static String get uploadTrfImage => '${_ashxBase}AddTrfPhoto';
 
   static String get addConsentPhoto => '${_ashxBase}AddConsentPhoto';
-
-  static String get dashboardCount => '$_asmxBase/phlebo/dashboard-summary';
 }
