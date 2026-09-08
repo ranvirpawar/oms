@@ -347,30 +347,13 @@ class PatientCard extends StatelessWidget {
 
     switch (patient.status) {
       case PatientStatus.rescheduled:
-        return Row(
-          children: [
-            Expanded(
-              flex: 2,
-              child: QueueActionButton(
-                label: 'Reject',
-                color: AppColors.redText,
-                style: QueueActionStyle.outlined,
-                isDisabled: isProcessing,
-                onPressed: onReject,
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Expanded(
-              flex: 3,
-              child: QueueActionButton(
-                label: 'Collect',
-                color: AppColors.blue,
-                style: QueueActionStyle.outlined,
-                isDisabled: true,
-                onPressed: null,
-              ),
-            ),
-          ],
+        return QueueActionButton(
+          label: 'Collect',
+          color: AppColors.accent700,
+          gradient: AppColors.accentGradient,
+          style: QueueActionStyle.gradient,
+          isDisabled: false,
+          onPressed: onTapDetails,
         );
 
       case PatientStatus.accepted:

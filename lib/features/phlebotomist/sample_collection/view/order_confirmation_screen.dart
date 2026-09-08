@@ -839,101 +839,35 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
+
 class _RouteTrackingMap extends StatefulWidget {
   final SampleCollectionController controller;
-
   const _RouteTrackingMap({required this.controller});
 
   @override
   State<_RouteTrackingMap> createState() => _RouteTrackingMapState();
 }
 
-class _RouteTrackingMapState extends State<_RouteTrackingMap>
-    with SingleTickerProviderStateMixin {
+class _RouteTrackingMapState extends State<_RouteTrackingMap> {
   final MapController _mapController = MapController();
   bool _hasFramedOnce = false;
-
-  List<LatLng>? _routePoints;
-  LatLng? _routeFetchedForDestination;
-  bool _isFetchingRoute = false;
-
-  // --- Smooth marker animation ---
-  late final AnimationController _markerAnimController;
-  LatLng? _animFrom;
-  LatLng? _animTo;
-  LatLng? _displayedCurrent;
-
-  // --- Follow-me camera ---
-  bool _followMode = true;
-  double _currentZoom = 15;
 
   SampleCollectionController get controller => widget.controller;
 
   LatLng? get _destination {
-    final lat = controller.destinationLat;
-    final lng = controller.destinationLng;
+    final lat = controller.destinationLat, lng = controller.destinationLng;
     if (lat == null || lng == null) return null;
     return LatLng(lat, lng);
   }
 
-  LatLng? get _rawCurrent {
+  LatLng? get _current {
     final pos = controller.currentPosition.value;
     if (pos == null) return null;
     return LatLng(pos.latitude, pos.longitude);
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _markerAnimController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..addListener(_onMarkerTick);
-
-    // Fires every time the GPS gives a new fix.
-    ever<Position?>(controller.currentPosition, (pos) {
-      if (pos == null) return;
-      _onNewFix(LatLng(pos.latitude, pos.longitude));
-    });
-  }
-
-  @override
-  void dispose() {
-    _markerAnimController.dispose();
-    super.dispose();
-  }
-
-  void _onNewFix(LatLng next) {
-    final from = _displayedCurrent ?? next;
-    _animFrom = from;
-    _animTo = next;
-    _markerAnimController
-      ..reset()
-      ..forward();
-
-    if (_followMode) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _mapController.move(next, _currentZoom);
-      });
-    }
-  }
-
-  void _onMarkerTick() {
-    final from = _animFrom;
-    final to = _animTo;
-    if (from == null || to == null) return;
-    final t = Curves.easeInOut.transform(_markerAnimController.value);
-    setState(() {
-      _displayedCurrent = LatLng(
-        from.latitude + (to.latitude - from.latitude) * t,
-        from.longitude + (to.longitude - from.longitude) * t,
-      );
-    });
-  }
-
-  void _fitToPoints(List<LatLng> points) {
-    if (points.length < 2) return;
-    final bounds = LatLngBounds.fromPoints(points);
+  void _fitToRoute(LatLng current, LatLng destination) {
+    final bounds = LatLngBounds.fromPoints([current, destination]);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _mapController.fitCamera(
         CameraFit.bounds(
@@ -944,80 +878,10 @@ class _RouteTrackingMapState extends State<_RouteTrackingMap>
     });
   }
 
-  Future<List<LatLng>?> _fetchRoute(LatLng origin, LatLng dest) async {
-    final url = Uri.parse(
-      'https://router.project-osrm.org/route/v1/driving/'
-      '${origin.longitude},${origin.latitude};'
-      '${dest.longitude},${dest.latitude}'
-      '?overview=full&geometries=polyline',
-    );
-    try {
-      final res = await http.get(url).timeout(const Duration(seconds: 8));
-      if (res.statusCode != 200) return null;
-      final body = jsonDecode(res.body) as Map<String, dynamic>;
-      final routes = body['routes'] as List?;
-      if (routes == null || routes.isEmpty) return null;
-      return _decodePolyline(routes.first['geometry'] as String);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  List<LatLng> _decodePolyline(String encoded) {
-    final points = <LatLng>[];
-    int index = 0, lat = 0, lng = 0;
-    while (index < encoded.length) {
-      int shift = 0, result = 0, b;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      lat += (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
-
-      shift = 0;
-      result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      lng += (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
-
-      points.add(LatLng(lat / 1e5, lng / 1e5));
-    }
-    return points;
-  }
-
-  void _maybeFetchRoute(LatLng current, LatLng destination) {
-    if (_isFetchingRoute) return;
-    if (_routePoints != null && _routeFetchedForDestination == destination) {
-      return;
-    }
-    _isFetchingRoute = true;
-    _fetchRoute(current, destination).then((points) {
-      if (!mounted) return;
-      setState(() {
-        _isFetchingRoute = false;
-        if (points != null && points.isNotEmpty) {
-          _routePoints = points;
-          _routeFetchedForDestination = destination;
-        }
-      });
-      if (points != null && points.isNotEmpty && !_followMode) {
-        _fitToPoints(points);
-      }
-    });
-  }
-
   Future<void> _launchDirections(LatLng dest) async {
     final uri = Platform.isIOS
-        ? Uri.parse(
-            'https://maps.apple.com/?daddr=${dest.latitude},${dest.longitude}',
-          )
-        : Uri.parse(
-            'google.navigation:q=${dest.latitude},${dest.longitude}&mode=d',
-          );
+        ? Uri.parse('https://maps.apple.com/?daddr=${dest.latitude},${dest.longitude}')
+        : Uri.parse('google.navigation:q=${dest.latitude},${dest.longitude}&mode=d');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
@@ -1033,59 +897,35 @@ class _RouteTrackingMapState extends State<_RouteTrackingMap>
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final rawCurrent = _rawCurrent;
+      final current = _current;
       final destination = _destination;
-      final current = _displayedCurrent ?? rawCurrent;
 
-      if (rawCurrent != null && destination != null) {
-        if (!_hasFramedOnce) {
-          _hasFramedOnce = true;
-          _displayedCurrent ??= rawCurrent;
-          _fitToPoints([rawCurrent, destination]);
-        }
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _maybeFetchRoute(rawCurrent, destination);
-        });
+      if (current != null && destination != null && !_hasFramedOnce) {
+        _hasFramedOnce = true;
+        _fitToRoute(current, destination);
       }
-
-      final routeLine =
-          _routePoints ??
-          (current != null && destination != null
-              ? [current, destination]
-              : null);
 
       return Stack(
         children: [
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              initialCenter:
-                  current ?? destination ?? const LatLng(19.8762, 75.3433),
-              initialZoom: _currentZoom,
-              onPositionChanged: (position, hasGesture) {
-                _currentZoom = position.zoom;
-                // If the user drags the map themselves, drop out of
-                // follow mode so we don't fight their gesture.
-                if (hasGesture && _followMode) {
-                  setState(() => _followMode = false);
-                }
-              },
+              initialCenter: current ?? destination ?? const LatLng(19.8762, 75.3433),
+              initialZoom: 14,
             ),
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.lifenity_health.oms',
+                userAgentPackageName: 'com.lifenity.connect',
               ),
-              if (routeLine != null)
+              if (current != null && destination != null)
                 PolylineLayer(
                   polylines: [
                     Polyline(
-                      points: routeLine,
-                      strokeWidth: _routePoints != null ? 4.5 : 3.5,
+                      points: [current, destination],
+                      strokeWidth: 3.5,
                       color: AppColors.blue,
-                      pattern: _routePoints != null
-                          ? const StrokePattern.solid()
-                          : const StrokePattern.dotted(),
+                      pattern: const StrokePattern.dotted(),
                     ),
                   ],
                 ),
@@ -1127,48 +967,22 @@ class _RouteTrackingMapState extends State<_RouteTrackingMap>
             ],
           ),
 
+          // Top-left back/status pill
           Positioned(
             top: 12,
             left: 12,
             right: 12,
-            child: _StatusPill(
-              controller: controller,
-              // isRouting: _isFetchingRoute && _routePoints == null, //todo
-            ),
+            child: _StatusPill(controller: controller),
           ),
 
-          // Recenter button — appears once the user has panned away
-          // from follow mode.
-          if (!_followMode)
-            Positioned(
-              right: 16,
-              bottom: 190,
-              child: FloatingActionButton.small(
-                heroTag: 'recenter',
-                backgroundColor: AppColors.bgCard,
-                onPressed: () {
-                  setState(() => _followMode = true);
-                  final target = _displayedCurrent ?? _rawCurrent;
-                  if (target != null) {
-                    _mapController.move(target, _currentZoom);
-                  }
-                },
-                child: const Icon(
-                  Icons.my_location_rounded,
-                  color: AppColors.blue,
-                ),
-              ),
-            ),
-
+          // Bottom action sheet
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
             child: _RouteBottomSheet(
               controller: controller,
-              onDirections: destination != null
-                  ? () => _launchDirections(destination)
-                  : null,
+              onDirections: destination != null ? () => _launchDirections(destination) : null,
             ),
           ),
         ],
@@ -1177,11 +991,8 @@ class _RouteTrackingMapState extends State<_RouteTrackingMap>
   }
 }
 
-
-/// Floating "On the way to {patient name}" pill over the map.
 class _StatusPill extends StatelessWidget {
   final SampleCollectionController controller;
-
   const _StatusPill({required this.controller});
 
   @override
@@ -1195,11 +1006,7 @@ class _StatusPill extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.directions_car_filled_rounded,
-            color: AppColors.blue,
-            size: 18,
-          ),
+          const Icon(Icons.directions_car_filled_rounded, color: AppColors.blue, size: 18),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -1219,12 +1026,9 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-/// Fixed bottom sheet over the map — distance readout, route progress bar
-/// and the Directions / Arrived actions (reachable one-handed).
 class _RouteBottomSheet extends StatelessWidget {
   final SampleCollectionController controller;
   final VoidCallback? onDirections;
-
   const _RouteBottomSheet({required this.controller, this.onDirections});
 
   String _distanceLabel(double? meters) {
@@ -1240,13 +1044,7 @@ class _RouteBottomSheet extends StatelessWidget {
       decoration: const BoxDecoration(
         color: AppColors.bgCard,
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 16,
-            offset: Offset(0, -4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 16, offset: Offset(0, -4))],
       ),
       child: Obx(() {
         final distance = controller.distanceToPatientMeters;
@@ -1266,16 +1064,11 @@ class _RouteBottomSheet extends StatelessWidget {
                     ),
                   ),
                 ),
-                Flexible(
-                  child: Text(
-                    controller.assignedPatient.address ?? '',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
+                Text(
+                  controller.assignedPatient.address ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
                 ),
               ],
             ),
@@ -1293,7 +1086,6 @@ class _RouteBottomSheet extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  flex: 1,
                   child: OutlinedButton.icon(
                     onPressed: onDirections,
                     icon: const Icon(Icons.navigation_outlined, size: 18),
@@ -1302,31 +1094,24 @@ class _RouteBottomSheet extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  flex: 1,
+                  flex: 2,
                   child: ElevatedButton(
-                    onPressed: controller.isMarkingArrived.value
-                        ? null
-                        : controller.markArrived,
+                    onPressed: controller.isMarkingArrived.value ? null : controller.markArrived,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.accent700,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: controller.isMarkingArrived.value
                         ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(Colors.white),
-                            ),
-                          )
-                        : const Text(
-                            'Arrived at Location',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                      ),
+                    )
+                        : const Text('Arrived at Location',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
                   ),
                 ),
               ],

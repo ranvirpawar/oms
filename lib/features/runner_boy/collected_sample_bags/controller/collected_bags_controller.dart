@@ -283,7 +283,7 @@ class CollectedBagsController extends GetxController {
     submissionErrors.clear();
     // Fetch both in parallel — no jumpToPage here (PageView not mounted yet)
     handoverPageController.jumpToPage(0);
-    Future.wait([fetchConnectors(), fetchRunnerBoys()]);
+    // Future.wait([fetchConnectors(), fetchRunnerBoys()]);
   }
 
   void resetHandoverPage() {
@@ -295,22 +295,22 @@ class CollectedBagsController extends GetxController {
     submissionErrors.clear();
   }
 
-  Future<void> fetchConnectors() async {
+  /*Future<void> fetchConnectors() async {
     try {
       isFetchingConnectors.value = true;
-      final list = await bagsService.getConnectorList('151');
+      final list = await bagsService.getConnectorList('3');
       connectorList.value = list;
     } catch (e) {
       _showSnackbar('Error', e.toString(), isError: true);
     } finally {
       isFetchingConnectors.value = false;
     }
-  }
+  }*/
 
   Future<void> fetchRunnerBoys() async {
     try {
       isFetchingRunnerBoys.value = true;
-      final list = await bagsService.getConnectorList('7');
+      final list = await bagsService.getConnectorList('3');
       runnerBoyList.value = list;
     } catch (e) {
       _showSnackbar('Error', e.toString(), isError: true);
@@ -350,7 +350,7 @@ class CollectedBagsController extends GetxController {
 
   void toggleHandoverType(bool toRunnerBoy) {
     isHandOverToRunnerBoy.value = toRunnerBoy;
-    fetchConnectors();
+    // fetchConnectors();
   }
 
   // Inside CollectedBagsController

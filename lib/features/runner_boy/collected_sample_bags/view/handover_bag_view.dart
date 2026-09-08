@@ -57,17 +57,8 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
         appBar: const CustomAppBar(title: 'Handover Bag(s)'),
         body: Column(
           children: [
-            _buildTypeSelector(),
-            Expanded(
-              child: PageView(
-                controller: c.handoverPageController,
-                onPageChanged: c.updateHandoverIndex,
-                children: [
-                  _buildHandoverContent('Connector'),
-                  _buildHandoverContent('Runner Boy'),
-                ],
-              ),
-            ),
+            // _buildTypeSelector(),
+            _buildHandoverContent('Runner Boy'),
           ],
         ),
         bottomNavigationBar: _buildConfirmButton(),
@@ -102,16 +93,18 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
               ),
               const SizedBox(height: 12),
 
-              Obx(() => Text(
-                    '${c.submissionProgress.value} bag(s) successfully handed over to '
-                    "${c.selectedConnector.value?.userName ?? 'recipient'}",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: Colors.grey.shade600,
-                      height: 1.5,
-                    ),
-                  )),
+              Obx(
+                () => Text(
+                  '${c.submissionProgress.value} bag(s) successfully handed over to '
+                  "${c.selectedConnector.value?.userName ?? 'recipient'}",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.grey.shade600,
+                    height: 1.5,
+                  ),
+                ),
+              ),
 
               // Partial errors if any
               Obx(() {
@@ -129,8 +122,11 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.warning_amber_rounded,
-                              color: Colors.orange.shade700, size: 18),
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.orange.shade700,
+                            size: 18,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             '${c.submissionErrors.length} bag(s) failed',
@@ -142,13 +138,18 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      ...c.submissionErrors.map((e) => Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text('• $e',
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.orange.shade700)),
-                          )),
+                      ...c.submissionErrors.map(
+                        (e) => Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            '• $e',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.orange.shade700,
+                            ),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 );
@@ -168,8 +169,10 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
 
                     Get.back();
                   },
-                  icon:
-                      const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                  icon: const Icon(
+                    Icons.arrow_back_rounded,
+                    color: Colors.white,
+                  ),
                   label: const Text(
                     'Go Back',
                     style: TextStyle(fontSize: 16, color: Colors.white),
@@ -177,7 +180,8 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary900,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15)),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
                   ),
                 ),
               ),
@@ -196,8 +200,10 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
 
                     Get.back();
                   },
-                  icon: const Icon(Icons.check_circle_outline,
-                      color: AppColors.primary),
+                  icon: const Icon(
+                    Icons.check_circle_outline,
+                    color: AppColors.primary,
+                  ),
                   label: const Text(
                     'Done',
                     style: TextStyle(fontSize: 16, color: AppColors.primary),
@@ -205,7 +211,8 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.primary),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15)),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
                   ),
                 ),
               ),
@@ -219,19 +226,16 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
   // ── Type Selector ────────────────────────────────────────────────────────
 
   Widget _buildTypeSelector() {
-    return Obx(() => Container(
-          margin: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            children: [
-              _typeTab('Connector', 0),
-              _typeTab('Runner Boy', 1),
-            ],
-          ),
-        ));
+    return Obx(
+      () => Container(
+        margin: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(children: [_typeTab('Runner Boy', 1)]),
+      ),
+    );
   }
 
   Widget _typeTab(String label, int index) {
@@ -271,11 +275,13 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const SizedBox(height: 30),
           _buildSummaryCard(),
           const SizedBox(height: 30),
-          Text('Select $typeLabel',
-              style:
-                  const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+          Text(
+            'Select $typeLabel',
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 12),
           _buildDropdownTrigger(),
           const SizedBox(height: 20),
@@ -288,36 +294,44 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
   Widget _buildSummaryCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-            colors: [AppColors.primary900, AppColors.primary600]),
+          colors: [AppColors.primary900, AppColors.primary600],
+        ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-              color: AppColors.primary.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6))
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
         ],
       ),
       child: Row(
         children: [
           const CircleAvatar(
-              backgroundColor: Colors.white24,
-              child: Icon(Icons.inventory_2, color: Colors.white)),
+            backgroundColor: Colors.white24,
+            child: Icon(Icons.inventory_2, color: Colors.white),
+          ),
           const SizedBox(width: 15),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Obx(() => Text(
-                    '${c.selectedSessionIds.length} Bags Selected',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold),
-                  )),
-              const Text('Ready for transfer',
-                  style: TextStyle(color: Colors.white70)),
+              Obx(
+                () => Text(
+                  '${c.selectedSessionIds.length} Bags Selected',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const Text(
+                'Ready for transfer',
+                style: TextStyle(color: Colors.white70),
+              ),
             ],
           ),
         ],
@@ -345,7 +359,9 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
                 width: 18,
                 height: 18,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: AppColors.primary),
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
               ),
               SizedBox(width: 12),
               Text('Loading...', style: TextStyle(color: Colors.grey)),
@@ -400,11 +416,13 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
           children: [
             const SizedBox(height: 15),
             Container(
-                width: 50,
-                height: 5,
-                decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(10))),
+              width: 50,
+              height: 5,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.all(20),
               child: TextField(
@@ -415,8 +433,9 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
                   filled: true,
                   fillColor: Colors.grey[100],
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: BorderSide.none),
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
             ),
@@ -429,11 +448,16 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.person_off_outlined,
-                            size: 48, color: Colors.grey.shade400),
+                        Icon(
+                          Icons.person_off_outlined,
+                          size: 48,
+                          color: Colors.grey.shade400,
+                        ),
                         const SizedBox(height: 12),
-                        Text('No results found',
-                            style: TextStyle(color: Colors.grey.shade500)),
+                        Text(
+                          'No results found',
+                          style: TextStyle(color: Colors.grey.shade500),
+                        ),
                       ],
                     ),
                   );
@@ -446,12 +470,16 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
                     final person = list[index];
                     return ListTile(
                       leading: CircleAvatar(
-                          backgroundColor: AppColors.primary50,
-                          child: Text(person.userName[0])),
-                      title: Text(person.userName,
-                          style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle:
-                          Text('ID: ${person.userId} • ${person.facilityName}'),
+                        backgroundColor: AppColors.primary50,
+                        child: Text(person.userName[0]),
+                      ),
+                      title: Text(
+                        person.userName,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        'ID: ${person.userId} • ${person.facilityName}',
+                      ),
                       onTap: () {
                         c.selectConnector(person);
                         Get.back();
@@ -515,8 +543,9 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
       if (isProcessing) {
         final progress = c.submissionProgress.value;
         final total = c.submissionTotal.value;
-        label =
-            total > 0 ? 'Submitting $progress / $total...' : 'Submitting...';
+        label = total > 0
+            ? 'Submitting $progress / $total...'
+            : 'Submitting...';
       }
 
       return Container(
@@ -528,11 +557,13 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
                 ? () => c.handoverToConnector(c.selectedConnector.value!.userId)
                 : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  canSubmit ? AppColors.primary900 : Colors.grey.shade300,
+              backgroundColor: canSubmit
+                  ? AppColors.primary900
+                  : Colors.grey.shade300,
               minimumSize: const Size(double.infinity, 55),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15)),
+                borderRadius: BorderRadius.circular(15),
+              ),
             ),
             child: isProcessing
                 ? Row(
@@ -542,16 +573,24 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2.5),
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      Text(label,
-                          style: const TextStyle(
-                              fontSize: 15, color: Colors.white)),
+                      Text(
+                        label,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Colors.white,
+                        ),
+                      ),
                     ],
                   )
-                : Text(label,
-                    style: const TextStyle(fontSize: 16, color: Colors.white)),
+                : Text(
+                    label,
+                    style: const TextStyle(fontSize: 16, color: Colors.white),
+                  ),
           ),
         ),
       );
