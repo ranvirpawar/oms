@@ -51,7 +51,7 @@ class _RecordingSampleCollectionService extends SampleCollectionService {
   final List<String> resubmittedOrderIds = [];
 
   @override
-  Future<bool> resubmitToDisha({required String orderId, }) async {
+  Future<bool> resubmitToDisha({required String orderId,required String userId }) async {
     if (shouldFail) {
       throw SampleCollectionException('Disha is not reachable.');
     }

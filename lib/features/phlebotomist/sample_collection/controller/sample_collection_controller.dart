@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
+import 'package:lifenity_connect/routes/route_manager.dart';
 import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart'
     hide SnackPosition;
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -13,6 +14,7 @@ import '../../../../services/location_tracking_service.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
 
 import '../../patient_queue/model/patient_queue_model.dart';
+import '../../patient_queue/service/patient_queue_service.dart';
 import '../../patient_registration/bag_status_dashboard/controller/registrarion_bag_controller.dart';
 import '../../patient_registration/bag_status_dashboard/model/qr_bag_details.dart';
 import '../../patient_registration/bag_status_dashboard/model/qr_bag_session.dart';
@@ -80,6 +82,9 @@ class SampleCollectionController extends GetxController {
     : orderId = assignedPatient.orderId.toString();
 
   final SampleCollectionService _service = SampleCollectionService();
+  final PatientQueueService _patientQueueService = PatientQueueService();
+
+  final RxBool isRescheduling = false.obs;
   final AuthManager _authManager = AuthManager();
 
   final AssignedPatient assignedPatient;
@@ -732,6 +737,7 @@ class SampleCollectionController extends GetxController {
     isSubmitting.value = true;
     try {
       final payload = _buildPayload();
+      kPrint('Collection Body');
       kPrint(payload.toJson().toString());
 
       await _service.submitSampleCollection(payload);
@@ -800,5 +806,70 @@ class SampleCollectionController extends GetxController {
     } finally {
       isRetryingDisha.value = false;
     }
+  }
+  /// Runs a reschedule-style action with a shared loading flag + snackbar
+  /// handling, so success/failure feedback is consistent across the flow.
+  Future<bool> _runAction(
+
+      Future<bool> Function() action, {
+        required String successMessage,
+      }) async {
+    isRescheduling.value = true;
+    try {
+      final success = await action();
+      if (success) {
+        LiquidSnack.success(successMessage, title: 'Success');
+        RouteManager.redirectToHomeDashboard();
+        RouteManager.navigateToPatientQueue();
+
+
+      }
+      return success;
+    } on SampleCollectionException catch (e) {
+      LiquidSnack.error(e.message, title: 'Action failed');
+      return false;
+    } catch (e) {
+      kPrint(e.toString());
+      LiquidSnack.error('Something went wrong. Please try again.',
+          title: 'Action failed');
+      return false;
+    } finally {
+      isRescheduling.value = false;
+    }
+  }
+
+  /// Reschedules a visit using the [AvailableSlot] the backend returned for
+  /// the picked date — persisted via the dedicated appointment-reschedule
+  /// endpoint. The mandatory [rescheduleReasonId] picked in the sheet is sent
+  /// as `RescheduleReasoneID`. Returns whether the backend accepted the
+  /// reschedule so the sheet can stay open on failure.
+  Future<bool> reschedule(
+      AssignedPatient patient, {
+        required DateTime newDate,
+        required AvailableSlot slot,
+        required int rescheduleReasonId,
+      }) {
+    return _runAction(
+        () => _service.reschedule(
+        orderId: patient.orderId,
+        userId: int.tryParse(empId.value) ?? 0,
+        createdBy: int.tryParse(empId.value) ?? 0,
+        appointmentDate: newDate,
+        slotId: slot.slotId,
+        rescheduleReasonId: rescheduleReasonId,
+      ),
+      successMessage: 'Visit rescheduled',
+    );
+  }
+
+  Future<List<RescheduleReason>> fetchRescheduleReasons() {
+    return _patientQueueService.fetchRescheduleReasons();
+  }
+
+  Future<List<AvailableSlot>> fetchAvailableSlots(DateTime date) {
+    return _patientQueueService.fetchAvailableSlots(
+      userId: empId.value,
+      appointmentDate: date,
+    );
   }
 }

@@ -49,6 +49,7 @@ class AppUrls {
   static String get getFacilityList => '$_asmxBase/getFacilityList';
 
   static String get login => '$_asmxBase/Login';
+
   static String get verifyLoginOtp => '$_asmxBase/VerifyLoginOtp';
 
   static String get logout => '$_asmxBase/LogINLogoutUser';
@@ -363,18 +364,18 @@ class AppUrls {
 
   static String verifyPatientOTP = '$_asmxBase/verify-otp';
 
-  /// START/END route tracking — fired when the phlebotomist taps
-  /// "Start Route" on an accepted order (action START) and when they mark
-  /// arrival on the order-confirmation map (action END). Payload carries
-  /// OrderAssignDetailID, SampleCollectionOrderID, UserID, TrackingAction,
-  /// Latitude, Longitude and CreatedBy.
   static String get locationTracking =>
       '$_asmxBase/UserSampleOrderLocationTracking';
 
-   static  String dishaSampleCollectionSync =
-       '$_asmxBase/orders/{orderId}/Recolled_DishaSampleCollection_API';
+  static String dishaSampleCollectionSync =
+      '$_asmxBase/orders/{orderId}/Recolled_DishaSampleCollection_API';
+
+  static String rescheduledSlots = '$_asmxBase/user/available-slots';
 
 
+  static String appointmentRescheduled = '$_asmxBase/InsertSampleCollAppoinmentReschedule';
+
+  static String appointmentRescheduledReason = '$_asmxBase/GetRescheduleReasone';
 
 
 

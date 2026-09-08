@@ -36,6 +36,15 @@ class PatientQueueService {
     return lower.contains('no record') || lower.contains('no data');
   }
 
+  /// Formats a [DateTime] the way the available-slots API expects its
+  /// `appointmentDate` query param (`yyyy-MM-ddTHH:mm:ss`).
+  static String _toApiDate(DateTime date) {
+    String pad(int v) => v.toString().padLeft(2, '0');
+    return '${date.year.toString().padLeft(4, '0')}-'
+        '${pad(date.month)}-${pad(date.day)}T'
+        '${pad(date.hour)}:${pad(date.minute)}:${pad(date.second)}';
+  }
+
   Future<List<AssignedPatient>> fetchAssignedPatients({
     required String userId,
   }) async {
@@ -67,6 +76,7 @@ class PatientQueueService {
 
 
       final output = body['output'];
+      // final output = dummyPatientList['output'];
 
 
 
@@ -87,18 +97,22 @@ class PatientQueueService {
     }
   }
 
-  /// Single call used by accept / reject / reschedule — same endpoint,
-  /// same envelope, only AssignStatusID (and the reschedule/reject-only
-  /// fields) differ.
+  /// Single call used by accept / reject — same endpoint, same envelope,
+  /// only AssignStatusID (and the reject-only reason id) differ.
+  /// Single call used by accept / reject / reschedule — same endpoint, same
+  /// envelope, only AssignStatusID (and the reject/reschedule-only fields)
+  /// differ.
   Future<bool> _updateAssignStatus(
-    AssignedPatient patient, {
-    required int assignStatusId,
-    required int updatedBy,
-    DateTime? rescheduleDate,
-    String? rescheduleStartTime,
-    String? rescheduleEndTime,
-    int? rejectReasonId,
-  }) async {
+      AssignedPatient patient, {
+        required int assignStatusId,
+        required int updatedBy,
+        int? rejectReasonId,
+        int? slotId,
+        int? rescheduleReasonId,
+        DateTime? rescheduleDate,
+        String? rescheduleStartTime,
+        String? rescheduleEndTime,
+      }) async {
     final body = {
       'Type_SampleOrderchnags': [
         {
@@ -111,6 +125,8 @@ class PatientQueueService {
         },
       ],
       'AssignStatusID': assignStatusId,
+      'SlotID': slotId ?? 0,
+      'RescheduleReasoneID': rescheduleReasonId ?? 0,
       'RescheduleDate': rescheduleDate?.toIso8601String(),
       'RescheduleStartTime': rescheduleStartTime,
       'RescheduleEndTime': rescheduleEndTime,
@@ -155,479 +171,511 @@ class PatientQueueService {
       rejectReasonId: reasonId,
     );
   }
-
-  Future<bool> reschedule(
-    AssignedPatient patient, {
-    required int updatedBy,
-    required DateTime newDate,
-    required String startTime,
-    required String endTime,
-  }) {
+  /// Reschedules via the shared `updateOrder` endpoint (AssignStatusID = 4)
+  /// instead of the dedicated appointment-reschedule API. Takes the picked
+  /// slot's id/time window and the mandatory reason id straight from the sheet.
+  Future<bool> rescheduleAssignment(
+      AssignedPatient patient, {
+        required int updatedBy,
+        required DateTime rescheduleDate,
+        required AvailableSlot slot,
+        required int rescheduleReasonId,
+      }) {
     return _updateAssignStatus(
       patient,
       assignStatusId: AssignStatus.rescheduled,
       updatedBy: updatedBy,
-      rescheduleDate: newDate,
-      rescheduleStartTime: startTime,
-      rescheduleEndTime: endTime,
+      slotId: slot.slotId,
+      rescheduleReasonId: rescheduleReasonId,
+      rescheduleDate: rescheduleDate,
+      rescheduleStartTime: null,
+      rescheduleEndTime: null,
     );
   }
+
+  /// Fetches the team's available time slots for an appointment date
+  /// (`GET user/available-slots`).
+  ///
+  /// The backend keys slots by [AvailableSlot.slotId]; that id is what the
+  /// reschedule insert API expects, so the UI must always pick from this list
+  /// rather than inventing free-form start/end times.
+  Future<List<AvailableSlot>> fetchAvailableSlots({
+    required String userId,
+    required DateTime appointmentDate,
+  }) async {
+    try {
+      final response = await _apiClient.get(
+        AppUrls.rescheduledSlots,
+        queryParameters: {
+          'userId': userId,
+          'appointmentDate': _toApiDate(appointmentDate),
+        },
+      );
+
+      final Map<String, dynamic> body = response.data is String
+          ? jsonDecode(response.data as String) as Map<String, dynamic>
+          : response.data as Map<String, dynamic>;
+
+      final isSuccess =
+          (body['status'] as String?)?.toLowerCase() == 'success';
+
+      if (!isSuccess) {
+        final message = (body['message'] as String?)?.trim() ?? '';
+        final output = body['output'];
+
+        if (output == null && _isNoDataMessage(message)) {
+          return const <AvailableSlot>[];
+        }
+
+        throw PatientQueueException(
+          message.isEmpty ? 'Unable to load available slots.' : message,
+        );
+      }
+
+      final output = body['output'];
+      final List<dynamic> list = output is List ? output : const [];
+
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map(AvailableSlot.fromJson)
+          .toList();
+    } on PatientQueueException {
+      rethrow;
+    } catch (e) {
+      kPrint(e.toString());
+      throw PatientQueueException(
+        'Unable to load available slots. Please check your connection and try again.',
+        isNetworkError: true,
+      );
+    }
+  }
+
+  /// Fetches the selectable reschedule reasons (`GetRescheduleReasone`).
+  /// Returns an empty list (never throws) so the sheet's mandatory-reason
+  /// gate simply stays locked if the backend is unreachable.
+  Future<List<RescheduleReason>> fetchRescheduleReasons() async {
+    try {
+      final response = await _apiClient.get(
+        AppUrls.appointmentRescheduledReason,
+      );
+
+      final Map<String, dynamic> body = response.data is String
+          ? jsonDecode(response.data as String) as Map<String, dynamic>
+          : response.data as Map<String, dynamic>;
+
+      final output = body['output'];
+      if (output is! List) return const <RescheduleReason>[];
+
+      return output
+          .whereType<Map<String, dynamic>>()
+          .map(RescheduleReason.fromJson)
+          .where((r) => r.id > 0)
+          .toList();
+    } catch (e) {
+      kPrint(e.toString());
+      return const <RescheduleReason>[];
+    }
+  }
+
+
+
 }
+
 final dummyPatientList = {
   'status': 'Success',
   'message': 'Order details',
-  'output': [
+  'output':[
     {
-      'SampleCollectionOrderID': 153,
-      'OMSOrderID': 'CL26090600000153',
-      'OrderID': 'ORD-TEST-1788676562182',
-      'PatientID': 'PAT-CL3-20260907-01',
-      'OrderAssignDetailID': 141,
-      'AssignStatusID': 2,
-      'UserID': 17,
-      'UserRosterID': 7,
-      'Status': 'Accepted',
-      'Priority': null,
-      'VisitType': 'Clinic',
-      'Title': null,
-      'FirstName': 'Aarav',
-      'MiddleName': null,
-      'LastName': 'Sharma',
-      'PatientName': 'Aarav Sharma',
-      'Age': '',
-      'Gender': 'Male',
-      'photoUrl': null,
-      'MobileNumber': '7036925814',
-      'AddressLine': '1 MG Road',
-      'City': 'Chhatrapati Sambhajinagar',
-      'Pincode': '431001',
-      'Latitude': null,
-      'Longitude': null,
-      'Address': '1 MG Road, Chhatrapati Sambhajinagar, 431001',
-      'Clinic': 'Chhatrapati Sambhajinagar GP 1',
-      'SlotDate': '2026-09-06T16:56:33.947',
-      'SlotStartTime': '08:00:00',
-      'SlotEndTime': '08:30:00',
-      'DistanceInKM': null,
-      'FastingRequired': 'Fasting Not Required',
-      'IsRoute': 'No',
-      'Tests': [
+      "SampleCollectionOrderID": 162,
+      "OMSOrderID": "CL26090600000162",
+      "OrderID": "ORD-CL3-20260907-10",
+      "PatientID": "PAT-CL3-20260907-10",
+      "OrderAssignDetailID": 150,
+      "AssignStatusID": 2,
+      "UserID": 17,
+      "UserRosterID": 8,
+      "Status": "Accepted",
+      "Priority": null,
+      "VisitType": "Clinic",
+      "Title": null,
+      "FirstName": "Zoya",
+      "MiddleName": null,
+      "LastName": "Nair",
+      "PatientName": " Zoya  Nair",
+      "Age": "",
+      "Gender": "Female",
+      "photoUrl": null,
+      "MobileNumber": "8369258147",
+      "AddressLine": "10 MG Road",
+      "City": "Chhatrapati Sambhajinagar",
+      "Pincode": "431001",
+      "Latitude": null,
+      "Longitude": null,
+      "Address": "10 MG Road, Chhatrapati Sambhajinagar, 431001",
+      "Clinic": "Chhatrapati Sambhajinagar GP 1",
+      "SlotDate": "2026-09-07T11:52:42.19",
+      "SlotStartTime": "12:30:00",
+      "SlotEndTime": "13:00:00",
+      "DistanceInKM": null,
+      "FastingRequired": "Fasting Not Required",
+      "IsRoute": "Start",
+      "OrderStatusID": 4,
+      "OrderStatus": "On The Way",
+      "Tests": [
         {
-          'OrderID': 'ORD-TEST-1788676562182',
-          'TestID': 10,
-          'TestName': 'Albumin',
-          'SampleTypeName': 'Serum',
-          'TubeId': 3,
-          'TubeContent': 'Plain Tube',
-          'FastingRequired': 'Fasting Not Required',
+          "OrderID": "ORD-CL3-20260907-10",
+          "TestID": 4,
+          "TestName": "Magnesium",
+          "SampleTypeName": "Serum",
+          "TubeId": 3,
+          "TubeContent": "Plain Tube",
+          "FastingRequired": "Fasting Not Required"
         },
         {
-          'OrderID': 'ORD-TEST-1788676562182',
-          'TestID': 23,
-          'TestName': 'Alkaline Phosphatase',
-          'SampleTypeName': 'Serum',
-          'TubeId': 3,
-          'TubeContent': 'Plain Tube',
-          'FastingRequired': 'Fasting Not Required',
-        },
-      ],
+          "OrderID": "ORD-CL3-20260907-10",
+          "TestID": 58,
+          "TestName": "Phosphorus",
+          "SampleTypeName": "Serum",
+          "TubeId": 3,
+          "TubeContent": "Plain Tube",
+          "FastingRequired": "Fasting Not Required"
+        }
+      ]
     },
     {
-      'SampleCollectionOrderID': 154,
-      'OMSOrderID': 'CL26090600000154',
-      'OrderID': 'ORD-CL3-20260907-02',
-      'PatientID': 'PAT-CL3-20260907-02',
-      'OrderAssignDetailID': 142,
-      'AssignStatusID': 1,
-      'UserID': 17,
-      'UserRosterID': 7,
-      // TEMP fixture (service is on dummy data): marked Arrived so the bag
-      // registration "Collect" → patient-queue (arrived-only) flow can be
-      // verified on device until the real API call is re-enabled.
-      'Status': 'Arrived',
-      'Priority': null,
-      'VisitType': 'Clinic',
-      'Title': null,
-      'FirstName': 'Diya',
-      'MiddleName': null,
-      'LastName': 'Deshmukh',
-      'PatientName': 'Diya Deshmukh',
-      'Age': '',
-      'Gender': 'Female',
-      'photoUrl': null,
-      'MobileNumber': '8703692581',
-      'AddressLine': '2 MG Road',
-      'City': 'Chhatrapati Sambhajinagar',
-      'Pincode': '431001',
-      'Latitude': null,
-      'Longitude': null,
-      'Address': '2 MG Road, Chhatrapati Sambhajinagar, 431001',
-      'Clinic': 'Chhatrapati Sambhajinagar GP 1',
-      'SlotDate': '2026-09-06T16:57:06.047',
-      'SlotStartTime': '08:30:00',
-      'SlotEndTime': '09:00:00',
-      'DistanceInKM': null,
-      'FastingRequired': 'Fasting Not Required',
-      'IsRoute': 'No',
-      'Tests': [
+      "SampleCollectionOrderID": 163,
+      "OMSOrderID": "CL26090600000163",
+      "OrderID": "ORD-CL3-20260908-01",
+      "PatientID": "PAT-CL3-20260908-01",
+      "OrderAssignDetailID": 151,
+      "AssignStatusID": 3,
+      "UserID": 17,
+      "UserRosterID": 8,
+      "Status": "Rejected",
+      "Priority": null,
+      "VisitType": "Clinic",
+      "Title": null,
+      "FirstName": "Aarav",
+      "MiddleName": null,
+      "LastName": "Sharma",
+      "PatientName": " Aarav  Sharma",
+      "Age": "",
+      "Gender": "Male",
+      "photoUrl": null,
+      "MobileNumber": "8581470369",
+      "AddressLine": "1 MG Road",
+      "City": "Chhatrapati Sambhajinagar",
+      "Pincode": "431001",
+      "Latitude": null,
+      "Longitude": null,
+      "Address": "1 MG Road, Chhatrapati Sambhajinagar, 431001",
+      "Clinic": "Chhatrapati Sambhajinagar GP 1",
+      "SlotDate": "2026-09-07T11:53:10.48",
+      "SlotStartTime": "08:00:00",
+      "SlotEndTime": "08:30:00",
+      "DistanceInKM": null,
+      "FastingRequired": "Fasting Not Required",
+      "IsRoute": "No",
+      "OrderStatusID": 2,
+      "OrderStatus": "Assigned",
+      "Tests": [
         {
-          'OrderID': 'ORD-CL3-20260907-02',
-          'TestID': 3,
-          'TestName': 'Amylase',
-          'SampleTypeName': 'Serum',
-          'TubeId': 3,
-          'TubeContent': 'Plain Tube',
-          'FastingRequired': 'Fasting Not Required',
+          "OrderID": "ORD-CL3-20260908-01",
+          "TestID": 28,
+          "TestName": "BUN (Blood Urea Nitrogen)",
+          "SampleTypeName": "Serum",
+          "TubeId": 3,
+          "TubeContent": "Plain Tube",
+          "FastingRequired": "Fasting Not Required"
         },
         {
-          'OrderID': 'ORD-CL3-20260907-02',
-          'TestID': 55,
-          'TestName': 'Bilirubin - Direct',
-          'SampleTypeName': 'Serum',
-          'TubeId': 3,
-          'TubeContent': 'Plain Tube',
-          'FastingRequired': 'Fasting Not Required',
-        },
-      ],
+          "OrderID": "ORD-CL3-20260908-01",
+          "TestID": 62,
+          "TestName": "Bilirubin - Total",
+          "SampleTypeName": "Serum",
+          "TubeId": 3,
+          "TubeContent": "Plain Tube",
+          "FastingRequired": "Fasting Not Required"
+        }
+      ]
     },
     {
-      'SampleCollectionOrderID': 155,
-      'OMSOrderID': 'CL26090600000155',
-      'OrderID': 'ORD-CL3-20260907-03',
-      'PatientID': 'PAT-CL3-20260907-03',
-      'OrderAssignDetailID': 143,
-      'AssignStatusID': 2,
-      'UserID': 17,
-      'UserRosterID': 7,
-      'Status': 'Accepted',
-      'Priority': null,
-      'VisitType': 'Clinic',
-      'Title': null,
-      'FirstName': 'Aditya',
-      'MiddleName': null,
-      'LastName': 'Reddy',
-      'PatientName': 'Aditya Reddy',
-      'Age': '',
-      'Gender': 'Male',
-      'photoUrl': null,
-      'MobileNumber': '9470369258',
-      'AddressLine': '3 MG Road',
-      'City': 'Chhatrapati Sambhajinagar',
-      'Pincode': '431001',
-      'Latitude': null,
-      'Longitude': null,
-      'Address': '3 MG Road, Chhatrapati Sambhajinagar, 431001',
-      'Clinic': 'Chhatrapati Sambhajinagar GP 1',
-      'SlotDate': '2026-09-06T16:57:28.557',
-      'SlotStartTime': '09:00:00',
-      'SlotEndTime': '09:30:00',
-      'DistanceInKM': null,
-      'FastingRequired': 'Fasting Not Required',
-      'IsRoute': 'End',
-      'Tests': [
+      "SampleCollectionOrderID": 164,
+      "OMSOrderID": "CL26090600000164",
+      "OrderID": "ORD-CL3-20260908-02",
+      "PatientID": "PAT-CL3-20260908-02",
+      "OrderAssignDetailID": 152,
+      "AssignStatusID": 2,
+      "UserID": 17,
+      "UserRosterID": 8,
+      "Status": "Accepted",
+      "Priority": null,
+      "VisitType": "Clinic",
+      "Title": null,
+      "FirstName": "Diya",
+      "MiddleName": null,
+      "LastName": "Deshmukh",
+      "PatientName": " Diya  Deshmukh",
+      "Age": "",
+      "Gender": "Female",
+      "photoUrl": null,
+      "MobileNumber": "9258147036",
+      "AddressLine": "2 MG Road",
+      "City": "Chhatrapati Sambhajinagar",
+      "Pincode": "431001",
+      "Latitude": null,
+      "Longitude": null,
+      "Address": "2 MG Road, Chhatrapati Sambhajinagar, 431001",
+      "Clinic": "Chhatrapati Sambhajinagar GP 1",
+      "SlotDate": "2026-09-07T11:54:47.227",
+      "SlotStartTime": "08:30:00",
+      "SlotEndTime": "09:00:00",
+      "DistanceInKM": null,
+      "FastingRequired": "Fasting Not Required",
+      "IsRoute": "No",
+      "OrderStatusID": 3,
+      "OrderStatus": "Order Accepted",
+      "Tests": [
         {
-          'OrderID': 'ORD-CL3-20260907-03',
-          'TestID': 62,
-          'TestName': 'Bilirubin - Total',
-          'SampleTypeName': 'Serum',
-          'TubeId': 3,
-          'TubeContent': 'Plain Tube',
-          'FastingRequired': 'Fasting Not Required',
+          "OrderID": "ORD-CL3-20260908-02",
+          "TestID": 61,
+          "TestName": "Calcium Total",
+          "SampleTypeName": "Serum",
+          "TubeId": 3,
+          "TubeContent": "Plain Tube",
+          "FastingRequired": "Fasting Not Required"
         },
         {
-          'OrderID': 'ORD-CL3-20260907-03',
-          'TestID': 67,
-          'TestName': 'Bilirubin - Indirect',
-          'SampleTypeName': 'Serum',
-          'TubeId': 3,
-          'TubeContent': 'Plain Tube',
-          'FastingRequired': 'Fasting Not Required',
-        },
-      ],
+          "OrderID": "ORD-CL3-20260908-02",
+          "TestID": 63,
+          "TestName": "Chlorides",
+          "SampleTypeName": "Serum",
+          "TubeId": 3,
+          "TubeContent": "Plain Tube",
+          "FastingRequired": "Fasting Not Required"
+        }
+      ]
     },
     {
-      'SampleCollectionOrderID': 156,
-      'OMSOrderID': 'CL26090600000156',
-      'OrderID': 'ORD-CL3-20260907-04',
-      'PatientID': 'PAT-CL3-20260907-04',
-      'OrderAssignDetailID': 144,
-      'AssignStatusID': 1,
-      'UserID': 17,
-      'UserRosterID': 7,
-      'Status': 'Assigned',
-      'Priority': null,
-      'VisitType': 'Clinic',
-      'Title': null,
-      'FirstName': 'Kavya',
-      'MiddleName': null,
-      'LastName': 'Iyer',
-      'PatientName': 'Kavya Iyer',
-      'Age': '',
-      'Gender': 'Female',
-      'photoUrl': null,
-      'MobileNumber': '6147036925',
-      'AddressLine': '4 MG Road',
-      'City': 'Chhatrapati Sambhajinagar',
-      'Pincode': '431001',
-      'Latitude': null,
-      'Longitude': null,
-      'Address': '4 MG Road, Chhatrapati Sambhajinagar, 431001',
-      'Clinic': 'Chhatrapati Sambhajinagar GP 1',
-      'SlotDate': '2026-09-06T16:57:38.073',
-      'SlotStartTime': '09:30:00',
-      'SlotEndTime': '10:00:00',
-      'DistanceInKM': null,
-      'FastingRequired': 'Fasting Not Required',
-      'IsRoute': 'No',
-      'Tests': [
+      "SampleCollectionOrderID": 165,
+      "OMSOrderID": "CL26090600000165",
+      "OrderID": "ORD-CL3-20260908-03",
+      "PatientID": "PAT-CL3-20260908-03",
+      "OrderAssignDetailID": 153,
+      "AssignStatusID": 2,
+      "UserID": 17,
+      "UserRosterID": 8,
+      "Status": "Accepted",
+      "Priority": null,
+      "VisitType": "Clinic",
+      "Title": null,
+      "FirstName": "Aditya",
+      "MiddleName": null,
+      "LastName": "Reddy",
+      "PatientName": " Aditya  Reddy",
+      "Age": "",
+      "Gender": "Male",
+      "photoUrl": null,
+      "MobileNumber": "6925814703",
+      "AddressLine": "3 MG Road",
+      "City": "Chhatrapati Sambhajinagar",
+      "Pincode": "431001",
+      "Latitude": null,
+      "Longitude": null,
+      "Address": "3 MG Road, Chhatrapati Sambhajinagar, 431001",
+      "Clinic": "Chhatrapati Sambhajinagar GP 1",
+      "SlotDate": "2026-09-07T11:55:03.56",
+      "SlotStartTime": "09:00:00",
+      "SlotEndTime": "09:30:00",
+      "DistanceInKM": null,
+      "FastingRequired": "Fasting Not Required",
+      "IsRoute": "No",
+      "OrderStatusID": 3,
+      "OrderStatus": "Order Accepted",
+      "Tests": [
         {
-          'OrderID': 'ORD-CL3-20260907-04',
-          'TestID': 28,
-          'TestName': 'BUN (Blood Urea Nitrogen)',
-          'SampleTypeName': 'Serum',
-          'TubeId': 3,
-          'TubeContent': 'Plain Tube',
-          'FastingRequired': 'Fasting Not Required',
+          "OrderID": "ORD-CL3-20260908-03",
+          "TestID": 44,
+          "TestName": "Cholesterol HDL Direct",
+          "SampleTypeName": "Serum",
+          "TubeId": 3,
+          "TubeContent": "Plain Tube",
+          "FastingRequired": "Fasting Required"
         },
         {
-          'OrderID': 'ORD-CL3-20260907-04',
-          'TestID': 61,
-          'TestName': 'Calcium Total',
-          'SampleTypeName': 'Serum',
-          'TubeId': 3,
-          'TubeContent': 'Plain Tube',
-          'FastingRequired': 'Fasting Not Required',
-        },
-      ],
+          "OrderID": "ORD-CL3-20260908-03",
+          "TestID": 94,
+          "TestName": "Cholesterol - Total",
+          "SampleTypeName": "Serum",
+          "TubeId": 3,
+          "TubeContent": "Plain Tube",
+          "FastingRequired": "Fasting Required"
+        }
+      ]
     },
     {
-      'SampleCollectionOrderID': 157,
-      'OMSOrderID': 'CL26090600000157',
-      'OrderID': 'ORD-CL3-20260907-05',
-      'PatientID': 'PAT-CL3-20260907-05',
-      'OrderAssignDetailID': 145,
-      'AssignStatusID': 1,
-      'UserID': 17,
-      'UserRosterID': 7,
-      // TEMP fixture (service is on dummy data): marked Arrived so the bag
-      // registration "Collect" → patient-queue (arrived-only) flow can be
-      // verified on device until the real API call is re-enabled.
-      'Status': 'Arrived',
-      'Priority': null,
-      'VisitType': 'Clinic',
-      'Title': null,
-      'FirstName': 'Kabir',
-      'MiddleName': null,
-      'LastName': 'Patil',
-      'PatientName': 'Kabir Patil',
-      'Age': '',
-      'Gender': 'Male',
-      'photoUrl': null,
-      'MobileNumber': '7814703692',
-      'AddressLine': '5 MG Road',
-      'City': 'Chhatrapati Sambhajinagar',
-      'Pincode': '431001',
-      'Latitude': null,
-      'Longitude': null,
-      'Address': '5 MG Road, Chhatrapati Sambhajinagar, 431001',
-      'Clinic': 'Chhatrapati Sambhajinagar GP 1',
-      'SlotDate': '2026-09-06T16:57:47.2',
-      'SlotStartTime': '10:00:00',
-      'SlotEndTime': '10:30:00',
-      'DistanceInKM': null,
-      'FastingRequired': 'Fasting Not Required',
-      'IsRoute': 'No',
-      'Tests': [
+      "SampleCollectionOrderID": 166,
+      "OMSOrderID": "CL26090600000166",
+      "OrderID": "ORD-CL3-20260908-04",
+      "PatientID": "PAT-CL3-20260908-04",
+      "OrderAssignDetailID": 154,
+      "AssignStatusID": 1,
+      "UserID": 17,
+      "UserRosterID": 8,
+      "Status": "Assigned",
+      "Priority": null,
+      "VisitType": "Clinic",
+      "Title": null,
+      "FirstName": "Kavya",
+      "MiddleName": null,
+      "LastName": "Iyer",
+      "PatientName": " Kavya  Iyer",
+      "Age": "",
+      "Gender": "Female",
+      "photoUrl": null,
+      "MobileNumber": "7692581470",
+      "AddressLine": "4 MG Road",
+      "City": "Chhatrapati Sambhajinagar",
+      "Pincode": "431001",
+      "Latitude": null,
+      "Longitude": null,
+      "Address": "4 MG Road, Chhatrapati Sambhajinagar, 431001",
+      "Clinic": "Chhatrapati Sambhajinagar GP 1",
+      "SlotDate": "2026-09-07T11:55:19.617",
+      "SlotStartTime": "09:30:00",
+      "SlotEndTime": "10:00:00",
+      "DistanceInKM": null,
+      "FastingRequired": "Fasting Not Required",
+      "IsRoute": "No",
+      "OrderStatusID": 2,
+      "OrderStatus": "Assigned",
+      "Tests": [
         {
-          'OrderID': 'ORD-CL3-20260907-05',
-          'TestID': 63,
-          'TestName': 'Chlorides',
-          'SampleTypeName': 'Serum',
-          'TubeId': 3,
-          'TubeContent': 'Plain Tube',
-          'FastingRequired': 'Fasting Not Required',
+          "OrderID": "ORD-CL3-20260908-04",
+          "TestID": 17,
+          "TestName": "Cholesterol LDL Direct",
+          "SampleTypeName": "Serum",
+          "TubeId": 3,
+          "TubeContent": "Plain Tube",
+          "FastingRequired": "Fasting Required"
         },
         {
-          'OrderID': 'ORD-CL3-20260907-05',
-          'TestID': 94,
-          'TestName': 'Cholesterol - Total',
-          'SampleTypeName': 'Serum',
-          'TubeId': 3,
-          'TubeContent': 'Plain Tube',
-          'FastingRequired': 'Fasting Required',
-        },
-      ],
+          "OrderID": "ORD-CL3-20260908-04",
+          "TestID": 45,
+          "TestName": "Gamma Glutamyl Transferase Test (GGT)",
+          "SampleTypeName": "Serum",
+          "TubeId": 3,
+          "TubeContent": "Plain Tube",
+          "FastingRequired": "Fasting Not Required"
+        }
+      ]
     },
     {
-      'SampleCollectionOrderID': 158,
-      'OMSOrderID': 'CL26090600000158',
-      'OrderID': 'ORD-CL3-20260907-06',
-      'PatientID': 'PAT-CL3-20260907-06',
-      'OrderAssignDetailID': 146,
-      'AssignStatusID': 1,
-      'UserID': 17,
-      'UserRosterID': 7,
-      'Status': 'Assigned',
-      'Priority': null,
-      'VisitType': 'Clinic',
-      'Title': null,
-      'FirstName': 'Priya',
-      'MiddleName': null,
-      'LastName': 'Joshi',
-      'PatientName': 'Priya Joshi',
-      'Age': '',
-      'Gender': 'Female',
-      'photoUrl': null,
-      'MobileNumber': '8581470369',
-      'AddressLine': '6 MG Road',
-      'City': 'Chhatrapati Sambhajinagar',
-      'Pincode': '431001',
-      'Latitude': null,
-      'Longitude': null,
-      'Address': '6 MG Road, Chhatrapati Sambhajinagar, 431001',
-      'Clinic': 'Chhatrapati Sambhajinagar GP 1',
-      'SlotDate': '2026-09-06T16:57:55.943',
-      'SlotStartTime': '10:30:00',
-      'SlotEndTime': '11:00:00',
-      'DistanceInKM': null,
-      'FastingRequired': 'Fasting Not Required',
-      'IsRoute': 'No',
-      'Tests': [
+      "SampleCollectionOrderID": 168,
+      "OMSOrderID": "CL26090600000168",
+      "OrderID": "ORD-CL3-20260908-06",
+      "PatientID": "PAT-CL3-20260908-06",
+      "OrderAssignDetailID": 156,
+      "AssignStatusID": 2,
+      "UserID": 17,
+      "UserRosterID": 8,
+      "Status": "Accepted",
+      "Priority": null,
+      "VisitType": "Clinic",
+      "Title": null,
+      "FirstName": "Priya",
+      "MiddleName": null,
+      "LastName": "Joshi",
+      "PatientName": " Priya  Joshi",
+      "Age": "",
+      "Gender": "Female",
+      "photoUrl": null,
+      "MobileNumber": "9036925814",
+      "AddressLine": "6 MG Road",
+      "City": "Chhatrapati Sambhajinagar",
+      "Pincode": "431001",
+      "Latitude": null,
+      "Longitude": null,
+      "Address": "6 MG Road, Chhatrapati Sambhajinagar, 431001",
+      "Clinic": "Chhatrapati Sambhajinagar GP 1",
+      "SlotDate": "2026-09-07T12:04:20.513",
+      "SlotStartTime": "10:30:00",
+      "SlotEndTime": "11:00:00",
+      "DistanceInKM": null,
+      "FastingRequired": "Fasting Not Required",
+      "IsRoute": "Start",
+      "OrderStatusID": 4,
+      "OrderStatus": "On The Way",
+      "Tests": [
         {
-          'OrderID': 'ORD-CL3-20260907-06',
-          'TestID': 17,
-          'TestName': 'Cholesterol LDL Direct',
-          'SampleTypeName': 'Serum',
-          'TubeId': 3,
-          'TubeContent': 'Plain Tube',
-          'FastingRequired': 'Fasting Required',
+          "OrderID": "ORD-CL3-20260908-06",
+          "TestID": 57,
+          "TestName": "Glucose (Blood Sugar), Random",
+          "SampleTypeName": "Plasma R",
+          "TubeId": 6,
+          "TubeContent": "Sodium fluoride vial",
+          "FastingRequired": "Fasting Not Required"
         },
         {
-          'OrderID': 'ORD-CL3-20260907-06',
-          'TestID': 44,
-          'TestName': 'Cholesterol HDL Direct',
-          'SampleTypeName': 'Serum',
-          'TubeId': 3,
-          'TubeContent': 'Plain Tube',
-          'FastingRequired': 'Fasting Required',
-        },
-      ],
+          "OrderID": "ORD-CL3-20260908-06",
+          "TestID": 83,
+          "TestName": "Iron",
+          "SampleTypeName": "Serum",
+          "TubeId": 3,
+          "TubeContent": "Plain Tube",
+          "FastingRequired": "Fasting Not Required"
+        }
+      ]
     },
     {
-      'SampleCollectionOrderID': 159,
-      'OMSOrderID': 'CL26090600000159',
-      'OrderID': 'ORD-CL3-20260907-07',
-      'PatientID': 'PAT-CL3-20260907-07',
-      'OrderAssignDetailID': 147,
-      'AssignStatusID': 1,
-      'UserID': 17,
-      'UserRosterID': 7,
-      'Status': 'Assigned',
-      'Priority': null,
-      'VisitType': 'Clinic',
-      'Title': null,
-      'FirstName': 'Aryan',
-      'MiddleName': null,
-      'LastName': 'Gupta',
-      'PatientName': 'Aryan Gupta',
-      'Age': '',
-      'Gender': 'Male',
-      'photoUrl': null,
-      'MobileNumber': '9258147036',
-      'AddressLine': '7 MG Road',
-      'City': 'Chhatrapati Sambhajinagar',
-      'Pincode': '431001',
-      'Latitude': null,
-      'Longitude': null,
-      'Address': '7 MG Road, Chhatrapati Sambhajinagar, 431001',
-      'Clinic': 'Chhatrapati Sambhajinagar GP 1',
-      'SlotDate': '2026-09-06T16:58:08.003',
-      'SlotStartTime': '11:00:00',
-      'SlotEndTime': '11:30:00',
-      'DistanceInKM': null,
-      'FastingRequired': 'Fasting Not Required',
-      'IsRoute': 'No',
-      'Tests': [
+      "SampleCollectionOrderID": 185,
+      "OMSOrderID": "CL26090700000185",
+      "OrderID": "ORD-102222052",
+      "PatientID": "PAT-10002",
+      "OrderAssignDetailID": 168,
+      "AssignStatusID": 1,
+      "UserID": 17,
+      "UserRosterID": 2,
+      "Status": "Assigned",
+      "Priority": null,
+      "VisitType": "Clinic",
+      "Title": "Mr.",
+      "FirstName": "Rahul",
+      "MiddleName": "S.",
+      "LastName": "Sharma",
+      "PatientName": "Mr. Rahul S. Sharma",
+      "Age": "36 Years",
+      "Gender": "Male",
+      "photoUrl": null,
+      "MobileNumber": "9999999999",
+      "AddressLine": "45 Park Street",
+      "City": "Karad",
+      "Pincode": "431001",
+      "Latitude": 19.076,
+      "Longitude": 72.8777,
+      "Address": "45 Park Street, Karad, 431001",
+      "Clinic": "Chhatrapati Sambhajinagar GP 1",
+      "SlotDate": "2026-09-07T19:04:20.553",
+      "SlotStartTime": "08:00:00",
+      "SlotEndTime": "08:30:00",
+      "DistanceInKM": 0.003,
+      "FastingRequired": "Fasting Not Required",
+      "IsRoute": "End",
+      "OrderStatusID": 5,
+      "OrderStatus": "Arrived",
+      "Tests": [
         {
-          'OrderID': 'ORD-CL3-20260907-07',
-          'TestID': 45,
-          'TestName': 'Gamma Glutamyl Transferase Test (GGT)',
-          'SampleTypeName': 'Serum',
-          'TubeId': 3,
-          'TubeContent': 'Plain Tube',
-          'FastingRequired': 'Fasting Not Required',
-        },
-        {
-          'OrderID': 'ORD-CL3-20260907-07',
-          'TestID': 46,
-          'TestName': 'Glucose (Blood Sugar), Fasting',
-          'SampleTypeName': 'Plasma F',
-          'TubeId': 6,
-          'TubeContent': 'Sodium fluoride vial',
-          'FastingRequired': 'Fasting Required',
-        },
-      ],
-    },
-    {
-      'SampleCollectionOrderID': 160,
-      'OMSOrderID': 'CL26090600000160',
-      'OrderID': 'ORD-CL3-20260907-08',
-      'PatientID': 'PAT-CL3-20260907-08',
-      'OrderAssignDetailID': 148,
-      'AssignStatusID': 1,
-      'UserID': 17,
-      'UserRosterID': 7,
-      'Status': 'Assigned',
-      'Priority': null,
-      'VisitType': 'Clinic',
-      'Title': null,
-      'FirstName': 'Saanvi',
-      'MiddleName': null,
-      'LastName': 'Verma',
-      'PatientName': 'Saanvi Verma',
-      'Age': '',
-      'Gender': 'Female',
-      'photoUrl': null,
-      'MobileNumber': '6925814703',
-      'AddressLine': '8 MG Road',
-      'City': 'Chhatrapati Sambhajinagar',
-      'Pincode': '431001',
-      'Latitude': null,
-      'Longitude': null,
-      'Address': '8 MG Road, Chhatrapati Sambhajinagar, 431001',
-      'Clinic': 'Chhatrapati Sambhajinagar GP 1',
-      'SlotDate': '2026-09-06T16:58:14.567',
-      'SlotStartTime': '11:30:00',
-      'SlotEndTime': '12:00:00',
-      'DistanceInKM': null,
-      'FastingRequired': 'Fasting Not Required',
-      'IsRoute': 'No',
-      'Tests': [
-        {
-          'OrderID': 'ORD-CL3-20260907-08',
-          'TestID': 53,
-          'TestName': 'Glucose (Blood Sugar), PP (Post Prandial)',
-          'SampleTypeName': 'Plasma',
-          'TubeId': 6,
-          'TubeContent': 'Sodium fluoride vial',
-          'FastingRequired': 'Fasting Required',
-        },
-        {
-          'OrderID': 'ORD-CL3-20260907-08',
-          'TestID': 57,
-          'TestName': 'Glucose (Blood Sugar), Random',
-          'SampleTypeName': 'Plasma R',
-          'TubeId': 6,
-          'TubeContent': 'Sodium fluoride vial',
-          'FastingRequired': 'Fasting Not Required',
-        },
-      ],
-    },
+          "OrderID": "ORD-102222052",
+          "TestID": 10,
+          "TestName": "Albumin",
+          "SampleTypeName": "Serum",
+          "TubeId": 3,
+          "TubeContent": "Plain Tube",
+          "FastingRequired": "Fasting Not Required"
+        }
+      ]
+    }
   ],
 };
-final dummyData = {
-  "status": "Success",
-  "message": "Order details",
-  "output": dummyPatientList
-};
+
 

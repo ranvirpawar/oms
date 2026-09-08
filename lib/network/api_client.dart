@@ -253,7 +253,9 @@ class APIClient {
       try {
         headers = await _buildHeaders(isJson: isFormData ? false : isJson, requiresAuth: requiresAuth);
         final body = isFormData ? (data is FormData ? data : FormData.fromMap(data ?? <String, dynamic>{})) : data;
-
+        if (kDebugMode && queryParameters != null && queryParameters.isNotEmpty) {
+          log('   query   : $queryParameters');
+        }
         final response = await _dio.request(
           url,
           data: body,

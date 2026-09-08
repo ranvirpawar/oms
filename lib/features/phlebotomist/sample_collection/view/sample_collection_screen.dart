@@ -7,6 +7,8 @@ import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/wi
 import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 
 import '../../../../theme/app_colors.dart';
+import '../../../../utils/ui_designs/tap_menu.dart';
+import '../../patient_queue/view/widgets/rescheduled_slot.dart';
 import '../controller/sample_collection_controller.dart';
 import 'widgets/active_bag_card.dart';
 
@@ -17,7 +19,43 @@ class SampleCollectionScreen extends GetView<SampleCollectionController> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.grayLight,
-      appBar: const CustomAppBar(title: 'Sample Collection'),
+      appBar:  CustomAppBar(title: 'Sample Collection',  actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: Builder(
+            builder: (context) => GestureDetector(
+              onTapDown: (details) {
+                TapPositionMenu.show(
+                  context: context,
+                  tapPosition: details.globalPosition,
+                  items: [
+                    TapMenuItem(
+                      icon: Icons.event_repeat_outlined,
+                      label: 'Reschedule visit',
+                      onTap: () => RescheduleSheet.show(
+                        context,
+                        patient: controller.assignedPatient,
+                        onFetchSlots: (date) => controller.fetchAvailableSlots(date),
+                        onFetchReasons: () => controller.fetchRescheduleReasons(),
+                        onConfirm: (date, slot, reasonId) => controller.reschedule(
+                          controller.assignedPatient,
+                          newDate: date,
+                          slot: slot,
+                          rescheduleReasonId: reasonId,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+              child: const Padding(
+                padding:  EdgeInsets.only(right: 8.0),
+                child:  Icon(Icons.more_vert, color: AppColors.surface,),
+              ),
+            ),
+          ),
+        ),
+      ],),
       body: Stack(
         children: [
           ListView(

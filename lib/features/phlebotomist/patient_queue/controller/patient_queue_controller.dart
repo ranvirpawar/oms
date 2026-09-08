@@ -87,66 +87,7 @@ class PatientQueueController extends GetxController {
 
   /// Patients matching the active filter + search query, sorted so the
   /// most urgent / soonest / actionable items surface first.
-  List<AssignedPatient> get filteredPatients {
-    Iterable<AssignedPatient> result = _visiblePatients;
 
-    switch (activeFilter.value) {
-      case QueueFilter.homeVisit:
-        result = result.where((p) => p.visitType == VisitType.home);
-        break;
-      case QueueFilter.clinicVisit:
-        result = result.where((p) => p.visitType == VisitType.clinic);
-        break;
-      case QueueFilter.rescheduled:
-        result = result.where((p) => p.status == PatientStatus.rescheduled);
-        break;
-      case QueueFilter.all:
-        break;
-    }
-
-    final query = searchQuery.value.toLowerCase();
-    if (query.isNotEmpty) {
-      result = result.where(
-        (p) =>
-            p.name.toLowerCase().contains(query) ||
-            p.orderId.toLowerCase().contains(query) ||
-            p.tests.any((t) => t.toLowerCase().contains(query)),
-      );
-    }
-
-    final list = result.toList()
-      ..sort((a, b) {
-        // LIS sync failures ("collect") still need manual action — pin them
-        // to the very top of the queue, above everything else.
-        final aNeedsSync = a.status.isLisSyncFailed;
-        final bNeedsSync = b.status.isLisSyncFailed;
-        if (aNeedsSync != bNeedsSync) return aNeedsSync ? -1 : 1;
-
-        // Terminal statuses (completed/cancelled/failed) sink to the bottom.
-        final aTerminal = a.status.isTerminal;
-        final bTerminal = b.status.isTerminal;
-        if (aTerminal != bTerminal) return aTerminal ? 1 : -1;
-
-        // Then by priority: urgent > high > normal.
-        final priorityRank = {
-          PriorityLevel.urgent: 0,
-          PriorityLevel.high: 1,
-          PriorityLevel.normal: 2,
-        };
-        final pCompare = priorityRank[a.priority]!.compareTo(
-          priorityRank[b.priority]!,
-        );
-        if (pCompare != 0) return pCompare;
-
-        // Then by slot time — patients without a slot go last.
-        if (a.slotDateTime == null && b.slotDateTime == null) return 0;
-        if (a.slotDateTime == null) return 1;
-        if (b.slotDateTime == null) return -1;
-        return a.slotDateTime!.compareTo(b.slotDateTime!);
-      });
-
-    return list;
-  }
 
   int get totalCount => _visiblePatients.length;
 
@@ -376,7 +317,23 @@ class PatientQueueController extends GetxController {
     }
   }
 
-  Future<void> reject(AssignedPatient patient, {int? reasonId}) => _runAction(
+  /// Loads the team's available slots for a reschedule date. Errors are
+  /// surfaced to the sheet (inline) via [PatientQueueException] — no snackbar
+  /// here so the feedback lives where the action is happening.
+  Future<List<AvailableSlot>> fetchAvailableSlots(DateTime date) {
+    return _service.fetchAvailableSlots(
+      userId: empId.value,
+      appointmentDate: date,
+    );
+  }
+
+  /// Loads the selectable reschedule reasons (`GetRescheduleReasone`) shown
+  /// as the mandatory dropdown inside the reschedule sheet.
+  Future<List<RescheduleReason>> fetchRescheduleReasons() {
+    return _service.fetchRescheduleReasons();
+  }
+
+  Future<bool> reject(AssignedPatient patient, {int? reasonId}) => _runAction(
     patient.id,
     () => _service.reject(
       patient,
@@ -386,30 +343,36 @@ class PatientQueueController extends GetxController {
     successMessage: 'Assignment rejected',
   );
 
-  Future<void> reschedule(
-    AssignedPatient patient, {
-    required DateTime newDate,
-    required String startTime,
-    required String endTime,
-  }) => _runAction(
-    patient.id,
-    () => _service.reschedule(
-      patient,
-      updatedBy: int.tryParse(empId.value) ?? 0,
-      newDate: newDate,
-      startTime: startTime,
-      endTime: endTime,
-    ),
 
-    successMessage: 'Visit rescheduled',
-  );
 
-  Future<void> _runAction(
+  /// Reschedules through the shared updateOrder/assign-status flow. Keeps
+  /// the same processingIds guard + refresh-on-success behavior as the other
+  /// queue actions.
+  Future<bool> rescheduleAssignment(
+      AssignedPatient patient, {
+        required DateTime newDate,
+        required AvailableSlot slot,
+        required int rescheduleReasonId,
+      }) {
+    return _runAction(
+      patient.id,
+          () => _service.rescheduleAssignment(
+        patient,
+        updatedBy: int.tryParse(empId.value) ?? 0,
+        rescheduleDate: newDate,
+        slot: slot,
+        rescheduleReasonId: rescheduleReasonId,
+      ),
+      successMessage: 'Visit rescheduled',
+    );
+  }
+
+  Future<bool> _runAction(
     String patientId,
     Future<bool> Function() action, {
     required String successMessage,
   }) async {
-    if (processingIds.contains(patientId)) return;
+    if (processingIds.contains(patientId)) return false;
 
     processingIds.add(patientId);
 
@@ -420,18 +383,162 @@ class PatientQueueController extends GetxController {
         LiquidSnack.quick(successMessage);
 
         await fetchPatients();
-      } else {
-        LiquidSnack.error('Please try again.', title: 'Action failed');
+        return true;
       }
+
+      LiquidSnack.error('Please try again.', title: 'Action failed');
+      return false;
+    } on PatientQueueException catch (e) {
+      // Surface the backend's actual reason (e.g. the slot got booked by
+      // someone else) instead of a generic connection message.
+      LiquidSnack.error(e.message, title: 'Action failed');
+      return false;
     } catch (_) {
       LiquidSnack.error(
         'Please check your connection and try again.',
         title: 'Action failed',
       );
+      return false;
     } finally {
       processingIds.remove(patientId);
     }
   }
+
+
+
+  /////////// Filter sections ////////////////////////////////
+  final Rx<PatientStatus?> activeStatusFilter = Rx<PatientStatus?>(null);
+
+  // ---------------------------------------------------------------------
+  // Status filter chips — built from whatever statuses actually exist
+  // in the currently loaded (and collection-mode-narrowed) patient list.
+  // ---------------------------------------------------------------------
+  List<StatusFilterOption> get statusFilters {
+    final counts = <PatientStatus, int>{};
+    for (final p in _visiblePatients) {
+      counts[p.status] = (counts[p.status] ?? 0) + 1;
+    }
+
+    final statuses = counts.keys.toList()
+      ..sort((a, b) => _statusRank(a).compareTo(_statusRank(b)));
+
+    return [
+      StatusFilterOption(
+        status: null,
+        label: 'All',
+        count: _visiblePatients.length,
+      ),
+      for (final status in statuses)
+        StatusFilterOption(
+          status: status,
+          label: _statusLabel(status),
+          count: counts[status]!,
+        ),
+    ];
+  }
+
+  void setStatusFilter(PatientStatus? status) =>
+      activeStatusFilter.value = status;
+
+  /// Human-readable label for a filter chip. Reuse StatusBadge's mapping
+  /// here if one already exists, instead of duplicating it.
+  String _statusLabel(PatientStatus status) {
+    if (status.isLisSyncFailed) return 'Sync Pending';
+    switch (status) {
+      case PatientStatus.assigned:
+        return 'Assigned';
+      case PatientStatus.pending:
+        return 'Pending';
+      case PatientStatus.accepted:
+        return 'Accepted';
+      case PatientStatus.rescheduled:
+        return 'Rescheduled';
+      case PatientStatus.inRoute:
+        return 'En Route';
+      case PatientStatus.arrived:
+        return 'Arrived';
+      default:
+        return status.toString().split('.').last;
+    }
+  }
+
+  /// Lower = higher priority = appears first in both the filter bar and
+  /// the queue itself.
+  int _statusRank(PatientStatus status) {
+    if (status.isTerminal) return 100;
+    if (status.isLisSyncFailed) return 0;
+    switch (status) {
+      case PatientStatus.arrived:
+        return 1;
+      case PatientStatus.inRoute:
+        return 2;
+      case PatientStatus.accepted:
+        return 3;
+      case PatientStatus.assigned:
+      case PatientStatus.pending:
+        return 4;
+      case PatientStatus.rescheduled:
+        return 5;
+      default:
+        return 6;
+    }
+  }
+
+  List<AssignedPatient> get filteredPatients {
+    Iterable<AssignedPatient> result = _visiblePatients;
+
+    final statusFilter = activeStatusFilter.value;
+    if (statusFilter != null) {
+      result = result.where((p) => p.status == statusFilter);
+    }
+
+    final query = searchQuery.value.toLowerCase();
+    if (query.isNotEmpty) {
+      result = result.where(
+            (p) =>
+        p.name.toLowerCase().contains(query) ||
+            p.orderId.toLowerCase().contains(query) ||
+            p.tests.any((t) => t.toLowerCase().contains(query)),
+      );
+    }
+
+    final list = result.toList()
+      ..sort((a, b) {
+        // Primary: lifecycle-stage rank (action-taken cards first).
+        final rankCompare = _statusRank(a.status).compareTo(_statusRank(b.status));
+        if (rankCompare != 0) return rankCompare;
+
+        // Tiebreaker within the same status: priority level.
+        const priorityRank = {
+          PriorityLevel.urgent: 0,
+          PriorityLevel.high: 1,
+          PriorityLevel.normal: 2,
+        };
+        final pCompare = priorityRank[a.priority]!.compareTo(
+          priorityRank[b.priority]!,
+        );
+        if (pCompare != 0) return pCompare;
+
+        // Then by slot time — patients without a slot go last.
+        if (a.slotDateTime == null && b.slotDateTime == null) return 0;
+        if (a.slotDateTime == null) return 1;
+        if (b.slotDateTime == null) return -1;
+        return a.slotDateTime!.compareTo(b.slotDateTime!);
+      });
+
+    return list;
+  }
 }
 
 
+class StatusFilterOption {
+  final PatientStatus? status; // null = "All"
+  final String label;
+  final int count;
+
+  const StatusFilterOption({
+    required this.status,
+    required this.label,
+    required this.count,
+  });
+}

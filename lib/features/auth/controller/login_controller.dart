@@ -90,10 +90,12 @@ class LoginController extends GetxController with CodeAutoFill {
   final Rx<String?> selectedBetaUser = Rx<String?>(null);
   final Map<String, Map<String, String>> betaUsers = {
     'Phlebotomist': {'user': '7070707070', 'pass': '123456'},
+    'Phlebotomist-Renuka': {'user': '8888658717', 'pass': '123456'},
+    'Phlebotomist-Aarati': {'user': '8822882288', 'pass': '123456'},
     'Runnerboy': {'user': '9604249812', 'pass': '123456'},
     'Lab Accession': {'user': '7767876692', 'pass': '123456'},
-    'Runnerboy-  Renuka': {'user': '9604249812', 'pass': '123456'},
-    'Runnerboy-  Renuka2': {'user': '9665253245', 'pass': '123456'},
+    'Runnerboy-  Avinash': {'user': '9604249812', 'pass': '123456'},
+    'Runnerboy-  Nilesh': {'user': '9665253245', 'pass': '123456'},
     // 'Team Lead': {'user': '9975020260', 'pass': '123456'},
     // 'Team Lead': {'user': '9975020260', 'pass': '123456'},
     // 'Lab Accession': {'user': '9975020298', 'pass': '1234567'},

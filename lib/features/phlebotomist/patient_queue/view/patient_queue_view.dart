@@ -8,6 +8,7 @@ import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widget
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/queue_summary_bar.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/rejected_assignment_sheet.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/rescheduled_slot.dart';
+import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/status_filter_bar.dart';
 import 'package:lifenity_connect/routes/route_manager.dart';
 import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 
@@ -34,19 +35,19 @@ class PatientQueueView extends GetView<PatientQueueController> {
         onSearchCleared: controller.clearSearch,
         actions: [
           Obx(
-                () => IconButton(
+            () => IconButton(
               onPressed: controller.isRefreshing.value
                   ? null
                   : controller.refreshPatients,
               icon: controller.isRefreshing.value
                   ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
                   : const Icon(Icons.refresh_rounded, color: Colors.white),
             ),
           ),
@@ -96,7 +97,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
       child: Column(
         children: [
           const SizedBox(height: 14),
-          Obx(
+          /*Obx(
                 () => QueueSummaryBar(
               activeFilter: controller.activeFilter.value,
               allCount: controller.totalCount,
@@ -106,7 +107,14 @@ class PatientQueueView extends GetView<PatientQueueController> {
               onFilterSelected: controller.setFilter,
             ),
           ),
-
+*/
+          Obx(
+            () => StatusFilterBar(
+              filters: controller.statusFilters,
+              activeStatus: controller.activeStatusFilter.value,
+              onFilterSelected: controller.setStatusFilter,
+            ),
+          ),
           Expanded(
             child: Obx(() {
               final patients = controller.filteredPatients;
@@ -114,7 +122,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
               if (patients.isEmpty) {
                 final isFiltered =
                     controller.isSearching ||
-                        controller.activeFilter.value != QueueFilter.all;
+                    controller.activeFilter.value != QueueFilter.all;
                 // Collection mode (bag registration entry point) narrows the
                 // queue to Arrived orders — explain that when it's empty.
                 final collectionEmpty =
@@ -129,14 +137,14 @@ class PatientQueueView extends GetView<PatientQueueController> {
                       title: collectionEmpty ? 'No arrived patients' : null,
                       subtitle: collectionEmpty
                           ? "Only orders with status 'Arrived' can be "
-                              'collected into this bag. They will appear here '
-                              'once the patient is marked as arrived.'
+                                'collected into this bag. They will appear here '
+                                'once the patient is marked as arrived.'
                           : null,
                       onClearFilter: isFiltered
                           ? () {
-                        controller.setFilter(QueueFilter.all);
-                        controller.clearSearch();
-                      }
+                              controller.setFilter(QueueFilter.all);
+                              controller.clearSearch();
+                            }
                           : null,
                     ),
                   ],
@@ -153,7 +161,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
                     key: ValueKey(patient.id),
                     index: index,
                     child: Obx(
-                          () => PatientCard(
+                      () => PatientCard(
                         key: ValueKey('card_${patient.id}'),
                         patient: patient,
                         isProcessing: controller.processingIds.contains(
@@ -161,16 +169,18 @@ class PatientQueueView extends GetView<PatientQueueController> {
                         ),
                         onTapDetails: () => _openPatientDetails(patient),
                         onReject: () => _confirmReject(context, patient),
-                            onReschedule: () => RescheduleSheet.show(
-                              context,
-                              patient: patient,
-                              onConfirm: (date, start, end) => controller.reschedule(
-                                patient,
-                                newDate: date,
-                                startTime: start,
-                                endTime: end,
-                              ),
+                          onReschedule: () => RescheduleSheet.show(
+                            context,
+                            patient: patient,
+                            onFetchSlots: (date) => controller.fetchAvailableSlots(date),
+                            onFetchReasons: () => controller.fetchRescheduleReasons(),
+                            onConfirm: (date, slot, reasonId) => controller.rescheduleAssignment(
+                              patient,
+                              newDate: date,
+                              slot: slot,
+                              rescheduleReasonId: reasonId,
                             ),
+                          ),
                         onPrimaryAction: () => _handlePrimaryAction(patient),
                         onStartRoute: () => controller.startRoute(patient),
                         onSyncToLis: () => controller.syncToLis(patient),
@@ -197,13 +207,9 @@ class PatientQueueView extends GetView<PatientQueueController> {
     // collection flow doesn't apply, so there's nothing to open.
     if (patient.status == PatientStatus.collect) return;
     RouteManager.navigateToSampleCollection(patient);
-
   }
 
-  void _confirmReject(
-      BuildContext context,
-      AssignedPatient patient,
-      ) {
+  void _confirmReject(BuildContext context, AssignedPatient patient) {
     RejectAssignmentSheet.show(
       context,
       patient: patient,

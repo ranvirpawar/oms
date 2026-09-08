@@ -5,22 +5,29 @@ import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widget
 import '../../../../../theme/app_colors.dart';
 import '../../model/patient_queue_model.dart';
 
-/// A single selectable time slot, e.g. 09:00–09:30.
-class TimeSlot {
-  final String start; // "09:00:00" - matches service's startTime format
-  final String end;   // "09:30:00"
-  final String label; // "9:00 AM"
-
-  const TimeSlot({required this.start, required this.end, required this.label});
-}
-
 class RescheduleSheet extends StatefulWidget {
   final AssignedPatient patient;
-  final Future<void> Function(DateTime date, String startTime, String endTime) onConfirm;
+
+  /// Loads the available time slots for a picked date — wired to the
+  /// controller's `user/available-slots` call. Errors should propagate so
+  /// the sheet can show an inline retry state.
+  final Future<List<AvailableSlot>> Function(DateTime date) onFetchSlots;
+
+  /// Loads the selectable reschedule reasons — wired to the controller's
+  /// `GetRescheduleReasone` call. Never throws; an empty list keeps the
+  /// confirm gate locked.
+  final Future<List<RescheduleReason>> Function() onFetchReasons;
+
+  /// Persists the reschedule. Returns `true` so the sheet can stay open
+  /// (showing the inline state) when the backend rejects the request.
+  final Future<bool> Function(
+      DateTime date, AvailableSlot slot, int rescheduleReasonId) onConfirm;
 
   const RescheduleSheet({
     super.key,
     required this.patient,
+    required this.onFetchSlots,
+    required this.onFetchReasons,
     required this.onConfirm,
   });
 
@@ -28,14 +35,21 @@ class RescheduleSheet extends StatefulWidget {
   static Future<void> show(
       BuildContext context, {
         required AssignedPatient patient,
-        required Future<void> Function(DateTime, String, String) onConfirm,
+        required Future<List<AvailableSlot>> Function(DateTime) onFetchSlots,
+        required Future<List<RescheduleReason>> Function() onFetchReasons,
+        required Future<bool> Function(DateTime, AvailableSlot, int) onConfirm,
       }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withOpacity(0.45),
-      builder: (_) => RescheduleSheet(patient: patient, onConfirm: onConfirm),
+      builder: (_) => RescheduleSheet(
+        patient: patient,
+        onFetchSlots: onFetchSlots,
+        onFetchReasons: onFetchReasons,
+        onConfirm: onConfirm,
+      ),
     );
   }
 
@@ -45,57 +59,110 @@ class RescheduleSheet extends StatefulWidget {
 
 class _RescheduleSheetState extends State<RescheduleSheet> {
   late final List<DateTime> _dates;
-  late final List<TimeSlot> _slots;
+
+  List<AvailableSlot> _slots = const <AvailableSlot>[];
+  List<RescheduleReason> _reasons = const <RescheduleReason>[];
 
   DateTime? _selectedDate;
-  TimeSlot? _selectedSlot;
+  AvailableSlot? _selectedSlot;
+  RescheduleReason? _selectedReason;
+
+  bool _loadingSlots = false;
+  bool _loadingReasons = false;
+  bool _reasonExpanded = false;
   bool _submitting = false;
+  String? _slotsError;
 
   @override
   void initState() {
     super.initState();
     final today = DateTime.now();
-    // Next 14 days, starting tomorrow — no same-day reschedule.
+    // Next 3 days, starting tomorrow — no same-day reschedule.
     _dates = List.generate(
       3,
           (i) => DateTime(today.year, today.month, today.day + i + 1),
     );
-    _slots = _buildSlots();
+    // Preselect the first day so its slots start loading immediately.
+    _selectedDate = _dates.first;
+    _loadSlots(_dates.first);
+    _loadReasons();
   }
 
-  List<TimeSlot> _buildSlots() {
-    final slots = <TimeSlot>[];
-    for (int hour = 8; hour < 18; hour++) {
-      for (final minute in [0, 30]) {
-        final startMinutesTotal = hour * 60 + minute;
-        final endMinutesTotal = startMinutesTotal + 30;
-        String fmt(int total) {
-          final h = (total ~/ 60).toString().padLeft(2, '0');
-          final m = (total % 60).toString().padLeft(2, '0');
-          return '$h:$m:00';
-        }
+  bool get _canConfirm =>
+      _selectedDate != null &&
+      _selectedSlot != null &&
+      _selectedReason != null &&
+      !_loadingSlots &&
+      !_loadingReasons &&
+      !_submitting;
 
-        final startLabel = DateFormat('h:mm a').format(
-          DateTime(0, 1, 1, hour, minute),
-        );
-        slots.add(TimeSlot(
-          start: fmt(startMinutesTotal),
-          end: fmt(endMinutesTotal),
-          label: startLabel,
-        ));
-      }
+  void _selectDate(DateTime date) {
+    if (_selectedDate != null &&
+        _selectedDate!.year == date.year &&
+        _selectedDate!.month == date.month &&
+        _selectedDate!.day == date.day) {
+      return;
     }
-    return slots;
+    setState(() => _selectedDate = date);
+    _loadSlots(date);
   }
 
-  bool get _canConfirm => _selectedDate != null && _selectedSlot != null && !_submitting;
+  Future<void> _loadSlots(DateTime date) async {
+    setState(() {
+      _selectedSlot = null;
+      _loadingSlots = true;
+      _slotsError = null;
+    });
+    try {
+      final slots = await widget.onFetchSlots(date);
+      if (!mounted) return;
+      setState(() {
+        _slots = slots;
+        _loadingSlots = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _slots = const <AvailableSlot>[];
+        _loadingSlots = false;
+        _slotsError =
+            'We could not load the slots for this date. Choose another '
+                'date or try again.';
+      });
+    }
+  }
+
+  Future<void> _loadReasons() async {
+    setState(() {
+      _loadingReasons = true;
+      _reasons = const <RescheduleReason>[];
+    });
+    try {
+      final reasons = await widget.onFetchReasons();
+      if (!mounted) return;
+      setState(() {
+        _reasons = reasons;
+        _loadingReasons = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _reasons = const <RescheduleReason>[];
+        _loadingReasons = false;
+      });
+    }
+  }
 
   Future<void> _handleConfirm() async {
     if (!_canConfirm) return;
     setState(() => _submitting = true);
     try {
-      await widget.onConfirm(_selectedDate!, _selectedSlot!.start, _selectedSlot!.end);
-      if (mounted) Navigator.of(context).pop();
+      final ok = await widget.onConfirm(
+        _selectedDate!,
+        _selectedSlot!,
+        _selectedReason!.id,
+      );
+      if (ok && mounted) Navigator.of(context).pop();
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -129,6 +196,8 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
                     children: [
                       _buildPatientSummary(),
+                      const SizedBox(height: 20),
+                      _buildReasonSection(),
                       const SizedBox(height: 24),
                       _sectionTitle('Select new date'),
                       const SizedBox(height: 10),
@@ -305,7 +374,7 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
               _selectedDate!.day == date.day;
 
           return GestureDetector(
-            onTap: () => setState(() => _selectedDate = date),
+            onTap: () => _selectDate(date),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 0),
               width: 56,
@@ -356,11 +425,86 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
   }
 
   Widget _buildSlotGrid() {
+    if (_loadingSlots) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 26),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.4),
+          ),
+        ),
+      );
+    }
+
+    if (_slotsError != null) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.amberLight,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.amberBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _slotsError!,
+              style: const TextStyle(fontSize: 12, height: 1.45),
+            ),
+            const SizedBox(height: 10),
+            TextButton.icon(
+              onPressed: _selectedDate == null
+                  ? null
+                  : () => _loadSlots(_selectedDate!),
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: const Text('Try again'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_slots.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.bgCardAlt,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: const Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.event_busy_rounded,
+              size: 18,
+              color: AppColors.textTertiary,
+            ),
+            SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'No slots available for this date. Please pick another date.',
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.4,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: _slots.map((slot) {
-        final isSelected = _selectedSlot?.start == slot.start;
+        final isSelected = _selectedSlot?.slotId == slot.slotId;
         return GestureDetector(
           onTap: () => setState(() => _selectedSlot = slot),
           child: AnimatedContainer(
@@ -375,7 +519,7 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
               ),
             ),
             child: Text(
-              slot.label,
+              slot.timeSlot,
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
@@ -429,6 +573,139 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
           ),
         ),
       ),
+    );
+  }
+  Widget _buildReasonSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionTitle('Reason for reschedule'),
+        const SizedBox(height: 10),
+        GestureDetector(
+          onTap: _loadingReasons || _reasons.isEmpty
+              ? null
+              : () => setState(() => _reasonExpanded = !_reasonExpanded),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: _reasonExpanded ? AppColors.primary700 : AppColors.border,
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _loadingReasons
+                      ? const Text(
+                    'Loading reasons...',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textTertiary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  )
+                      : Text(
+                    _selectedReason?.reason ?? 'Select a reason',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _selectedReason != null
+                          ? AppColors.textPrimary
+                          : AppColors.textTertiary,
+                    ),
+                  ),
+                ),
+                if (_loadingReasons)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  AnimatedRotation(
+                    duration: const Duration(milliseconds: 180),
+                    turns: _reasonExpanded ? 0.5 : 0,
+                    child: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        if (!_loadingReasons && _reasons.isEmpty)
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Row(
+              children: [
+                Icon(Icons.error_outline_rounded, size: 14, color: AppColors.textTertiary),
+                SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Could not load reasons. Pull down to refresh and try again.',
+                    style: TextStyle(fontSize: 11.5, color: AppColors.textTertiary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          child: _reasonExpanded && _reasons.isNotEmpty
+              ? Container(
+            margin: const EdgeInsets.only(top: 8),
+            decoration: BoxDecoration(
+              color: AppColors.bgCardAlt,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: _reasons.map((reason) {
+                final isSelected = _selectedReason?.id == reason.id;
+                final isLast = reason == _reasons.last;
+                return InkWell(
+                  onTap: () => setState(() {
+                    _selectedReason = reason;
+                    _reasonExpanded = false;
+                  }),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      border: isLast
+                          ? null
+                          : const Border(bottom: BorderSide(color: AppColors.border)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            reason.reason,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              color: isSelected
+                                  ? AppColors.primary700
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                        if (isSelected)
+                          const Icon(Icons.check_rounded, size: 18, color: AppColors.primary700),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          )
+              : const SizedBox.shrink(),
+        ),
+      ],
     );
   }
 }

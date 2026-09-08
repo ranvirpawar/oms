@@ -162,23 +162,7 @@ class SampleCollectionService {
   /// with [SampleCollectionException.isLisSyncFailure] set when the order
   /// row was inserted but the push to LIS failed — the caller treats that
   /// as a "soft" success, not a hard failure.
-/*  {
-  "status": "Success",
-  "omsResult": {
-  "retval": 1,
-  "statusCode": 201,
-  "status": "SUCCESS",
-  "message": "Sample collection details saved successfully."
-  },
-  "dishaResult": {
-  "status": "201",
-  "message": "Patient registered successfully!",
-  "output": [],
-  "timestamp": "2026-09-05T19:46:40.407",
-  "patientId": 42526,
-  "treatmentId": 42585
-  }
-  }*/
+
   Future<bool> submitSampleCollection(SampleCollectionPayload payload) async {
     try {
       final url = AppUrls.submitSampleCollection.replaceFirst(
@@ -252,67 +236,7 @@ class SampleCollectionService {
       );
     }
   }
-  /*Future<bool> submitSampleCollection(SampleCollectionPayload payload) async {
-    try {
-      final url = AppUrls.submitSampleCollection.replaceFirst(
-        '{orderId}',
-        payload.orderId.toString(),
-      );
-      final response = await _apiClient.post(url, data: payload.toJson());
 
-      final Map<String, dynamic> respBody = response.data is String
-          ? jsonDecode(response.data as String) as Map<String, dynamic>
-          : response.data as Map<String, dynamic>;
-
-      // The backend now reports the LIS/Disha outcome via a top-level
-      // "Dishstatuss" field (sic) instead of nesting it in dishaResult.status.
-      // dishaResult itself may now be a plain string (e.g.
-      // "Response: Patient registered successfully!") rather than a map, so
-      // we can't rely on dishaResult['status'] anymore. We check both the
-      // new top-level field and the old nested shape for safety.
-      final dishaResultRaw = respBody['dishaResult'];
-      final nestedDishStatus = dishaResultRaw is Map<String, dynamic>
-          ? (dishaResultRaw['status'] as String?)?.trim().toLowerCase()
-          : null;
-      final topLevelDishStatus =
-      (respBody['Dishstatuss'] as String?)?.trim().toLowerCase();
-
-      final isLisFailure = topLevelDishStatus == 'fail insert disha' ||
-          nestedDishStatus == 'fail insert disha';
-
-      if (isLisFailure) {
-        throw SampleCollectionException(
-          respBody['message'] as String? ??
-              (dishaResultRaw is Map<String, dynamic>
-                  ? dishaResultRaw['message'] as String?
-                  : null) ??
-              'Sample collection saved, but the LIS sync failed.',
-          isLisSyncFailure: true,
-        );
-      }
-
-      // NOTE: check isLisFailure *before* this, since the backend now sends
-      // status: "Fail" for the soft-failure case too, not just for hard
-      // failures where the order row itself wasn't saved.
-      final status = (respBody['status'] as String?)?.trim().toLowerCase();
-      if (status != 'success') {
-        throw SampleCollectionException(
-          respBody['message'] as String? ??
-              'Unable to submit sample collection.',
-        );
-      }
-
-      return true;
-    } on SampleCollectionException {
-      rethrow;
-    } catch (e) {
-      kPrint(e.toString());
-      throw SampleCollectionException(
-        'Unable to submit sample collection. Please check your connection and try again.',
-        isNetworkError: true,
-      );
-    }
-  }*/
 
 
 
@@ -350,6 +274,52 @@ class SampleCollectionService {
       kPrint(e.toString());
       throw SampleCollectionException(
         'Unable to reach Disha right now. Please try again shortly.',
+        isNetworkError: true,
+      );
+    }
+  }
+
+  Future<bool> reschedule({
+    required String orderId,
+    required int userId,
+    required int createdBy,
+    required DateTime appointmentDate,
+    required int slotId,
+    int? rescheduleReasonId,
+  }) async {
+    final body = {
+      'OrderID': orderId,
+      'usreID': userId,
+      'AppoinmentDate': appointmentDate.toIso8601String(),
+      'SlotID': slotId,
+      'RescheduleReasoneID': rescheduleReasonId ?? 0,
+      'CreatedBy': createdBy,
+    };
+
+    try {
+      final response = await _apiClient.post(
+        AppUrls.appointmentRescheduled,
+        data: body,
+      );
+      final Map<String, dynamic> respBody = response.data is String
+          ? jsonDecode(response.data as String) as Map<String, dynamic>
+          : response.data as Map<String, dynamic>;
+
+      final isSuccess =
+          (respBody['status'] as String?)?.toLowerCase() == 'success';
+
+      if (!isSuccess) {
+        final message = (respBody['message'] as String?)?.trim() ?? '';
+        throw SampleCollectionException(
+          message.isEmpty ? 'Unable to reschedule this visit.' : message,
+        );
+      }
+      return true;
+    } on SampleCollectionException {
+      rethrow;
+    } catch (_) {
+      throw SampleCollectionException(
+        'Unable to reschedule this visit. Please check your connection and try again.',
         isNetworkError: true,
       );
     }

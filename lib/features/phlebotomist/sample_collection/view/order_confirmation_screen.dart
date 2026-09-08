@@ -491,7 +491,7 @@ class _PatientHeaderCard extends StatelessWidget {
                   ],
                 ),
               ),
-              _PriorityBadge(priority: order.priority),
+              // _PriorityBadge(priority: order.priority),
             ],
           ),
           const Divider(height: 24),
