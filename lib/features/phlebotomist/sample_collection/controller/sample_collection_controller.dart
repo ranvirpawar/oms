@@ -234,6 +234,14 @@ class SampleCollectionController extends GetxController {
   void toggleComplicationsExpanded() {
     complicationsExpanded.value = !complicationsExpanded.value;
   }
+  /// Number of sample types this order requires — compared against the
+  /// active bag's remaining capacity to warn if it won't all fit.
+  int get requiredSampleCount => sampleEntries.length;
+
+  /// True when a bag is open, its capacity is known, and it doesn't have
+  /// enough vacant slots left for every sample this order needs.
+  bool get bagCapacityInsufficient =>
+      hasOpenBag && bagCapacity > 0 && bagVacant < requiredSampleCount;
 
   @override
   void onInit() {
@@ -442,7 +450,7 @@ class SampleCollectionController extends GetxController {
       final mobileNumber = orderDetails.value?.mobileNumber ?? '';
       await _service.sendCollectionOtp(
         mobileNumber: mobileNumber,
-        userId: empId.value,
+        userId: empId.value, ///todo
       );
       _startResendTimer();
     } catch (e) {
@@ -484,6 +492,7 @@ class SampleCollectionController extends GetxController {
         userId: empId.value,
         otp: otp,
         mobileNumber: orderDetails.value?.mobileNumber ?? '',
+        collectionOrderId: /*orderDetails.value?. ??*/ '', //todo
       );
       if (success) {
         step.value = SampleCollectionStep.collection;

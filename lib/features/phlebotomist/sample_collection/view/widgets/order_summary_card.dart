@@ -362,7 +362,7 @@ class _Body extends StatefulWidget {
 }
 
 class _BodyState extends State<_Body> {
-  bool _instructionsExpanded = true; // start expanded (change to false if you prefer collapsed)
+  bool _instructionsExpanded = false; // start expanded (change to false if you prefer collapsed)
 
   @override
   Widget build(BuildContext context) {

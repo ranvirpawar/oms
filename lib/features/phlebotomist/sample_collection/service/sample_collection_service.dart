@@ -7,6 +7,7 @@ import '../../../../network/api_client.dart';
 import '../../../../network/app_error.dart';
 import '../../../../network/app_urls.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
+import '../../patient_queue/model/order_reject_reasons.dart';
 import '../model/sample_collection_models.dart';
 
 class SampleCollectionService {
@@ -71,7 +72,29 @@ class SampleCollectionService {
       return [];
     }
   }
+  Future<List<AssignRejectedReasonOption>> fetchRejectedReasons() async {
+    try {
+      final response = await _apiClient.get(
+        AppUrls.getRejectedReason,
+      );
 
+      final Map<String, dynamic> body = response.data is String
+          ? jsonDecode(response.data as String) as Map<String, dynamic>
+          : response.data as Map<String, dynamic>;
+
+      final output = body['output'];
+
+      final List<dynamic> list = output is List ? output : [];
+
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map(AssignRejectedReasonOption.fromJson)
+          .toList();
+    } catch (e) {
+      kPrint(e.toString());
+      return [];
+    }
+  }
   Future<List<ComplicationOption>> fetchComplications() async {
     try {
       final response = await _apiClient.get(AppUrls.getComplicationsList);
@@ -95,6 +118,7 @@ class SampleCollectionService {
   Future<bool> sendCollectionOtp({
     required String mobileNumber,
     required String userId,
+
   }) async {
     try {
       final body = {
@@ -130,12 +154,14 @@ class SampleCollectionService {
     required String mobileNumber,
     required String otp,
     required String userId,
+    required String collectionOrderId
   }) async {
     try {
       final body = {
         'MobileNo': mobileNumber,
         'OTP': otp,
         'VerifyBy': int.tryParse(userId) ?? 0,
+        /*'SampleCollectionOrderID' : collectionOrderId*/
       };
 
       final response = await _apiClient.post(

@@ -66,8 +66,11 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   void dispose() {
+    _dropdownEntry?.remove();
+    _dropdownEntry = null;
+
     _pulseController.dispose();
-    _removeDropdown();
+
     super.dispose();
   }
 
@@ -110,7 +113,12 @@ class _DashboardScreenState extends State<DashboardScreen>
   void _removeDropdown() {
     _dropdownEntry?.remove();
     _dropdownEntry = null;
-    if (mounted) setState(() => _pillExpanded = false);
+
+    if (mounted) {
+      setState(() {
+        _pillExpanded = false;
+      });
+    }
   }
 
   // ── Identity helpers ────────────────────────────────────────────────────

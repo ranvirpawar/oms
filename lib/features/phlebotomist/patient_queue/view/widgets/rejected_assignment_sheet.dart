@@ -9,6 +9,7 @@ import '../../../../../theme/app_colors.dart';
 import '../../../../../utils/ui_designs/liquid_snackbar.dart' hide SnackPosition;
 
 import '../../../sample_collection/service/sample_collection_service.dart';
+import '../../model/order_reject_reasons.dart';
 import '../widgets/visit_type_badge.dart';
 
 class RejectAssignmentSheet extends StatefulWidget {
@@ -54,9 +55,9 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
   // State
   // ---------------------------------------------------------------------------
 
-  List<dynamic> _reasons = [];
+  List<AssignRejectedReasonOption> _reasons = [];
 
-  dynamic _selectedReason;
+  AssignRejectedReasonOption? _selectedReason;
 
   bool _loadingReasons = true;
   bool _submitting = false;
@@ -80,7 +81,7 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
 
   Future<void> _loadReasons() async {
     try {
-      final reasons = await widget.service.fetchIncompleteReasons();
+      final reasons = await widget.service.fetchRejectedReasons();
 
       if (!mounted) return;
 
@@ -117,18 +118,18 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
        *
        *   reject(patient)
        *
-       * then pass the reasonId to the service inside that method.
+       * then pass the assignRejectReasonId to the service inside that method.
        *
-       * If your controller already accepts reasonId:
+       * If your controller already accepts assignRejectReasonId:
        *
-       *   reject(patient, reasonId: ...)
+       *   reject(patient, assignRejectReasonId: ...)
        *
        * use the version below.
        */
 
       await widget.controller.reject(
         widget.patient,
-        reasonId: _selectedReason.reasonId,
+        reasonId: _selectedReason!.assignRejectReasonId,
       );
 
       if (!mounted) return;
@@ -623,7 +624,7 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
           ...List.generate(_reasons.length, (index) {
             final reason = _reasons[index];
 
-            final isSelected = _selectedReason?.reasonId == reason.reasonId;
+            final isSelected = _selectedReason?.assignRejectReasonId == reason.assignRejectReasonId;
 
             return _buildReasonItem(
               reason,
@@ -896,7 +897,7 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
               // -----------------------------------------------------------------
               Expanded(
                 child: Text(
-                  reason.reason,
+                  reason.assignRejectReasonName,
                   style: TextStyle(
                     fontSize: 12.5,
                     height: 1.35,

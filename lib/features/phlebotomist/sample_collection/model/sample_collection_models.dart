@@ -370,6 +370,7 @@ class SampleCollectionPayload {
     'TubeCount' : tubeCount,
     'Notes': notes,
     'CollectedAt': collectedAt.toUtc().toIso8601String(),
+
     'SampleCollectionDetails':
     sampleCollectionDetails.map((e) => e.toJson()).toList(),
     'SampleCollectionComplications':

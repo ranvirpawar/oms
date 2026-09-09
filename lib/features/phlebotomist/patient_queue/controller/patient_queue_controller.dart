@@ -27,8 +27,8 @@ class PatientQueueController extends GetxController {
     SampleCollectionService? sampleCollectionService,
     this.isCollectionMode = false,
   }) : _service = service ?? PatientQueueService(),
-       _sampleCollectionService =
-           sampleCollectionService ?? SampleCollectionService();
+        _sampleCollectionService =
+            sampleCollectionService ?? SampleCollectionService();
 
   /// True when the queue was opened from the bag-registration dashboard's
   /// "Collect" action. Bag collection is only possible for patients who
@@ -44,7 +44,7 @@ class PatientQueueController extends GetxController {
 
   /// Pushes the START tracking ping when the phlebotomist begins the route.
   final LocationTrackingService _locationTrackingService =
-      LocationTrackingService();
+  LocationTrackingService();
 
   // ---------------------------------------------------------------------
   // State
@@ -108,13 +108,13 @@ class PatientQueueController extends GetxController {
     authManager
         .getUserData()
         .then((data) {
-          if (data != null) {
-            final user = data['user'];
-            if (user != null && user.containsKey('EmpCode')) {
-              empId.value = user['EmpCode'].toString();
-            }
-          }
-        })
+      if (data != null) {
+        final user = data['user'];
+        if (user != null && user.containsKey('EmpCode')) {
+          empId.value = user['EmpCode'].toString();
+        }
+      }
+    })
         .catchError((_) {});
   }
 
@@ -335,7 +335,7 @@ class PatientQueueController extends GetxController {
 
   Future<bool> reject(AssignedPatient patient, {int? reasonId}) => _runAction(
     patient.id,
-    () => _service.reject(
+        () => _service.reject(
       patient,
       updatedBy: int.tryParse(empId.value) ?? 0,
       reasonId: reasonId,
@@ -368,10 +368,10 @@ class PatientQueueController extends GetxController {
   }
 
   Future<bool> _runAction(
-    String patientId,
-    Future<bool> Function() action, {
-    required String successMessage,
-  }) async {
+      String patientId,
+      Future<bool> Function() action, {
+        required String successMessage,
+      }) async {
     if (processingIds.contains(patientId)) return false;
 
     processingIds.add(patientId);

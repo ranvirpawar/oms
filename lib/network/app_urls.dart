@@ -353,6 +353,8 @@ class AppUrls {
 
   static String getIncompleteReasons =
       '$_asmxBase/GetSampleCollectionIncompleteReasonDetails';
+ static String getRejectedReason =
+      '$_asmxBase/GetAssignRejectedReason';
 
   static String getSampleRequirements =
       '$_asmxBase/orders/{orderId}/sample-requirements';

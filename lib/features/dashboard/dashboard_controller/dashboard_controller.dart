@@ -172,6 +172,8 @@ class DashboardController extends GetxController {
       case UserRole.labTechnician:
       case UserRole.labAccession:
         return _labTechnicianCards();
+      case UserRole.teamLead:
+        return _teamLeadCards();
 
       default:
         return _defaultCards();
@@ -272,8 +274,24 @@ class DashboardController extends GetxController {
     ),*/
      DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.bagStatus, icon: AppAssets.bagStatus, onTap: RouteManager.navigateToBagStatus),
   ];
+  List<DashboardTileCard> _teamLeadCards() => [
 
-  List<DashboardTileCard> _defaultCards() => [DashboardTileCard( variant: DashboardTileVariant.grid,title: 'Please Connect with support team', icon: AppAssets.deliveryBoyIcon, onTap: () {})];
+    DashboardTileCard(
+      variant: DashboardTileVariant.grid,
+      title: AppStrings.sampleLiveTracking,
+      icon: AppAssets.liveTrackingIcon,
+      onTap: RouteManager.navigateToSampleLiveTracking,
+    ),
+
+
+  ];
+
+  List<DashboardTileCard> _defaultCards() => [DashboardTileCard( variant: DashboardTileVariant.grid,title: 'Please Connect with support team', icon: AppAssets.deliveryBoyIcon, onTap: () {}), DashboardTileCard(
+    variant: DashboardTileVariant.grid,
+    title: AppStrings.sampleLiveTracking,
+    icon: AppAssets.liveTrackingIcon,
+    onTap: RouteManager.navigateToSampleLiveTracking,
+  ),];
 
   /// Call this to signal a rebuild-triggered refresh
   void onDashboardBuild() {

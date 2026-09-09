@@ -13,6 +13,7 @@ import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/bag_context_card.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/order_summary_card.dart';
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
 import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -82,7 +83,13 @@ class OrderConfirmationScreen extends GetView<SampleCollectionController> {
               left: 0,
               right: 0,
               bottom: 0,
-              child: _ConfirmBar(controller: controller),
+              child: Obx(
+                () => _ConfirmBar(
+                  controller: controller,
+                  enabled:
+                      controller.hasOpenBag, // pass this through to the button
+                ),
+              ),
             ),
           ],
         );
@@ -142,8 +149,9 @@ class _NotAcceptedView extends StatelessWidget {
 
 class _ConfirmBar extends StatelessWidget {
   final SampleCollectionController controller;
+  final bool enabled;
 
-  const _ConfirmBar({required this.controller});
+  _ConfirmBar({required this.controller, required this.enabled});
 
   @override
   Widget build(BuildContext context) {
@@ -171,8 +179,13 @@ class _ConfirmBar extends StatelessWidget {
             elevation: 0,
           ),
           onPressed: () {
-            controller.confirmAndCollect();
-            Get.to(() => const OtpVerificationScreen());
+            if (enabled) {
+              controller.confirmAndCollect();
+              Get.to(() => const OtpVerificationScreen());
+            } else {
+              LiquidSnack.error('You need to open a bag first for sample collection');
+            }
+            ;
           },
           child: const Text(
             'Confirm & Collect',
