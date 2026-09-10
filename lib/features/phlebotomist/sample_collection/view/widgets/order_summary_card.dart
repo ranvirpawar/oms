@@ -605,215 +605,27 @@ class _BodyState extends State<_Body> {
     return widgets;
   }
 }
-/*
-class _Body extends StatelessWidget {
-  final bool fastingRequired;
-  final String? fastingNote;
-  final List<String> specialInstructions;
-  final List<SummarySampleGroup> sampleGroups;
+/// One test row inside a sample group. `code` is optional (AssignedPatient's
+/// pre-fetch test list has none; the fetched order's TestInfo usually does).
+class SummaryTestItem {
+  final String name;
+  final String? code;
 
-  const _Body({
-    required this.fastingRequired,
-    required this.fastingNote,
-    required this.specialInstructions,
-    required this.sampleGroups,
+  const SummaryTestItem(this.name, [this.code]);
+}
+
+/// One sample-type group (e.g. "Blood • 5 ml") with its tests.
+class SummarySampleGroup {
+  final String sampleType;
+  final String volume;
+  final List<SummaryTestItem> tests;
+
+  const SummarySampleGroup({
+    required this.sampleType,
+    this.volume = '',
+    required this.tests,
   });
+}
 
-  @override
-  Widget build(BuildContext context) {
-    final hasInstructions =
-        (fastingRequired && (fastingNote?.isNotEmpty ?? false)) ||
-            specialInstructions.isNotEmpty;
-    final testCount = sampleGroups.fold(0, (sum, g) => sum + g.tests.length);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Divider(height: 20),
 
-        if (sampleGroups.isNotEmpty) ...[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Tests ($testCount)',
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              if (sampleGroups.length > 1 ||
-                  sampleGroups.first.sampleType != 'Tests')
-                Text(
-                  '${sampleGroups.length} sample${sampleGroups.length == 1 ? '' : 's'}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textTertiary,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ..._buildGroups(),
-        ],
-        if (hasInstructions) ...[
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.amberLight.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.amberBorder),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline_rounded,
-                      size: 15,
-                      color: AppColors.amberText,
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      'Instructions',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-                if (fastingRequired && (fastingNote?.isNotEmpty ?? false)) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    fastingNote!,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-                for (final instruction in specialInstructions)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          '•  ',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            instruction,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-      ],
-    );
-  }
-
-  List<Widget> _buildGroups() {
-    final widgets = <Widget>[];
-    var serial = 0;
-    for (var i = 0; i < sampleGroups.length; i++) {
-      final group = sampleGroups[i];
-      // Skip the redundant group-header row for the plain "Tests" fallback
-      // (used when only a flat test-name list is available, pre-fetch).
-      if (group.sampleType != 'Tests' || sampleGroups.length > 1) {
-        widgets.add(
-          Row(
-            children: [
-              const Icon(
-                Icons.science_outlined,
-                size: 14,
-                color: AppColors.tealText,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  group.volume.isNotEmpty
-                      ? '${group.sampleType} • ${group.volume}'
-                      : group.sampleType,
-                  style: const TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-        widgets.add(const SizedBox(height: 6));
-      }
-      for (final test in group.tests) {
-        serial++;
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.only(left: 20, bottom: 6),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 22,
-                  child: Text(
-                    '$serial.',
-                    style: const TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    test.name,
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-                if (test.code?.isNotEmpty ?? false)
-                  Text(
-                    test.code!,
-                    style: const TextStyle(
-                      fontSize: 10.5,
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        );
-      }
-      if (i != sampleGroups.length - 1) {
-        widgets.add(const SizedBox(height: 10));
-      }
-    }
-    return widgets;
-  }
-}*/
