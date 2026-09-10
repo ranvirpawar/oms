@@ -19,10 +19,13 @@ import '../../patient_registration/bag_status_dashboard/controller/registrarion_
 import '../../patient_registration/bag_status_dashboard/model/qr_bag_details.dart';
 import '../../patient_registration/bag_status_dashboard/model/qr_bag_session.dart';
 import '../model/barcode_formatter.dart';
+import '../model/barcode_validator.dart';
 import '../model/sample_collection_models.dart';
 import '../service/sample_collection_service.dart';
+import '../view/sample_collection_screen.dart';
 import '../view/widgets/barcode_scanner_sheet.dart';
 import '../view/widgets/incomplete_bottom_sheet.dart';
+import '../view/widgets/otp_verification_screen.dart';
 import '../view/widgets/sample_collection_success_page.dart';
 
 /// Per-sample-type UI state: one of these exists for every entry in
@@ -234,6 +237,7 @@ class SampleCollectionController extends GetxController {
   void toggleComplicationsExpanded() {
     complicationsExpanded.value = !complicationsExpanded.value;
   }
+
   /// Number of sample types this order requires — compared against the
   /// active bag's remaining capacity to warn if it won't all fit.
   int get requiredSampleCount => sampleEntries.length;
@@ -439,8 +443,19 @@ class SampleCollectionController extends GetxController {
   // ---------------------------------------------------------------------
 
   Future<void> confirmAndCollect() async {
+    final details = orderDetails.value;
+    kPrint('is otp verified or not ${details?.isOtpVerified}');
+
+    if (details?.isOtpVerified == false) {
+      step.value = SampleCollectionStep.collection;
+      Get.off(() => const SampleCollectionScreen());
+      return;
+    }
+
     step.value = SampleCollectionStep.otpVerification;
     await sendOtp();
+
+    Get.to(() => const OtpVerificationScreen());
   }
 
   Future<void> sendOtp() async {
@@ -450,8 +465,11 @@ class SampleCollectionController extends GetxController {
       final mobileNumber = orderDetails.value?.mobileNumber ?? '';
       await _service.sendCollectionOtp(
         mobileNumber: mobileNumber,
-        userId: empId.value, ///todo
+        userId: empId.value,
+        collectionOrderId: orderDetails.value?.sampleCollectionOrderId ?? '',
       );
+      LiquidSnack.success('OTP has been send successfully');
+
       _startResendTimer();
     } catch (e) {
       otpError.value = 'Unable to send OTP. Please try again.';
@@ -462,13 +480,14 @@ class SampleCollectionController extends GetxController {
 
   Future<void> resendOtp() async {
     if (resendSecondsLeft.value > 0) return;
+    otpError.value= '';
     otpInputKey.currentState?.clear();
     await sendOtp();
   }
 
   void _startResendTimer() {
     _resendTimer?.cancel();
-    resendSecondsLeft.value = 30;
+    resendSecondsLeft.value = 60;
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (resendSecondsLeft.value <= 1) {
         timer.cancel();
@@ -492,7 +511,7 @@ class SampleCollectionController extends GetxController {
         userId: empId.value,
         otp: otp,
         mobileNumber: orderDetails.value?.mobileNumber ?? '',
-        collectionOrderId: /*orderDetails.value?. ??*/ '', //todo
+        collectionOrderId: orderDetails.value?.sampleCollectionOrderId ?? '',
       );
       if (success) {
         step.value = SampleCollectionStep.collection;
@@ -510,15 +529,7 @@ class SampleCollectionController extends GetxController {
   // Barcode entry
   // ---------------------------------------------------------------------
 
-  static final RegExp _allowedChars = RegExp(r'^[A-Za-z0-9-]+$');
 
-  bool _isValidBarcodeFormat(String value) {
-    if (value.length < 14 || value.length > 20) return false;
-    if (!_allowedChars.hasMatch(value)) return false;
-    // Allow at most one hyphen
-    if (value.split('-').length > 2) return false;
-    return true;
-  }
 
   String getBarcodeLabel(SampleBarcodeEntry entry) {
     final vol = entry.volumeRequiredMl.trim();
@@ -526,11 +537,11 @@ class SampleCollectionController extends GetxController {
   }
 
   void onBarcodeChanged(
-    SampleBarcodeEntry entry,
-    String value, {
-    bool immediate = false,
-  }) {
-    final trimmed = value.trim();
+      SampleBarcodeEntry entry,
+      String value, {
+        bool immediate = false,
+      }) {
+    final trimmed = value.trim().toUpperCase();
 
     if (trimmed.isEmpty) {
       entry.barcodeStatus.value = BarcodeCheckStatus.idle;
@@ -539,11 +550,10 @@ class SampleCollectionController extends GetxController {
       return;
     }
 
-    // 2. Format (length + chars + single '-')
-    if (!_isValidBarcodeFormat(trimmed)) {
+    // Format validation only (pure, no API)
+    if (!BarcodeValidator.isValid(trimmed)) {
       entry.barcodeStatus.value = BarcodeCheckStatus.formatError;
-      entry.barcodeMessage.value =
-          'Must be 14–20 characters: letters, numbers and at most one "-".';
+      entry.barcodeMessage.value = BarcodeValidator.invalidMessage(trimmed);
       _recomputeStatus(entry);
       return;
     }
@@ -597,10 +607,9 @@ class SampleCollectionController extends GetxController {
   }
 
   void _processScanResult(SampleBarcodeEntry entry, String scannedCode) {
-    final value = scannedCode.trim();
+    final value = scannedCode.trim().toUpperCase();
     entry.barcodeController.text = value;
     _closeScanner(entry);
-    // Scanning is a discrete action — verify immediately, no debounce.
     onBarcodeChanged(entry, value, immediate: true);
   }
 

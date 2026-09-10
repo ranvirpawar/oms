@@ -118,12 +118,14 @@ class SampleCollectionService {
   Future<bool> sendCollectionOtp({
     required String mobileNumber,
     required String userId,
+    required String collectionOrderId
 
   }) async {
     try {
       final body = {
         'MobileNo': mobileNumber,
         'CreatedBy': int.tryParse(userId) ?? 0,
+        'SampleCollectionOrderID' : collectionOrderId
       };
 
       final response = await _apiClient.post(
@@ -161,7 +163,7 @@ class SampleCollectionService {
         'MobileNo': mobileNumber,
         'OTP': otp,
         'VerifyBy': int.tryParse(userId) ?? 0,
-        /*'SampleCollectionOrderID' : collectionOrderId*/
+        'SampleCollectionOrderID' : collectionOrderId
       };
 
       final response = await _apiClient.post(

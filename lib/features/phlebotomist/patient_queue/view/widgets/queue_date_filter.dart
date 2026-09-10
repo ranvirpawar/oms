@@ -1,20 +1,32 @@
 import 'package:flutter/material.dart';
 
-/// Date horizon for the queue. Deliberately forward-looking (no "last N
-/// days" presets) — this screen is about what a phlebotomist needs to act
-/// on *next*, not a historical range.
-enum QueueDateFilter { today, thisWeek, future }
+
+enum QueueDateFilter { today, thisWeek, future, past, custom }
 
 extension QueueDateFilterX on QueueDateFilter {
   String get label => switch (this) {
-        QueueDateFilter.today => 'Today',
-        QueueDateFilter.thisWeek => 'This week',
-        QueueDateFilter.future => 'Upcoming',
-      };
+    QueueDateFilter.today => 'Today',
+    QueueDateFilter.thisWeek => 'This week',
+    QueueDateFilter.future => 'Upcoming',
+    QueueDateFilter.past => 'Past orders',
+    QueueDateFilter.custom => 'Pick a date',
+  };
 
   IconData get icon => switch (this) {
-        QueueDateFilter.today => Icons.today_rounded,
-        QueueDateFilter.thisWeek => Icons.view_week_rounded,
-        QueueDateFilter.future => Icons.event_available_rounded,
-      };
+    QueueDateFilter.today => Icons.today_rounded,
+    QueueDateFilter.thisWeek => Icons.view_week_rounded,
+    QueueDateFilter.future => Icons.event_available_rounded,
+    QueueDateFilter.past => Icons.history_rounded,
+    QueueDateFilter.custom => Icons.calendar_month_rounded,
+  };
+
+  /// The four selectable presets shown in the popover, in display order.
+  /// `custom` isn't in here — it gets its own row + divider since picking
+  /// it opens the calendar instead of applying immediately.
+  static const presets = [
+    QueueDateFilter.today,
+    QueueDateFilter.thisWeek,
+    QueueDateFilter.future,
+    QueueDateFilter.past,
+  ];
 }

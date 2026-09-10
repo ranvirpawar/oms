@@ -4,19 +4,31 @@ import 'package:flutter/services.dart';
 import '../../../../../theme/app_colors.dart';
 import 'queue_date_filter.dart';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+
+import 'queue_calendar_sheet.dart';
+import 'queue_date_filter.dart';
+
 /// Compact "tile" that shows the active date horizon (defaults to Today)
-/// and opens a small anchored popover with the three forward-looking
-/// options on tap. Deliberately not a full bottom sheet — three options
-/// don't need one, and a quick popover keeps triage fast for someone
-/// working through a live queue between visits.
+/// and opens a small anchored popover on tap: Today / This week / Upcoming
+/// / Past orders, plus a "Pick a date" row that opens a full calendar
+/// gated to days that actually have an order.
 class DateFilterTile extends StatefulWidget {
   final QueueDateFilter active;
+  final DateTime? customDate;
+  final Set<DateTime> orderDates;
   final ValueChanged<QueueDateFilter> onChanged;
+  final ValueChanged<DateTime> onCustomDateSelected;
 
   const DateFilterTile({
     super.key,
     required this.active,
+    required this.customDate,
+    required this.orderDates,
     required this.onChanged,
+    required this.onCustomDateSelected,
   });
 
   @override
@@ -33,6 +45,17 @@ class _DateFilterTileState extends State<DateFilterTile>
   );
 
   bool get _isOpen => _entry != null;
+
+  String get _displayLabel {
+    if (widget.active == QueueDateFilter.custom && widget.customDate != null) {
+      return DateFormat('MMM d').format(widget.customDate!);
+    }
+    return widget.active.label;
+  }
+
+  IconData get _displayIcon => widget.active == QueueDateFilter.custom
+      ? Icons.calendar_month_rounded
+      : widget.active.icon;
 
   @override
   void dispose() {
@@ -58,6 +81,7 @@ class _DateFilterTileState extends State<DateFilterTile>
           widget.onChanged(value);
           _removeOverlay();
         },
+        onPickDate: _openCalendar,
         onDismiss: _removeOverlay,
       ),
     );
@@ -80,6 +104,19 @@ class _DateFilterTileState extends State<DateFilterTile>
     });
   }
 
+  void _openCalendar() {
+    // Close the popover without waiting for its exit animation — sliding
+    // straight into the sheet reads as one continuous motion rather than
+    // two separate overlays stacking on top of each other.
+    _removeOverlay(animate: false);
+    QueueCalendarSheet.show(
+      context,
+      orderDates: widget.orderDates,
+      initialSelected: widget.customDate,
+      onSelect: widget.onCustomDateSelected,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return CompositedTransformTarget(
@@ -96,7 +133,9 @@ class _DateFilterTileState extends State<DateFilterTile>
             color: _isOpen ? AppColors.blueLight : AppColors.bgCard,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _isOpen ? AppColors.primary.withOpacity(0.4) : AppColors.border,
+              color: _isOpen
+                  ? AppColors.primary.withOpacity(0.4)
+                  : AppColors.border,
               width: 1,
             ),
           ),
@@ -104,13 +143,13 @@ class _DateFilterTileState extends State<DateFilterTile>
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                widget.active.icon,
+                _displayIcon,
                 size: 15,
                 color: _isOpen ? AppColors.blueText : AppColors.textSecondary,
               ),
               const SizedBox(width: 6),
               Text(
-                widget.active.label,
+                _displayLabel,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -140,6 +179,7 @@ class _DateFilterMenu extends StatelessWidget {
   final AnimationController anim;
   final QueueDateFilter active;
   final ValueChanged<QueueDateFilter> onSelect;
+  final VoidCallback onPickDate;
   final VoidCallback onDismiss;
 
   const _DateFilterMenu({
@@ -147,6 +187,7 @@ class _DateFilterMenu extends StatelessWidget {
     required this.anim,
     required this.active,
     required this.onSelect,
+    required this.onPickDate,
     required this.onDismiss,
   });
 
@@ -160,7 +201,6 @@ class _DateFilterMenu extends StatelessWidget {
 
     return Stack(
       children: [
-        // Invisible full-screen tap catcher to dismiss on outside tap.
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
@@ -184,7 +224,7 @@ class _DateFilterMenu extends StatelessWidget {
                   child: Material(
                     color: Colors.transparent,
                     child: Container(
-                      width: 190,
+                      width: 200,
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -200,13 +240,26 @@ class _DateFilterMenu extends StatelessWidget {
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
-                        children: QueueDateFilter.values
-                            .map((filter) => _MenuItem(
-                                  filter: filter,
-                                  selected: filter == active,
-                                  onTap: () => onSelect(filter),
-                                ))
-                            .toList(),
+                        children: [
+                          ...QueueDateFilterX.presets.map(
+                            (filter) => _MenuItem(
+                              icon: filter.icon,
+                              label: filter.label,
+                              selected: filter == active,
+                              onTap: () => onSelect(filter),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Divider(height: 1, color: AppColors.border),
+                          ),
+                          _MenuItem(
+                            icon: Icons.calendar_month_rounded,
+                            label: 'Pick a date',
+                            selected: active == QueueDateFilter.custom,
+                            onTap: onPickDate,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -221,12 +274,14 @@ class _DateFilterMenu extends StatelessWidget {
 }
 
 class _MenuItem extends StatelessWidget {
-  final QueueDateFilter filter;
+  final IconData icon;
+  final String label;
   final bool selected;
   final VoidCallback onTap;
 
   const _MenuItem({
-    required this.filter,
+    required this.icon,
+    required this.label,
     required this.selected,
     required this.onTap,
   });
@@ -245,12 +300,15 @@ class _MenuItem extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(filter.icon,
-                size: 16, color: selected ? AppColors.blueText : AppColors.textSecondary),
+            Icon(
+              icon,
+              size: 16,
+              color: selected ? AppColors.blueText : AppColors.textSecondary,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                filter.label,
+                label,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w500,

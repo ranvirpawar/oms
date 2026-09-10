@@ -39,19 +39,19 @@ class PatientQueueView extends GetView<PatientQueueController> {
         onSearchCleared: controller.clearSearch,
         actions: [
           Obx(
-                () => IconButton(
+            () => IconButton(
               onPressed: controller.isRefreshing.value
                   ? null
                   : controller.refreshPatients,
               icon: controller.isRefreshing.value
                   ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
                   : const Icon(Icons.refresh_rounded, color: Colors.white),
             ),
           ),
@@ -108,7 +108,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
             child: Obx(
-                  () => Row(
+              () => Row(
                 children: [
                   Expanded(
                     child: VisitTypeTabs(
@@ -121,7 +121,10 @@ class PatientQueueView extends GetView<PatientQueueController> {
                   const SizedBox(width: 10),
                   DateFilterTile(
                     active: controller.activeDateFilter.value,
+                    customDate: controller.customDate.value,
+                    orderDates: controller.orderDates,
                     onChanged: controller.setDateFilter,
+                    onCustomDateSelected: controller.setCustomDate,
                   ),
                 ],
               ),
@@ -129,7 +132,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
           ),
 
           Obx(
-                () => StatusFilterBar(
+            () => StatusFilterBar(
               filters: controller.statusFilters,
               activeStatus: controller.activeStatusFilter.value,
               onFilterSelected: controller.setStatusFilter,
@@ -155,8 +158,8 @@ class PatientQueueView extends GetView<PatientQueueController> {
                       title: collectionEmpty ? 'No arrived patients' : null,
                       subtitle: collectionEmpty
                           ? "Only orders with status 'Arrived' can be "
-                          'collected into this bag. They will appear here '
-                          'once the patient is marked as arrived.'
+                                'collected into this bag. They will appear here '
+                                'once the patient is marked as arrived.'
                           : null,
                       onClearFilter: isFiltered
                           ? controller.clearAllFilters
@@ -176,7 +179,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
                     key: ValueKey(patient.id),
                     index: index,
                     child: Obx(
-                          () => PatientCard(
+                      () => PatientCard(
                         key: ValueKey('card_${patient.id}'),
                         patient: patient,
                         isProcessing: controller.processingIds.contains(
@@ -187,14 +190,17 @@ class PatientQueueView extends GetView<PatientQueueController> {
                         onReschedule: () => RescheduleSheet.show(
                           context,
                           patient: patient,
-                          onFetchSlots: (date) => controller.fetchAvailableSlots(date),
-                          onFetchReasons: () => controller.fetchRescheduleReasons(),
-                          onConfirm: (date, slot, reasonId) => controller.rescheduleAssignment(
-                            patient,
-                            newDate: date,
-                            slot: slot,
-                            rescheduleReasonId: reasonId,
-                          ),
+                          onFetchSlots: (date) =>
+                              controller.fetchAvailableSlots(date),
+                          onFetchReasons: () =>
+                              controller.fetchRescheduleReasons(),
+                          onConfirm: (date, slot, reasonId) =>
+                              controller.rescheduleAssignment(
+                                patient,
+                                newDate: date,
+                                slot: slot,
+                                rescheduleReasonId: reasonId,
+                              ),
                         ),
                         onPrimaryAction: () => _handlePrimaryAction(patient),
                         onStartRoute: () => controller.startRoute(patient),
@@ -311,7 +317,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
       child: Column(
         children: [
           const SizedBox(height: 14),
-          *//*Obx(
+          */ /*Obx(
                 () => QueueSummaryBar(
               activeFilter: controller.activeFilter.value,
               allCount: controller.totalCount,
@@ -321,7 +327,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
               onFilterSelected: controller.setFilter,
             ),
           ),
-*//*
+*/ /*
           Obx(
             () => StatusFilterBar(
               filters: controller.statusFilters,

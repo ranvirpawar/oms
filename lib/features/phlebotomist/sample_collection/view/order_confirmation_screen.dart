@@ -84,11 +84,12 @@ class OrderConfirmationScreen extends GetView<SampleCollectionController> {
               right: 0,
               bottom: 0,
               child: Obx(
-                () => _ConfirmBar(
-                  controller: controller,
-                  enabled:
+                    () =>
+                    _ConfirmBar(
+                      controller: controller,
+                      enabled:
                       controller.hasOpenBag, // pass this through to the button
-                ),
+                    ),
               ),
             ),
           ],
@@ -181,22 +182,22 @@ class _ConfirmBar extends StatelessWidget {
           onPressed: () {
             if (enabled) {
               controller.confirmAndCollect();
-              Get.to(() => const OtpVerificationScreen());
             } else {
-              LiquidSnack.error('You need to open a bag first for sample collection');
+              LiquidSnack.error(
+                'You need to open a bag first for sample collection',
+              );
             }
-            ;
           },
           child: const Text(
-            'Confirm & Collect',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
+          'Confirm & Collect',
+          style: TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w700,
+          color: Colors.white,
         ),
       ),
+    ),)
+    ,
     );
   }
 }
@@ -251,7 +252,8 @@ class _RouteTrackingMapState extends State<_RouteTrackingMap> {
   SampleCollectionController get controller => widget.controller;
 
   LatLng? get _destination {
-    final lat = controller.destinationLat, lng = controller.destinationLng;
+    final lat = controller.destinationLat,
+        lng = controller.destinationLng;
     if (lat == null || lng == null) return null;
     return LatLng(lat, lng);
   }
@@ -277,17 +279,18 @@ class _RouteTrackingMapState extends State<_RouteTrackingMap> {
   Future<void> _launchDirections(LatLng dest) async {
     final uri = Platform.isIOS
         ? Uri.parse(
-            'https://maps.apple.com/?daddr=${dest.latitude},${dest.longitude}',
-          )
+      'https://maps.apple.com/?daddr=${dest.latitude},${dest.longitude}',
+    )
         : Uri.parse(
-            'google.navigation:q=${dest.latitude},${dest.longitude}&mode=d',
-          );
+      'google.navigation:q=${dest.latitude},${dest.longitude}&mode=d',
+    );
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
       await launchUrl(
         Uri.parse(
-          'https://www.google.com/maps/dir/?api=1&destination=${dest.latitude},${dest.longitude}',
+          'https://www.google.com/maps/dir/?api=1&destination=${dest
+              .latitude},${dest.longitude}',
         ),
         mode: LaunchMode.externalApplication,
       );
@@ -311,7 +314,7 @@ class _RouteTrackingMapState extends State<_RouteTrackingMap> {
             mapController: _mapController,
             options: MapOptions(
               initialCenter:
-                  current ?? destination ?? const LatLng(19.8762, 75.3433),
+              current ?? destination ?? const LatLng(19.8762, 75.3433),
               initialZoom: 14,
             ),
             children: [
@@ -493,20 +496,20 @@ class _RouteBottomSheet extends StatelessWidget {
                     ),
                     child: controller.isMarkingArrived.value
                         ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(Colors.white),
-                            ),
-                          )
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                      ),
+                    )
                         : const Text(
-                            'Arrived at Location',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                      'Arrived at Location',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -550,8 +553,8 @@ class _NeedsRouteStartView extends StatelessWidget {
               Expanded(
                 child: Text(
                   'You need to start the route and mark yourself as '
-                  'arrived at the collection location before you can '
-                  'collect the sample.',
+                      'arrived at the collection location before you can '
+                      'collect the sample.',
                   style: TextStyle(
                     fontSize: 12.5,
                     color: AppColors.textSecondary,

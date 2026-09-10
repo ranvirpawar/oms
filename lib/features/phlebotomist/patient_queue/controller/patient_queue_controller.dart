@@ -12,6 +12,7 @@ import '../../../../utils/ui_designs/liquid_snackbar.dart' hide SnackPosition;
 
 import '../view/widgets/queue_date_filter.dart';
 
+
 /// Filter options surfaced via the summary bar at the top of the screen.
 enum QueueFilter { all, homeVisit, clinicVisit, rescheduled }
 
@@ -64,8 +65,12 @@ class PatientQueueController extends GetxController {
   /// treated as a "clearable" filter the way search/status/date are.
   final Rx<VisitType> activeVisitType = VisitType.clinic.obs;
 
-  /// Forward-looking date horizon for the queue. Defaults to Today.
+  /// Date horizon for the queue. Defaults to Today.
   final Rx<QueueDateFilter> activeDateFilter = QueueDateFilter.today.obs;
+
+  /// The specific day picked from the calendar, when [activeDateFilter] is
+  /// [QueueDateFilter.custom]. Normalized to midnight. Null otherwise.
+  final Rx<DateTime?> customDate = Rx<DateTime?>(null);
 
   // Session values needed for the accept payload.
   final RxString empId = ''.obs;
@@ -95,14 +100,17 @@ class PatientQueueController extends GetxController {
       ? _patients.where((p) => p.status == PatientStatus.arrived)
       : _patients;
 
+  static DateTime _midnight(DateTime d) => DateTime(d.year, d.month, d.day);
+
   /// Whether a patient falls inside the active date horizon. Patients
-  /// without a slot time are treated as "needs action today" rather than
-  /// silently dropped, except under "Upcoming" where an unscheduled order
-  /// has nothing to show yet.
+  /// without a slot time default into "Today" (an operational assumption:
+  /// unscheduled orders need attention now) — they're excluded from every
+  /// other bucket, including "This week", since they have no date to
+  /// compare against.
   bool _matchesDateFilter(AssignedPatient p) {
     final slot = p.slotDateTime;
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = _midnight(now);
     final tomorrow = today.add(const Duration(days: 1));
     final weekStart = today.subtract(Duration(days: today.weekday - 1));
     final weekEnd = weekStart.add(const Duration(days: 7));
@@ -117,6 +125,13 @@ class PatientQueueController extends GetxController {
       case QueueDateFilter.future:
         if (slot == null) return false;
         return !slot.isBefore(weekEnd);
+      case QueueDateFilter.past:
+        if (slot == null) return false;
+        return slot.isBefore(today);
+      case QueueDateFilter.custom:
+        final picked = customDate.value;
+        if (slot == null || picked == null) return false;
+        return _midnight(slot) == picked;
     }
   }
 
@@ -126,6 +141,19 @@ class PatientQueueController extends GetxController {
   Iterable<AssignedPatient> get _contextPatients => _visiblePatients
       .where((p) => p.visitType == activeVisitType.value)
       .where(_matchesDateFilter);
+
+  /// Every distinct day (normalized to midnight) that has at least one
+  /// order for the currently active visit-type tab — used to gate the
+  /// calendar so only days with real orders are selectable, regardless
+  /// of which date-horizon bucket is currently applied.
+  Set<DateTime> get orderDates {
+    final dates = <DateTime>{};
+    for (final p in _visiblePatients.where((p) => p.visitType == activeVisitType.value)) {
+      final slot = p.slotDateTime;
+      if (slot != null) dates.add(_midnight(slot));
+    }
+    return dates;
+  }
 
   /// Patients matching the active filter + search query, sorted so the
   /// most urgent / soonest / actionable items surface first.
@@ -249,8 +277,21 @@ class PatientQueueController extends GetxController {
   /// Switches between the Clinic and Home visit-type tabs.
   void setVisitType(VisitType type) => activeVisitType.value = type;
 
-  /// Switches the date horizon (Today / This week / Upcoming).
-  void setDateFilter(QueueDateFilter filter) => activeDateFilter.value = filter;
+  /// Switches the date horizon (Today / This week / Upcoming / Past).
+  /// Any preset other than [QueueDateFilter.custom] clears a previously
+  /// picked calendar date so stale state can't leak back in later.
+  void setDateFilter(QueueDateFilter filter) {
+    activeDateFilter.value = filter;
+    if (filter != QueueDateFilter.custom) {
+      customDate.value = null;
+    }
+  }
+
+  /// Applies a specific day picked from the calendar.
+  void setCustomDate(DateTime date) {
+    customDate.value = _midnight(date);
+    activeDateFilter.value = QueueDateFilter.custom;
+  }
 
   void clearSearch() {
     searchQuery.value = '';

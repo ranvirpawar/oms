@@ -5,6 +5,7 @@ import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/model/sample_collection_models.dart';
 
 import '../controller/sample_collection_controller.dart';
+import 'barcode_validator.dart';
 
 enum BarcodeCheckStatus { idle, checking, available, unavailable, duplicate, formatError, error }
 
@@ -14,7 +15,7 @@ class SampleBarcodeEntry {
   final String volumeRequiredMl;
   final List<TestInfo> tests;
 
-  final TextEditingController barcodeController = TextEditingController();
+  final   TextEditingController barcodeController = TextEditingController(text: BarcodeValidator.prefix,);
   final Rx<SampleCollectionStatus> status = SampleCollectionStatus.pending.obs;
 
   // ── Barcode verification (server-checked availability) ──────────────────
@@ -40,7 +41,15 @@ class SampleBarcodeEntry {
     required this.sampleType,
     required this.volumeRequiredMl,
     required this.tests,
-  });
+  }) {
+    // barcodeController = TextEditingController(
+    //   text: BarcodeValidator.prefix, // "JAA"
+    // );
+    // Critical: put the cursor AFTER the prefix so the user types digits immediately
+    barcodeController.selection = TextSelection.collapsed(
+      offset: BarcodeValidator.prefix.length,
+    );
+  }
 
   bool get isCollected => status.value == SampleCollectionStatus.collected;
   bool get isPending => status.value == SampleCollectionStatus.pending;

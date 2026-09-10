@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../controller/sample_collection_controller.dart';
 import '../../model/barcode_formatter.dart';
+import '../../model/barcode_validator.dart';
 
 class BarcodeInputField extends StatelessWidget {
   final SampleBarcodeEntry entry;
@@ -62,9 +63,14 @@ class BarcodeInputField extends StatelessWidget {
                     controller: entry.barcodeController,
                     onChanged: onChanged,
                     maxLength: 15,
-                    style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
+                    keyboardType: TextInputType.number,          // numeric keypad only
+                    textCapitalization: TextCapitalization.characters,
                     inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9\-]')),
+                      // Force uppercase + only allow digits after the fixed prefix
+                      FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                      LengthLimitingTextInputFormatter(BarcodeValidator.maxLength),
+                      // Optional: a custom formatter that never lets the user delete the "JAA"
+                      _JaaPrefixFormatter(),
                     ],
 
                     decoration: InputDecoration(
@@ -188,82 +194,37 @@ class _ScanButton extends StatelessWidget {
   }
 }
 
-
-/*class BarcodeInputField extends StatelessWidget {
-  final TextEditingController controller;
-  final VoidCallback onScanTap;
-  final ValueChanged<String> onChanged;
-  final bool hasError;
-
-  const BarcodeInputField({
-    super.key,
-    required this.controller,
-    required this.onScanTap,
-    required this.onChanged,
-    this.hasError = false,
-  });
-
+class _JaaPrefixFormatter extends TextInputFormatter {
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 44,
-      decoration: BoxDecoration(
-        color: AppColors.grayLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: hasError ? AppColors.redText : Colors.transparent,
-          width: 1.2,
-        ),
-      ),
-      child: Row(
-        children: [
-          const SizedBox(width: 12),
-          const Icon(Icons.numbers_rounded, size: 15, color: AppColors.textMuted),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              onChanged: onChanged,
-              maxLength: 14,
-              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
-              inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
-              decoration: const InputDecoration(
-                isDense: true,
-                counterText: '',
-                hintText: 'Enter or scan barcode',
-                hintStyle: TextStyle(fontSize: 13, color: AppColors.textMuted, fontWeight: FontWeight.w400),
-                border: InputBorder.none,
-              ),
-            ),
-          ),
-          _ScanButton(onTap: onScanTap),
-        ],
-      ),
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue,
+      TextEditingValue newValue,
+      ) {
+    const prefix = BarcodeValidator.prefix;
+    String text = newValue.text.toUpperCase();
+
+    // Always keep the prefix
+    if (!text.startsWith(prefix)) {
+      text = prefix + text.replaceAll(RegExp(r'[^0-9]'), '');
+    } else {
+      // Keep only digits after the prefix
+      final after = text.substring(prefix.length).replaceAll(RegExp(r'[^0-9]'), '');
+      text = prefix + after;
+    }
+
+    // Clamp length
+    if (text.length > BarcodeValidator.maxLength) {
+      text = text.substring(0, BarcodeValidator.maxLength);
+    }
+
+    // Keep cursor after the prefix at minimum
+    int offset = newValue.selection.baseOffset;
+    if (offset < prefix.length) offset = prefix.length;
+    if (offset > text.length) offset = text.length;
+
+    return TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: offset),
     );
   }
-}*/
-/*
-
-class _ScanButton extends StatelessWidget {
-  final VoidCallback onTap;
-  const _ScanButton({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(4),
-      child: Material(
-        color: AppColors.accent700,
-        borderRadius: BorderRadius.circular(9),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(9),
-          onTap: onTap,
-          child: const Padding(
-            padding: EdgeInsets.all(8),
-            child: Icon(Icons.qr_code_scanner_rounded, size: 18, color: Colors.white),
-          ),
-        ),
-      ),
-    );
-  }
-}*/
+}

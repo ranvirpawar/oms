@@ -117,6 +117,8 @@ class OrderConfirmationDetails {
   final String orderId;
   final String priority;
   final String slotDate;
+  final String sampleCollectionOrderId;
+  final bool isOtpVerified;
   final String slotStartTime;
   final String slotEndTime;
   final String slotDateTime;
@@ -139,6 +141,8 @@ class OrderConfirmationDetails {
     required this.patient,
     required this.mobileNumber,
     required this.fastingRequired,
+    required this.sampleCollectionOrderId,
+    required this.isOtpVerified,
     this.fastingNote,
     required this.specialInstructions,
     required this.sampleRequirements,
@@ -165,6 +169,8 @@ class OrderConfirmationDetails {
       // `patient`, not a field inside it — matches the sample-requirements
       // response as logged.
       mobileNumber: json['MobileNumber']?.toString() ?? '',
+      sampleCollectionOrderId: json['SampleCollectionOrderID']?.toString() ?? '',
+      isOtpVerified: json['IsOTPverify']?.toString().toLowerCase() == 'yes',
       fastingRequired: json['fastingRequired'] == true,
       fastingNote: json['fastingNote'] as String?,
       specialInstructions: specialList is List
@@ -187,7 +193,8 @@ class OrderConfirmationDetails {
           : int.tryParse('${json['totalTestCountReceived']}') ?? 0,
     );
   }
-}
+
+  }
 
 // ---------------------------------------------------------------------------
 // Complications / Incomplete reasons
