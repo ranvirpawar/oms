@@ -20,6 +20,7 @@ class PatientQueueBinding extends Bindings {
         service: Get.find<PatientQueueService>(),
         isCollectionMode: isCollectionMode,
       ),
+      fenix: true,
     );
   }
 }

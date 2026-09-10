@@ -64,7 +64,7 @@ class SampleCollectionScreen extends GetView<SampleCollectionController> {
             children: [
               // Which bag the phlebotomist is collecting into — shows the
               // open bag's live capacity and lets them switch bags.
-              BagContextBanner(controller: controller, isOrderConfirmationPage: false,),
+              BagContextBanner(bagContext: controller, isOrderConfirmationPage: false,),
               const SizedBox(height: 14),
               // No outer Obx needed anymore — _ProgressSummary observes its
               // own reactive counts internally (see fix below).

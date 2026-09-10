@@ -15,6 +15,7 @@ import '../../../../../utils/ui_designs/tap_menu.dart';
 import '../../controller/sample_collection_controller.dart';
 
 import '../../model/barcode_formatter.dart';
+import '../../model/sample_collection_models.dart';
 import '../../model/sample_stype_style.dart';
 
 import 'barcode_input_field.dart';

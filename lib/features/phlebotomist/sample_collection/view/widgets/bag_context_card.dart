@@ -1,35 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
-
 import '../../../../../theme/app_colors.dart';
 import '../../../patient_registration/bag_status_dashboard/view/scan_bag_page.dart';
-import '../../controller/sample_collection_controller.dart';
-import 'active_bag_card.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:get/get.dart';
-import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
+import '../../controller/bag_context_mixin.dart';
 
-import '../../../../../theme/app_colors.dart';
-import '../../../patient_registration/bag_status_dashboard/view/scan_bag_page.dart';
-import '../../controller/sample_collection_controller.dart';
 import 'active_bag_card.dart';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get.dart';
-import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
-
-import '../../../../../theme/app_colors.dart';
-import '../../../patient_registration/bag_status_dashboard/view/scan_bag_page.dart';
-import '../../controller/sample_collection_controller.dart';
-import 'active_bag_card.dart';
 
 class BagContextBanner extends StatelessWidget {
-  final SampleCollectionController controller;
+  final HasBagContext bagContext;
 
   /// Whether this instance lives on the sample-collection page. Only there
   /// can the phlebo act on the bag state (reopen / start new bag) — every
@@ -38,14 +19,14 @@ class BagContextBanner extends StatelessWidget {
   final bool isOrderConfirmationPage;
 
   const BagContextBanner({
-    required this.controller,
+    required this.bagContext,
     this.isOrderConfirmationPage = true,
   });
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final bag = controller.bagController;
+      final bag = bagContext.bagController;
 
       // Hide while the very first session fetch is still in flight.
       if (bag.isLoading.value && !bag.hasBags) return const SizedBox.shrink();
@@ -55,8 +36,8 @@ class BagContextBanner extends StatelessWidget {
       // flag is stale/non-reactive right after a reopen or a new-bag scan),
       // fall back to the "no open bag" state instead of rendering
       // "Collecting into Bag #0" with no way to fix it.
-      final looksOpen = controller.hasOpenBag &&
-          (controller.activeBagId > 0 || controller.activeBagcode.isNotEmpty);
+      final looksOpen = bagContext.hasOpenBag &&
+          (bagContext.activeBagId > 0 || bagContext.activeBagcode.isNotEmpty);
 
       return _PremiumCard(
         child: AnimatedSwitcher(
@@ -66,13 +47,13 @@ class BagContextBanner extends StatelessWidget {
           child: looksOpen
               ? _OpenBagContent(
             key: const ValueKey('open'),
-            controller: controller,
+            controller: bagContext,
             bag: bag,
             showActions: isOrderConfirmationPage,
           )
               : _NoOpenBagContent(
             key: const ValueKey('closed'),
-            controller: controller,
+            controller: bagContext,
             bag: bag,
             showActions: isOrderConfirmationPage,
           ),
@@ -114,7 +95,7 @@ class _PremiumCard extends StatelessWidget {
 /// --- No open bag ------------------------------------------------------
 
 class _NoOpenBagContent extends StatelessWidget {
-  final SampleCollectionController controller;
+  final HasBagContext controller;
   final dynamic bag; // BagController (typed dynamic to avoid an import cycle here)
   final bool showActions;
 
@@ -233,7 +214,7 @@ class _NoOpenBagContent extends StatelessWidget {
 /// --- Open bag ------------------------------------------------------
 
 class _OpenBagContent extends StatelessWidget {
-  final SampleCollectionController controller;
+  final HasBagContext controller;
   final dynamic bag; // BagController
   final bool showActions;
   const _OpenBagContent({
@@ -439,7 +420,7 @@ class _ActionButtonState extends State<_ActionButton> {
 
 /*
 class BagContextBanner extends StatelessWidget {
-  final SampleCollectionController controller;
+  final OrderConfirmationController controller;
 
   const BagContextBanner({required this.controller});
 

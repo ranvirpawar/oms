@@ -52,8 +52,8 @@ class SampleCollectionSuccessPage extends StatelessWidget {
     _finish();
   }
 
-  void _finish() {
-    RouteManager.redirectToHomeDashboard();
+  Future<void> _finish() async {
+    await RouteManager.redirectToHomeDashboard();
     RouteManager.navigateToPatientQueue();
   }
 

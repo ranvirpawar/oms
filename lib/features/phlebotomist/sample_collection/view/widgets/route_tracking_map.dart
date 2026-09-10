@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:lifenity_connect/features/phlebotomist/sample_collection/controller/order_confirmation_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../theme/app_colors.dart';
@@ -12,7 +13,7 @@ import '../../controller/sample_collection_controller.dart';
 import 'order_summary_card.dart';
 
 class RouteTrackingMap extends StatefulWidget {
-  final SampleCollectionController controller;
+  final OrderConfirmationController controller;
 
   const RouteTrackingMap({super.key, required this.controller});
 
@@ -24,7 +25,7 @@ class RouteTrackingMapState extends State<RouteTrackingMap> {
   final MapController _mapController = MapController();
   bool _hasFramedOnce = false;
 
-  SampleCollectionController get controller => widget.controller;
+  OrderConfirmationController get controller => widget.controller;
 
   LatLng? get _destination {
     final lat = controller.destinationLat,
@@ -183,7 +184,7 @@ class RouteTrackingMapState extends State<RouteTrackingMap> {
 }
 
 class _RouteBottomSheet extends StatelessWidget {
-  final SampleCollectionController controller;
+  final OrderConfirmationController controller;
   final VoidCallback? onDirections;
 
   const _RouteBottomSheet({required this.controller, this.onDirections});

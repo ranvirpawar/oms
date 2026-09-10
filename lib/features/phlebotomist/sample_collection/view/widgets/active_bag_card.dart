@@ -14,6 +14,7 @@ import '../../../../../theme/app_colors.dart';
 import '../../../patient_registration/bag_status_dashboard/controller/registrarion_bag_controller.dart';
 import '../../../patient_registration/bag_status_dashboard/model/qr_bag_session.dart';
 import '../../../patient_registration/bag_status_dashboard/view/scan_bag_page.dart';
+import '../../controller/bag_context_mixin.dart';
 import '../../controller/sample_collection_controller.dart';
 // active_bag_card.dart
 //
@@ -743,7 +744,7 @@ class _CapacityNotice extends StatelessWidget {
 /// current one), close the open one, or scan a brand-new bag.
 Future<void> showBagPicker(
     BuildContext context,
-    SampleCollectionController controller,
+    HasBagContext controller,
     ) {
   return showModalBottomSheet<void>(
     context: context,
@@ -757,7 +758,7 @@ Future<void> showBagPicker(
 class _BagPickerSheet extends StatelessWidget {
   const _BagPickerSheet({required this.controller});
 
-  final SampleCollectionController controller;
+  final HasBagContext controller;
 
   @override
   Widget build(BuildContext context) {
@@ -900,7 +901,7 @@ class _SheetCloseButton extends StatelessWidget {
 class _BagRow extends StatelessWidget {
   const _BagRow({required this.controller, required this.session});
 
-  final SampleCollectionController controller;
+  final HasBagContext controller;
   final QRBagSession session;
 
   @override

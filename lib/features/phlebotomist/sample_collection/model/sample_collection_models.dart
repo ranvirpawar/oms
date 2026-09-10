@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // Tests / special instructions
 // ---------------------------------------------------------------------------
-
+enum SampleCollectionStatus { pending, collected, incomplete }
 class TestInfo {
   final int testId;
   final String testCode;
@@ -118,7 +118,7 @@ class OrderConfirmationDetails {
   final String priority;
   final String slotDate;
   final String sampleCollectionOrderId;
-  final bool isOtpVerified;
+  final String isOtpVerified;
   final String slotStartTime;
   final String slotEndTime;
   final String slotDateTime;
@@ -170,7 +170,7 @@ class OrderConfirmationDetails {
       // response as logged.
       mobileNumber: json['MobileNumber']?.toString() ?? '',
       sampleCollectionOrderId: json['SampleCollectionOrderID']?.toString() ?? '',
-      isOtpVerified: json['IsOTPverify']?.toString().toLowerCase() == 'yes',
+      isOtpVerified: json['IsOTPverify']?.toString() ?? '',
       fastingRequired: json['fastingRequired'] == true,
       fastingNote: json['fastingNote'] as String?,
       specialInstructions: specialList is List
@@ -231,6 +231,13 @@ class IncompleteReasonOption {
       reason: json['IncompleteReason'] as String? ?? '',
     );
   }
+}
+
+class TestIncompleteInfo {
+  TestIncompleteInfo({required this.reason, this.remarks = ''});
+
+  final IncompleteReasonOption reason;
+  final String remarks;
 }
 
 // ---------------------------------------------------------------------------

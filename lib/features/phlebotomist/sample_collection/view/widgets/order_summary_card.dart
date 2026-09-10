@@ -127,10 +127,7 @@ class _OrderPatientSummaryCardState extends State<OrderPatientSummaryCard> {
 
   @override
   Widget build(BuildContext context) {
-    final hasBody = widget.fastingRequired ||
-        (widget.fastingNote?.isNotEmpty ?? false) ||
-        widget.specialInstructions.isNotEmpty ||
-        widget.sampleGroups.isNotEmpty;
+    final hasBody = widget.sampleGroups.isNotEmpty;
 
     final card = Container(
       decoration: BoxDecoration(
@@ -146,6 +143,7 @@ class _OrderPatientSummaryCardState extends State<OrderPatientSummaryCard> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Header
             GestureDetector(
               onTapDown: hasBody ? (_) => setState(() => _pressed = true) : null,
               onTapUp: hasBody ? (_) => setState(() => _pressed = false) : null,
@@ -171,6 +169,8 @@ class _OrderPatientSummaryCardState extends State<OrderPatientSummaryCard> {
                 ),
               ),
             ),
+
+            // Expandable Tests only
             AnimatedSize(
               duration: const Duration(milliseconds: 280),
               curve: Curves.easeOutCubic,
@@ -194,20 +194,23 @@ class _OrderPatientSummaryCardState extends State<OrderPatientSummaryCard> {
 
     if (!widget.floating) return card;
 
-    // Floating (map-overlay) variant: subtle extra elevation so it reads
-    // as sitting above the map rather than embedded in a list.
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
+    return Column(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.12),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: card,
+          child: card,
+        ),
+        OrderInstructionsCard()
+      ],
     );
   }
 }
@@ -362,7 +365,7 @@ class _Body extends StatefulWidget {
 }
 
 class _BodyState extends State<_Body> {
-  bool _instructionsExpanded = false; // start expanded (change to false if you prefer collapsed)
+   // start expanded (change to false if you prefer collapsed)
 
   @override
   Widget build(BuildContext context) {
@@ -405,119 +408,7 @@ class _BodyState extends State<_Body> {
           ..._buildGroups(),
         ],
 
-        if (hasInstructions) ...[
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: AppColors.amberLight.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.amberBorder),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Tappable header (keeps the original look + chevron)
-                InkWell(
-                  onTap: () {
-                    setState(() {
-                      _instructionsExpanded = !_instructionsExpanded;
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(14),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.info_outline_rounded,
-                          size: 15,
-                          color: AppColors.amberText,
-                        ),
-                        const SizedBox(width: 6),
-                        const Expanded(
-                          child: Text(
-                            'Instructions',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        AnimatedRotation(
-                          turns: _instructionsExpanded ? 0.5 : 0.0,
-                          duration: const Duration(milliseconds: 200),
-                          child: const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            size: 20,
-                            color: AppColors.textTertiary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
 
-                // Collapsible content
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeInOut,
-                  alignment: Alignment.topCenter,
-                  child: _instructionsExpanded
-                      ? Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (widget.fastingRequired &&
-                            (widget.fastingNote?.isNotEmpty ?? false)) ...[
-                          Text(
-                            widget.fastingNote!,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                        for (final instruction
-                        in widget.specialInstructions)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Row(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  '•  ',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    instruction,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  )
-                      : const SizedBox.shrink(),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
       ],
     );
   }
@@ -605,8 +496,180 @@ class _BodyState extends State<_Body> {
     return widgets;
   }
 }
-/// One test row inside a sample group. `code` is optional (AssignedPatient's
-/// pre-fetch test list has none; the fetched order's TestInfo usually does).
+class OrderInstructionsCard extends StatefulWidget {
+  final bool fastingRequired;
+  final String? fastingNote;
+  final List<String> specialInstructions;
+  final bool initiallyExpanded;
+  final bool floating;
+
+  const OrderInstructionsCard({
+    super.key,
+    this.fastingRequired = false,
+    this.fastingNote,
+    this.specialInstructions = const [],
+    this.initiallyExpanded = false,
+    this.floating = false,
+  });
+
+  @override
+  State<OrderInstructionsCard> createState() => _OrderInstructionsCardState();
+}
+
+class _OrderInstructionsCardState extends State<OrderInstructionsCard> {
+  late bool _expanded = widget.initiallyExpanded;
+
+  bool get hasContent =>
+      (widget.fastingRequired && (widget.fastingNote?.isNotEmpty ?? false)) ||
+          widget.specialInstructions.isNotEmpty;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!hasContent) return const SizedBox.shrink();
+
+    final card = Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: widget.floating
+            ? AppColors.bgCard.withOpacity(0.92)
+            : AppColors.bgCard,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppColors.shadowSm,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                setState(() => _expanded = !_expanded);
+              },
+              borderRadius: BorderRadius.circular(18),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.amberLight.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.info_outline_rounded,
+                        size: 18,
+                        color: AppColors.amberText,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Instructions',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    AnimatedRotation(
+                      turns: _expanded ? 0.5 : 0.0,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      child: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 22,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Content
+            AnimatedSize(
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: !_expanded
+                  ? const SizedBox(width: double.infinity)
+                  : Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Divider(height: 1),
+                    const SizedBox(height: 12),
+                    if (widget.fastingRequired &&
+                        (widget.fastingNote?.isNotEmpty ?? false)) ...[
+                      Text(
+                        widget.fastingNote!,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                          height: 1.45,
+                        ),
+                      ),
+                      if (widget.specialInstructions.isNotEmpty)
+                        const SizedBox(height: 10),
+                    ],
+                    for (final instruction in widget.specialInstructions)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '•  ',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                instruction,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                  height: 1.45,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (!widget.floating) return card;
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: card,
+    );
+  }
+}
 class SummaryTestItem {
   final String name;
   final String? code;
