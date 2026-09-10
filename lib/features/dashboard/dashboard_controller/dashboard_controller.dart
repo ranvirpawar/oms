@@ -253,7 +253,7 @@ class DashboardController extends GetxController {
      DashboardTileCard( variant: DashboardTileVariant.grid,title: 'Collect Bag From Phlebotomist', icon: AppAssets.bagFilledWithSamples, onTap: RouteManager.navigateToCollectBagsFromPhlebotomist),
      DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.collectedSampleBags, icon: AppAssets.bagsCollected, onTap: RouteManager.navigateToCollectedBags),
      DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.bagStatus, icon: AppAssets.bagStatus, onTap: RouteManager.navigateToBagStatus),
-     DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.samplePickup, icon: AppAssets.bagFilledWithSamples, onTap: RouteManager.navigateToSamplePickupDashboard),
+     // DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.samplePickup, icon: AppAssets.bagFilledWithSamples, onTap: RouteManager.navigateToSamplePickupDashboard),
   ];
 
   List<DashboardTileCard> _connectorCards() => [
@@ -261,11 +261,11 @@ class DashboardController extends GetxController {
      DashboardTileCard( variant: DashboardTileVariant.grid,title: 'Collect Bag From Phlebotomist', icon: AppAssets.bagFilledWithSamples, onTap: RouteManager.navigateToCollectBagsFromPhlebotomist),
      DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.collectedSampleBags, icon: AppAssets.bagsCollected, onTap: RouteManager.navigateToCollectedBags),
      DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.bagStatus, icon: AppAssets.bagStatus, onTap: RouteManager.navigateToBagStatus),
-     DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.samplePickup, icon: AppAssets.bagFilledWithSamples, onTap: RouteManager.navigateToSamplePickupDashboard),
+     // DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.samplePickup, icon: AppAssets.bagFilledWithSamples, onTap: RouteManager.navigateToSamplePickupDashboard),
   ];
 
   List<DashboardTileCard> _labTechnicianCards() => [
-     DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.acceptSampleInLab, icon: AppAssets.bagAcceptedInLab, onTap: RouteManager.navigateToSampleAccept),
+     // DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.acceptSampleInLab, icon: AppAssets.bagAcceptedInLab, onTap: RouteManager.navigateToSampleAccept),
      DashboardTileCard( variant: DashboardTileVariant.grid,title: AppStrings.acceptBagInLab, icon: AppAssets.bagAcceptedInLab, onTap: RouteManager.navigateToAcceptBagInLaboratory),
     /* DashboardTileCard(
       title: AppStrings.handOverToInventory,

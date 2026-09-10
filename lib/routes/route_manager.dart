@@ -34,6 +34,7 @@ import '../features/dashboard/dashboard_controller/dashboard_controller.dart';
 import '../features/lab_technician/accept_handover_bag/view/accept_bag_in_lab_view.dart';
 import '../features/lab_technician/accept_handover_bag/view/handover_bag_view.dart';
 import '../features/phlebotomist/facility_count_dashboard/view/facility_count_dashboard.dart';
+import '../features/phlebotomist/patient_queue/controller/patient_queue_controller.dart';
 import '../features/phlebotomist/patient_queue/model/patient_queue_model.dart';
 import '../features/phlebotomist/patient_registration/view/patient_detail_page.dart';
 import '../features/phlebotomist/patient_registration/view/patient_registration_view.dart';
@@ -228,6 +229,9 @@ class RouteManager {
   /// have already Arrived are listed, since a bag can only collect samples
   /// for patients that are physically present.
   static void navigateToPatientQueue({bool isCollectionTrue = false}) {
+    if (Get.isRegistered<PatientQueueController>()) {
+      Get.delete<PatientQueueController>(force: true);
+    }
     Get.to(
       () => const PatientQueueView(),
       binding: PatientQueueBinding(),
