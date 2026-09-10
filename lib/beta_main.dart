@@ -32,13 +32,43 @@ void main() async {
   await AppTheme.initialize();
   Get.put(ThemeProvider());
   Get.put(AuthManager());
-  Get.put(SessionCoordinator(Get.find<AuthManager>()));
+  final sessionCoordinator = SessionCoordinator(Get.find<AuthManager>());
+  Get.put(sessionCoordinator);
   Get.put(APIClient(
     dio: Dio(),
     sessionManager: Get.find<SessionCoordinator>(),
   ));
+  _wireSessionExpiryHandling(sessionCoordinator);
   HttpOverrides.global = MyHttpOverrides();
   runApp(const MyApp());
+}
+
+/// The app-shell's SINGLE subscriber of session-expiry events.
+///
+/// [SessionCoordinator] emits [SessionExpired] exactly once when a 401 is
+/// seen (handled inside `APIClient`, which never touches the UI itself).
+/// Everything the user sees for a dead session — the one "Session expired,
+/// please login again" message — originates here, so it happens exactly
+/// once no matter how many parallel requests hit 401 at the same moment.
+///
+/// Screens must swallow `AppError.isSessionTerminal` errors (see the
+/// guards in controllers) so this is the only toast rendered on 401.
+/// Navigation to Login is performed by `AuthManager.logoutUser()` →
+/// `RouteManager.redirectToLogin()`, which [SessionCoordinator] already
+/// invokes as part of the teardown.
+void _wireSessionExpiryHandling(SessionCoordinator coordinator) {
+  coordinator.events.listen((event) {
+    if (event is! SessionExpired) return;
+
+    // Run after the current frame so the navigator's Overlay (used by
+    // LiquidSnack) is guaranteed to exist when we insert the toast.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      LiquidSnack.error(
+        'Your session has expired. Please login again.',
+        title: 'Session expired',
+      );
+    });
+  });
 }
 
 class MyApp extends StatelessWidget {

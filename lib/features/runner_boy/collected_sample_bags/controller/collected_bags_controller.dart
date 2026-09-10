@@ -2,22 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
+import '../../../../network/app_error.dart';
 import '../../../../services/user_service.dart';
 import '../../../../utils/ui_designs/liquid_snackbar.dart';
 import '../../../auth/model/login_response_model.dart';
 import '../../handover_to_connector/model/connector_model.dart';
 import '../model/collected_bag_model.dart';
 import '../service/collected_bags_service.dart';
-import 'package:flutter/material.dart';
+
+
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
-import '../../../../services/user_service.dart';
-import '../../../../utils/ui_designs/liquid_snackbar.dart';
-import '../../../auth/model/login_response_model.dart';
-import '../../handover_to_connector/model/connector_model.dart';
-import '../model/collected_bag_model.dart';
-import '../service/collected_bags_service.dart';
+import 'collected_bags_extension.dart';
+
 
 enum SubmissionState { idle, processing, success, error }
 
@@ -34,16 +32,28 @@ class CollectedBagsController extends GetxController {
 
   // Bags data
   final RxList<QRBag> bagsList = <QRBag>[].obs;
-  final RxList<QRBag> filteredBagsList = <QRBag>[].obs;
+  // filteredBagsList is a computed getter (see below)
   final RxString searchQuery = ''.obs;
 
-  // Multi-selection
+  // Multi-selection (kept as RxSet<int> – do not change type)
   final RxSet<int> selectedSessionIds = <int>{}.obs;
 
   // Submission progress tracking
   final RxInt submissionProgress = 0.obs;
   final RxInt submissionTotal = 0.obs;
   final RxList<String> submissionErrors = <String>[].obs;
+
+  // ── Filter / sort state ───────────────────────────────────────────────
+  final Rx<TatFilter> statusFilter = TatFilter.all.obs;
+  final RxnString facilityFilter = RxnString();
+  final RxString sortOption = 'newest'.obs; // 'newest' | 'oldest' | 'tubes'
+
+  // ── Handover (unchanged) ────────────────────────────────────────────
+  final Rxn<Connector> selectedConnector = Rxn<Connector>();
+  final RxBool isHandOverToRunnerBoy = true.obs;
+  final RxList<Connector> runnerBoyList = <Connector>[].obs;
+  final RxBool isFetchingRunnerBoys = false.obs;
+  final RxInt currentHandoverTab = 0.obs;
 
   @override
   void onInit() {
@@ -80,13 +90,17 @@ class CollectedBagsController extends GetxController {
 
       if (response.isSuccess && response.output != null) {
         bagsList.value = response.output!;
-        filteredBagsList.value = response.output!;
         debugPrint('✅ Loaded ${bagsList.length} bags');
       } else {
         bagsList.value = [];
-        filteredBagsList.value = [];
       }
     } catch (e) {
+      if (e is AppError && e.isSessionTerminal) {
+        // Session death is handled centrally (one "Session expired"
+        // message + redirect to Login) — don't render a second, garbled
+        // error toast for this screen's in-flight request.
+        return;
+      }
       errorMessage.value = e.toString().replaceAll('Exception: ', '');
       _showSnackbar('Error', errorMessage.value, isError: true);
     } finally {
@@ -94,7 +108,7 @@ class CollectedBagsController extends GetxController {
     }
   }
 
-  // ─── Selection ───────────────────────────────
+  // ─── Selection (unchanged) ───────────────────────────────
 
   void toggleBagSelection(QRBag bag) {
     HapticFeedback.selectionClick();
@@ -124,24 +138,92 @@ class CollectedBagsController extends GetxController {
     }
   }
 
-  // ─── Search ──────────────────────────────────
+  // ─── Search ────────────────────────────────────────────────
 
   void searchBags(String query) {
     searchQuery.value = query;
-    filteredBagsList.value = query.isEmpty
-        ? bagsList
-        : bagsList
-        .where((bag) =>
-        bag.bagcode.toLowerCase().contains(query.toLowerCase()))
-        .toList();
   }
 
   void clearSearch() {
     searchQuery.value = '';
-    filteredBagsList.value = bagsList;
   }
 
-  // ─── Submission ──────────────────────────────
+  // ─── TAT helpers used by the view ─────────────────────────
+
+  TatInfo tatFor(QRBag bag) => TatHelper.evaluate(
+    collectedAt: bag.collectedAt,
+    tubeCount: bag.tubeCount,
+  );
+
+  // ─── Derived getters used by the view ─────────────────────
+
+  /// Same as filteredBagsList but ignoring the status filter — used to
+  /// show the correct count on the "All" chip.
+  List<QRBag> get filteredBagsListUnfiltered =>
+      _applyNonStatusFilters(bagsList);
+
+  /// The list the view actually renders.
+  List<QRBag> get filteredBagsList {
+    var list = _applyNonStatusFilters(bagsList);
+
+    final targetStatus = statusFilter.value.toStatus;
+    if (targetStatus != null) {
+      list = list.where((bag) => tatFor(bag).status == targetStatus).toList();
+    }
+
+    list.sort((a, b) {
+      switch (sortOption.value) {
+        case 'oldest':
+          return a.collectedAt.compareTo(b.collectedAt);
+        case 'tubes':
+          return b.tubeCount.compareTo(a.tubeCount);
+        case 'newest':
+        default:
+          return b.collectedAt.compareTo(a.collectedAt);
+      }
+    });
+
+    return list;
+  }
+
+  List<QRBag> _applyNonStatusFilters(List<QRBag> source) {
+    return source.where((bag) {
+      if (facilityFilter.value != null &&
+          bag.facilityName != facilityFilter.value) {
+        return false;
+      }
+      if (searchQuery.value.isNotEmpty &&
+          !bag.bagcode
+              .toLowerCase()
+              .contains(searchQuery.value.toLowerCase())) {
+        return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  List<String> get availableFacilities {
+    final names = bagsList.map((b) => b.facilityName).toSet().toList();
+    names.sort();
+    return names;
+  }
+
+  int get onTrackCount =>
+      bagsList.where((b) => tatFor(b).status == TatStatus.onTrack).length;
+
+  int get dueSoonCount =>
+      bagsList.where((b) => tatFor(b).status == TatStatus.dueSoon).length;
+
+  int get overdueCount =>
+      bagsList.where((b) => tatFor(b).status == TatStatus.overdue).length;
+
+  int get emptyBagCount =>
+      bagsList.where((b) => tatFor(b).status == TatStatus.empty).length;
+
+  /// Bags that genuinely need the Runner's attention right now.
+  int get needsAttentionCount => overdueCount + dueSoonCount;
+
+  // ─── Submission (unchanged) ───────────────────────────────
 
   /// Submit to Lab (type=1). handoverUserId = userId (same person).
   Future<void> submitToLab() async {
@@ -154,7 +236,7 @@ class CollectedBagsController extends GetxController {
     await _runBatchSubmission(type: 1);
   }
 
-  /// Handover to Runner Boy (type=2). Prompts for runner boy ID.
+  /// Handover to Runner Boy / lab staff (type=2). Prompts for their ID.
   Future<void> handoverToConnector(int connectorUserId) async {
     if (!hasSelection) {
       _showSnackbar('Required', 'Please select at least one bag',
@@ -255,23 +337,13 @@ class CollectedBagsController extends GetxController {
     errorMessage.value = '';
     submissionState.value = SubmissionState.idle;
     searchQuery.value = '';
-    filteredBagsList.value = bagsList;
+    facilityFilter.value = null;
+    statusFilter.value = TatFilter.all;
+    sortOption.value = 'newest';
   }
 
-  //---------- Runner Boy handover -----------------
+  //---------- Handover to lab staff / runner boy (unchanged) -----------
 
-  final Rxn<Connector> selectedConnector = Rxn<Connector>();
-  // Handover is runner-boy only now, so this is always true.
-  final RxBool isHandOverToRunnerBoy = true.obs;
-
-  final RxList<Connector> runnerBoyList = <Connector>[].obs;
-  final RxBool isFetchingRunnerBoys = false.obs;
-
-  // Kept only so existing search UI (which references searchQuery) still works.
-  // Not used for tab logic any more since there is only one list.
-  final RxInt currentHandoverTab = 0.obs;
-
-  // Single entry point when the handover page opens.
   void initHandoverPage() {
     selectedConnector.value = null;
     searchQuery.value = '';
@@ -292,7 +364,7 @@ class CollectedBagsController extends GetxController {
   Future<void> fetchRunnerBoys() async {
     try {
       isFetchingRunnerBoys.value = true;
-      final list = await bagsService.getConnectorList('3');
+      final list = await bagsService.getConnectorList('3', userId.value);
       runnerBoyList.value = list;
     } catch (e) {
       _showSnackbar('Error', e.toString(), isError: true);
@@ -301,7 +373,6 @@ class CollectedBagsController extends GetxController {
     }
   }
 
-  // Only source is the runner boy list now.
   List<Connector> get filteredConnectors {
     final source = runnerBoyList;
     if (searchQuery.value.isEmpty) return source;
@@ -387,6 +458,9 @@ class CollectedBagsController extends GetxController {
         filteredBagsList.value = [];
       }
     } catch (e) {
+      if (e is AppError && e.isSessionTerminal) {
+        return; // session expired — app-shell listener handles it
+      }
       errorMessage.value = e.toString().replaceAll('Exception: ', '');
       _showSnackbar('Error', errorMessage.value, isError: true);
     } finally {

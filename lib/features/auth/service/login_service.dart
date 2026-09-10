@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
 
 import '../../../network/api_client.dart';
+import '../../../network/app_error.dart';
 import '../../../network/app_urls.dart';
 import '../../../utils/helper_functions/helper_methods.dart';
 import '../model/login_response_model.dart';
@@ -36,6 +37,12 @@ class LoginService {
         );
       }
     } catch (e) {
+      if (e is AppError && e.isSessionTerminal) {
+        // A 401 reached this unauthenticated login call: the session is
+        // already gone and the app-shell listener + AuthManager.logout
+        // own the message/redirect — don't stack a generic toast here.
+        rethrow;
+      }
       LiquidSnack.error('Something went wrong please try later');
       rethrow;
     }
@@ -73,6 +80,10 @@ class LoginService {
       }
     } catch (e) {
       kPrint('Error verifying OTP: $e');
+      if (e is AppError && e.isSessionTerminal) {
+        // Session teardown is handled centrally — no extra toast.
+        rethrow;
+      }
       LiquidSnack.error('Something went wrong please try later');
       rethrow;
     }
@@ -140,6 +151,15 @@ class LoginService {
         return false;
       }
     } catch (e) {
+      if (e is AppError && e.isSessionTerminal) {
+        // The token that triggered this 401 is already dead, so the
+        // server-side "logout" call can never succeed. The app-shell
+        // SessionCoordinator listener already showed "Session expired,
+        // please login again" — swallow quietly and let AuthManager
+        // finish the local teardown + redirect.
+        kPrint('logOutUser skipped — session already expired: $e');
+        return false;
+      }
       LiquidSnack.error('Something went wrong please try later');
       rethrow;
     }

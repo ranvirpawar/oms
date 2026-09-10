@@ -7,31 +7,56 @@ class QRBag {
   final int sessionId;
   final int bagId;
   final String bagcode;
-  final String collectedDate;
+  final String collectedDate;   // still keep for display if needed
+  final DateTime collectedAt;   // now uses the real timestamp
   final String status;
   final int tubeCount;
-  final String createdOn;
+  final String facilityName;
+  final DateTime createdAt;
 
   QRBag({
     required this.sessionId,
     required this.bagId,
     required this.bagcode,
     required this.collectedDate,
+    required this.collectedAt,
     required this.status,
     required this.tubeCount,
-    required this.createdOn,
+    required this.facilityName,
+    required this.createdAt,
   });
 
   factory QRBag.fromJson(Map<String, dynamic> json) {
+    final DateTime createdAt = _parseDateTime(json['Createdon']);
+
+    // Prefer Createdon (has time). Fall back to Collecteddate only if Createdon is missing.
+    final DateTime collectedAt = _parseDateTime(
+      json['Createdon'],
+      fallback: _parseDateTime(json['Collecteddate']),
+    );
+
     return QRBag(
       sessionId: json['SessionID'] ?? 0,
       bagId: json['BagID'] ?? 0,
       bagcode: json['Bagcode']?.toString() ?? '',
       collectedDate: json['Collecteddate']?.toString() ?? '',
+      collectedAt: collectedAt,
       status: json['Status']?.toString() ?? '',
       tubeCount: json['Tubecount'] ?? 0,
-      createdOn: json['Createdon']?.toString() ?? '',
+      facilityName: json['FacilityName']?.toString() ?? '—',
+      createdAt: createdAt,
     );
+  }
+
+  static DateTime _parseDateTime(dynamic value, {DateTime? fallback}) {
+    if (value == null) return fallback ?? DateTime.now();
+
+    try {
+      if (value is DateTime) return value;
+      return DateTime.parse(value.toString());
+    } catch (_) {
+      return fallback ?? DateTime.now();
+    }
   }
 }
 

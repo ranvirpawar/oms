@@ -27,6 +27,16 @@ sealed class AppError implements Exception {
 
   @override
   String toString() => '$runtimeType(status: $statusCode, message: $message)';
+
+  /// True when this error means the user's session is dead and the
+  /// app-shell already reacted to it (the single `SessionExpired` event
+  /// listener shows the "Session expired" message and redirects to
+  /// Login). Services/controllers should catch-and-swallow these at the
+  /// call site instead of rendering their own generic snackbar — otherwise
+  /// one 401 produces a wall of "Something went wrong" toasts on top of
+  /// the intended session-expired message.
+  bool get isSessionTerminal =>
+      this is SessionExpiredError || this is UnauthorizedError;
 }
 
 class NoInternetError extends AppError {

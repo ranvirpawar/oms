@@ -10,6 +10,7 @@ import 'package:get/get.dart';
 
 
 import '../../../componenents/otp_boxes_input.dart';
+import '../../../network/app_error.dart';
 import '../../../network/session_coordinator.dart';
 import '../../../services/auth_manager.dart';
 import '../../../utils/ui_designs/liquid_snackbar.dart';
@@ -125,8 +126,8 @@ class LoginController extends GetxController with CodeAutoFill {
   void onClose() {
     _resendTimer?.cancel();
     cancel(); // stop the SMS Retriever listener (CodeAutoFill mixin)
-    emailController.dispose();
-    passwordController.dispose();
+    // emailController.dispose();
+    // passwordController.dispose();
     mathAnswerController.dispose();
     super.onClose();
   }
@@ -232,6 +233,11 @@ class LoginController extends GetxController with CodeAutoFill {
         LiquidSnack.error(loginResponse.message, title: 'Login failed');
       }
     } catch (e) {
+      if (e is AppError && e.isSessionTerminal) {
+        // Session expired is handled by the app-shell listener — don't
+        // double-toast with a "Login failed" card on the login screen.
+        return;
+      }
       LiquidSnack.error(_cleanError(e), title: 'Login failed');
     } finally {
       isLoading.value = false;
@@ -320,6 +326,9 @@ class LoginController extends GetxController with CodeAutoFill {
         LiquidSnack.error(loginResponse.message, title: 'Login failed');
       }
     } catch (e) {
+      if (e is AppError && e.isSessionTerminal) {
+        return; // session expired — central listener owns the message
+      }
       LiquidSnack.error(_cleanError(e), title: 'Login failed');
     } finally {
       isResendingOtp.value = false;

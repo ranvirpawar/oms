@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 
 
 import '../../../../network/api_client.dart';
+import '../../../../network/app_error.dart';
 import '../../../../network/app_urls.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
 import '../../handover_to_connector/model/connector_model.dart';
@@ -37,6 +38,12 @@ class CollectedBagsService {
       kPrint('📥 Raw response: ${response.body}');
 
       return QRBagListResponse.fromJson(response.body);
+    } on AppError {
+      // Leave AppError (e.g. SessionExpiredError/UnauthorizedError) intact
+      // so the controller can detect `isSessionTerminal` and let the
+      // app-shell listener own the message instead of wrapping it into a
+      // generic "Failed to get bag list" toast.
+      rethrow;
     } catch (e) {
       kPrint('❌ Error in getCollectedQRBagDetails: $e');
       throw Exception('Failed to get bag list: $e');
@@ -73,6 +80,8 @@ class CollectedBagsService {
       kPrint('📥 Raw submission response: ${response.body}');
 
       return HandoverSubmitResponse.fromJson(response.body);
+    } on AppError {
+      rethrow; // session-terminal errors are handled by the app shell
     } catch (e) {
       kPrint('❌ Error in submitQRBagToLabOrHandover: $e');
       throw Exception('Submission failed: $e');
@@ -118,7 +127,7 @@ class CollectedBagsService {
   // --------------------------------------------------------------
   // 1. Get list of connectors
   // --------------------------------------------------------------
-  Future<List<Connector>> getConnectorList(String desgid) async {
+  Future<List<Connector>> getConnectorList(String desgid, String userId) async {
     try {
       kPrint('👥 Fetching connector list for designation: $desgid');
 
@@ -126,6 +135,7 @@ class CollectedBagsService {
         AppUrls.getPhlebotomistList,
         data: {
           'desgid': desgid,
+          'userid' : userId
         },
       );
 
