@@ -3,30 +3,14 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lifenity_connect/features/dashboard/dashboard_controller/dashboard_controller.dart';
-import 'package:lifenity_connect/features/dashboard/view/widget/dashboard_header.dart';
 import 'package:lifenity_connect/features/dashboard/view/widget/dashboard_tile_card.dart';
 import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
 import 'package:lifenity_connect/utils/widgets/app_drawer.dart';
-import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 
 import '../../../constants/app_strings.dart';
 import '../../../theme/app_colors.dart';
-import '../../../utils/widgets/liw.dart';
 
-// dashboard_screen.dart
-//
-// Revamped dashboard: fixed (non-scrolling) app bar + availability pill,
-// a compact elevated metrics card, and a separate grid widget wrapping the
-// existing DashboardTileCard. No bottom nav bar here — that lives in the
-// outer navigation shell.
-//
-// Assumes these already exist in your project (unchanged):
-//   DashboardController, DashboardTileCard, CustomDrawer,
-//   AppStrings, AppAssets, RouteManager
-
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -156,7 +140,8 @@ class _DashboardScreenState extends State<DashboardScreen>
       key: _scaffoldKey,
       backgroundColor: _bg,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60), // adjust to your content height
+        preferredSize: const Size.fromHeight(60),
+        // adjust to your content height
         child: _buildAppBar(),
       ),
       drawer: CustomDrawer(controller: controller),
@@ -211,6 +196,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       ),
     );
   }
+
   Widget _buildAppBar() {
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 0, 18, 0),
@@ -242,7 +228,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Obx(
-                        () => Text(
+                    () => Text(
                       _greetingTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -277,57 +263,6 @@ class _DashboardScreenState extends State<DashboardScreen>
       ),
     );
   }
- /* Widget _buildAppBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 6, 18, 0),
-      child: Row(
-        children: [
-          _IconSquareButton(
-            icon: Icons.menu_rounded,
-            onTap: () => _scaffoldKey.currentState?.openDrawer(),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Obx(
-                  () => Text(
-                    _greetingTitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: _ink,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  _todayLabel,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black.withOpacity(0.45),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          _IconSquareButton(
-            icon: Icons.notifications_none_rounded,
-            showDot: true,
-            onTap: () {
-              LiquidSnack.info('comming soon');
-            },
-          ),
-        ],
-      ),
-    );
-  }*/
 
   // ── Availability pill (existing behaviour, fixed position) ────────────
   Widget _buildAvailabilityPill() {
@@ -593,7 +528,7 @@ class _DashboardGrid extends StatelessWidget {
                     ? '🧪  $count ${count == 1 ? 'bag' : 'bags'} with you  •  Submit to lab or hand over'
                     : null;
                 return DashboardTileCard(
-                  variant: DashboardTileVariant.grid,
+                  variant: DashboardTileVariant.modern,
                   title: card.title,
                   icon: card.icon,
                   onTap: card.onTap,
@@ -601,7 +536,12 @@ class _DashboardGrid extends StatelessWidget {
                   backgroundImage: card.backgroundImage,
                   isNetworkImage: card.isNetworkImage,
                   labelBandFraction: card.labelBandFraction,
+                  subtitle: card.subtitle,
                   bannerText: banner,
+                  iconRight: card.iconRight,
+                  iconLeft: card.iconLeft,
+                  iconBottom: card.iconBottom,
+                  iconTop: card.iconTop,
                 );
               })
             : DashboardTileCard(
@@ -615,6 +555,10 @@ class _DashboardGrid extends StatelessWidget {
                 labelBandFraction: card.labelBandFraction,
                 bannerText: card.bannerText,
                 subtitle: card.subtitle,
+                iconRight: card.iconRight,
+                iconLeft: card.iconLeft,
+                iconBottom: card.iconBottom,
+                iconTop: card.iconTop,
               );
 
         return _FadeSlideIn(index: index + 1, child: tile);
@@ -761,61 +705,6 @@ class _DropdownAction extends StatelessWidget {
   }
 }
 
-class _IconSquareButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool showDot;
-
-  const _IconSquareButton({
-    required this.icon,
-    required this.onTap,
-    this.showDot = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _PressableScale(
-      onTap: onTap,
-      scaleDown: 0.93,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(13),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Icon(icon, size: 22, color: const Color(0xFF161A2B)),
-            if (showDot)
-              Positioned(
-                top: 9,
-                right: 10,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFFEF4444),
-                    border: Border.all(color: Colors.white, width: 1.5),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// Generic press-scale wrapper — every tappable surface in this screen
 /// reacts physically rather than relying on a bare ripple.
 class _PressableScale extends StatefulWidget {
@@ -891,365 +780,6 @@ class _FadeSlideIn extends StatelessWidget {
     );
   }
 }
-/*class DashboardScreen extends StatelessWidget {
-  DashboardScreen({super.key});
-
-  final DashboardController controller = Get.put(DashboardController());
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-    final topPad = MediaQuery.of(context).padding.top;
-
-    return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF0F0F1A)
-          : const Color(0xFFF5F6FA),
-
-      drawer: CustomDrawer(controller: controller),
-
-      body: RefreshIndicator(
-        onRefresh: () async {
-          controller.refreshBagCount();
-          controller.refreshDashboardStats();
-        },
-        child: CustomScrollView(
-          physics: const ClampingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          slivers: [
-            DashboardHeaderSliver(controller: controller, topPadding: topPad),
-
-            // ── Section Label ──────────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 24, 18, 14),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 3.5,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        color: cs.primary,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 9),
-                    Text(
-                      'Quick Actions',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? Colors.white.withOpacity(0.85)
-                            : cs.onSurface,
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // ── Cards ──────────────────────────────────────────────────────
-            Obx(() {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                controller.onDashboardBuild();
-              });
-
-              if (controller.userRole.value == null) {
-                return SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
-                  sliver: SliverToBoxAdapter(
-                    child: _ShimmerGrid(isDark: isDark, cs: cs),
-                  ),
-                );
-              }
-
-              final cards = controller.getRoleBasedStatCards();
-
-              return SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                sliver: _GridSliver(cards: cards, controller: controller),
-              );
-            }),
-
-            const SliverToBoxAdapter(child: SizedBox(height: 500)),
-
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GridSliver extends StatelessWidget {
-  final List<DashboardTileCard> cards;
-  final DashboardController controller;
-
-  const _GridSliver({required this.cards, required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    return SliverGrid(
-      delegate: SliverChildBuilderDelegate((context, index) {
-        final card = cards[index];
-        final isBagCard =
-            card.title == AppStrings.collectedSampleBags ||
-            card.title == 'Collected Bags';
-        /// it for only runnerboy so our phlebo car
-        if (isBagCard) {
-          return Obx(() {
-            final count = controller.collectedBagsCount.value;
-            final banner = count > 0
-                ? '🧪  $count ${count == 1 ? 'bag' : 'bags'} with you  •  Submit to lab or hand over          '
-                : null;
-
-            return DashboardTileCard(
-              title: card.title,
-              icon: card.icon,
-              onTap: card.onTap,
-              borderColor: card.borderColor,
-              backgroundImage: card.backgroundImage,
-              isNetworkImage: card.isNetworkImage,
-              labelBandFraction: card.labelBandFraction,
-              bannerText: banner,
-            );
-          });
-        }
-
-        return DashboardTileCard(
-          title: card.title,
-          icon: card.icon,
-          onTap: card.onTap,
-          borderColor: card.borderColor,
-          backgroundImage: card.backgroundImage,
-          isNetworkImage: card.isNetworkImage,
-          labelBandFraction: card.labelBandFraction,
-          bannerText: card.bannerText,
-        );
-      }, childCount: cards.length),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
-        childAspectRatio: 1.0,
-      ),
-    );
-  }
-}*/
-
-class _WelcomeCard extends StatelessWidget {
-  final DashboardController controller;
-  final bool isDark;
-  final ColorScheme cs;
-
-  const _WelcomeCard({
-    required this.controller,
-    required this.isDark,
-    required this.cs,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // ── Neumorphic palette (same as tile cards for consistency) ──────────────
-    final neuBase = isDark ? const Color(0xFF1E1E2C) : const Color(0xFFECEFF4);
-    final neuLight = isDark ? const Color(0xFF2C2C40) : Colors.white;
-    final neuDark = isDark ? const Color(0xFF0F0F1A) : const Color(0xFFC8CBD6);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      decoration: BoxDecoration(
-        color: neuBase,
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: [
-          // Top-left highlight
-          BoxShadow(
-            color: neuLight.withOpacity(isDark ? 0.12 : 1.0),
-            offset: const Offset(-6, -6),
-            blurRadius: 12,
-          ),
-          // Bottom-right shadow
-          BoxShadow(
-            color: neuDark.withOpacity(isDark ? 0.75 : 0.55),
-            offset: const Offset(6, 6),
-            blurRadius: 12,
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // ── Neumorphic avatar ──────────────────────────────────────────────
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [cs.primary.withOpacity(0.85), cs.primary],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: cs.primary.withOpacity(0.35),
-                  offset: const Offset(3, 4),
-                  blurRadius: 10,
-                ),
-              ],
-            ),
-            child: Center(
-              child: Obx(() {
-                final name = controller.userName.value;
-                final initials = name.trim().isNotEmpty
-                    ? name
-                          .trim()
-                          .split(' ')
-                          .where((p) => p.isNotEmpty)
-                          .take(2)
-                          .map((p) => p[0].toUpperCase())
-                          .join()
-                    : '?';
-                return Text(
-                  initials,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
-                  ),
-                );
-              }),
-            ),
-          ),
-
-          const SizedBox(width: 14),
-
-          // ── Text ──────────────────────────────────────────────────────────
-          Expanded(
-            child: Obx(() {
-              final name = controller.userName.value;
-              final first = name.isNotEmpty ? name.trim().split(' ').first : '';
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    first.isNotEmpty
-                        ? 'Hello, $first!'
-                        : AppStrings.welcomeToLifenity,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: isDark
-                          ? Colors.white.withOpacity(0.9)
-                          : const Color(0xFF2D3142),
-                      height: 1.2,
-                      letterSpacing: 0.1,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    AppStrings.welcomeToLifenity,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w400,
-                      color: isDark
-                          ? Colors.white.withOpacity(0.38)
-                          : const Color(0xFF2D3142).withOpacity(0.45),
-                      height: 1.3,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              );
-            }),
-          ),
-
-          const SizedBox(width: 12),
-        ],
-      ),
-    );
-  }
-}
-
-/*class _ShimmerGrid extends StatefulWidget {
-  final bool isDark;
-  final ColorScheme cs;
-
-  const _ShimmerGrid({required this.isDark, required this.cs});
-
-  @override
-  State<_ShimmerGrid> createState() => _ShimmerGridState();
-}
-
-class _ShimmerGridState extends State<_ShimmerGrid>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _anim;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1100),
-    )..repeat();
-    _anim = Tween<double>(
-      begin: -1.5,
-      end: 1.5,
-    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final base = widget.isDark
-        ? Colors.white.withOpacity(0.05)
-        : widget.cs.surfaceContainerHighest.withOpacity(0.4);
-    final shine = widget.isDark
-        ? Colors.white.withOpacity(0.1)
-        : widget.cs.surfaceContainerHighest.withOpacity(0.75);
-
-    return AnimatedBuilder(
-      animation: _anim,
-      builder: (_, __) => GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 14,
-          mainAxisSpacing: 14,
-          childAspectRatio: 1.0,
-        ),
-        itemCount: 4,
-        itemBuilder: (_, __) => Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            gradient: LinearGradient(
-              begin: Alignment(_anim.value - 1, 0),
-              end: Alignment(_anim.value, 0),
-              colors: [base, shine, base],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}*/
 
 // ── Glass icon button, matching CustomAppBar's frosted-glass surfaces ──
 class _GlassIconButton extends StatefulWidget {
@@ -1324,4 +854,3 @@ class _GlassIconButtonState extends State<_GlassIconButton> {
     );
   }
 }
-// ── App bar ───────────────────

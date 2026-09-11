@@ -92,20 +92,19 @@ class AppAssets {
   static const String performanceDashboard = 'assets/images/performance.png';
   static const String hospitalFacilityIcon = 'assets/icons/hospital-facility.png';
   static const String mergeBarcode = 'assets/images/scan.png';
-  static const String orderManagement = 'assets/images/order-management.png';
   static const String sampleCollection = 'assets/images/sample-collection.png';
   static const String sampleRecollectionIcon = 'assets/images/sample-recollection.png';
 
   /// Dashboard cards
-  static const String collectSampleCard = 'assets/cards/sample-collection.png';
-  static const String collectSampleIcon = 'assets/images/collect-sample-icon.png';
-  static const String collectedBagsCard = 'assets/cards/collected-bags.png';
-  static const String sampleRecollectionCard = 'assets/cards/sample-recollection.png';
-  static const String assignedPatients = 'assets/cards/patient-queue.png';
-  static const String manageOrderIcon = 'assets/images/manage-order-icon.png';
-  static const String bagHistoryCard = 'assets/cards/bag-history.png';
-  static const String bagHistoryIcon = 'assets/images/bag-history-icon.png';
-  static const String sampleRecollectionIconOg = 'assets/images/sample-recollection-icon.png';
+
+  static const String collectSampleIcon = 'assets/dashboard_icons/collect-sample-icon.png';
+  static const String manageOrderIcon = 'assets/dashboard_icons/manage-order-icon.png';
+  static const String bagHistoryIcon = 'assets/dashboard_icons/bag-history-icon.png';
+  static const String sampleRecollectionIconOg = 'assets/dashboard_icons/sample-recollection-icon.png';
+  static const String collectedBagsIcon = 'assets/dashboard_icons/collected-bags.png';
+  static const String collectBagIcon = 'assets/dashboard_icons/collect-bag.png';
+  static const String collectDestinationBag = 'assets/dashboard_icons/collect-destination-bag.png';
+  static const String acceptInLabIcon = 'assets/dashboard_icons/accept-in-lab.png';
 
   /// sample live tracking dashboard
   static const String bagOpenedIcon = 'assets/images/bag-opened-icon.jpg';

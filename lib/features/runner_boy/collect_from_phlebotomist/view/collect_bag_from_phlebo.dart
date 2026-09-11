@@ -440,7 +440,7 @@ class CollectBagFromPhlebotomistView extends StatelessWidget {
                     _buildTransferArrow(),
                     const SizedBox(height: 16),
                     _buildTransferSection(
-                      title: 'RB/Connector Bag (To)',
+                      title: 'Runner Boy Bag (To)',
                       icon: Icons.download,
                       color: const Color(0xFF48BB78),
                       bagDetail: controller.destinationBag.value,

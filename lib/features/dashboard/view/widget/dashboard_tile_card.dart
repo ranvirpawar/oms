@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lifenity_connect/utils/animations/animated_tap_scale.dart';
 import 'package:lifenity_connect/utils/helper_functions/helper_methods.dart';
+
 // Unified dashboard tile card.
 //
 // Supports three explicit visual variants, selected via [DashboardTileVariant]
@@ -69,6 +70,11 @@ class DashboardTileCard extends StatefulWidget {
   /// Optional override. For grid/graphic this tints the neumorphic border
   /// (graphic mode only). For modern this tints the icon glow + banner.
   final Color? borderColor;
+  final double? iconTop;
+  final double? iconRight;
+  final double? iconBottom;
+  final double? iconLeft;
+
 
   DashboardTileCard({
     super.key,
@@ -82,26 +88,25 @@ class DashboardTileCard extends StatefulWidget {
     this.bannerText,
     double? labelBandFraction,
     this.borderColor,
-  })  : labelBandFraction = labelBandFraction ??
-      (variant == DashboardTileVariant.modern ? 0.56 : 0.18),
-        assert(
-        variant != DashboardTileVariant.grid || icon != null,
-        'DashboardTileVariant.grid requires `icon`.',
-        ),
-        assert(
-        variant != DashboardTileVariant.graphic || backgroundImage != null,
-        'DashboardTileVariant.graphic requires `backgroundImage`.',
-        ),
-        assert(
-        variant != DashboardTileVariant.modern || icon != null,
-        'DashboardTileVariant.modern requires `icon` (the graphic asset).',
-        );
-       /* assert(
-        variant != DashboardTileVariant.graphic ||
-            (this.labelBandFraction >= 0.15 &&
-                this.labelBandFraction <= 0.20),
-        'graphic variant labelBandFraction must stay within the 15–20% design spec.',
-        );*/
+    this.iconTop,
+    this.iconRight,
+    this.iconBottom,
+    this.iconLeft,
+  }) : labelBandFraction =
+           labelBandFraction ??
+           (variant == DashboardTileVariant.modern ? 0.56 : 0.18),
+       assert(
+         variant != DashboardTileVariant.grid || icon != null,
+         'DashboardTileVariant.grid requires `icon`.',
+       ),
+       assert(
+         variant != DashboardTileVariant.graphic || backgroundImage != null,
+         'DashboardTileVariant.graphic requires `backgroundImage`.',
+       ),
+       assert(
+         variant != DashboardTileVariant.modern || icon != null,
+         'DashboardTileVariant.modern requires `icon` (the graphic asset).',
+       );
 
   @override
   State<DashboardTileCard> createState() => _DashboardTileCardState();
@@ -114,7 +119,9 @@ class _DashboardTileCardState extends State<DashboardTileCard> {
   Color get _accent => widget.borderColor ?? const Color(0xFF3B82F6);
 
   void _handleTapDown() => setState(() => _pressed = true);
+
   void _handleTapCancel() => setState(() => _pressed = false);
+
   void _handleTapUp() {
     setState(() => _pressed = false);
     HapticFeedback.lightImpact();
@@ -146,7 +153,8 @@ class _DashboardTileCardState extends State<DashboardTileCard> {
     final neuLight = isDark ? const Color(0xFF2C2C40) : Colors.white;
     final neuDark = isDark ? const Color(0xFF0F0F1A) : const Color(0xFFC8CBD6);
 
-    final resolvedBorderColor = widget.borderColor ??
+    final resolvedBorderColor =
+        widget.borderColor ??
         (isDark ? neuLight.withOpacity(0.16) : neuDark.withOpacity(0.9));
 
     return GestureDetector(
@@ -194,33 +202,33 @@ class _DashboardTileCardState extends State<DashboardTileCard> {
                   ),
                   child: hasBanner
                       ? _MarqueeBanner(
-                    key: ValueKey(widget.bannerText),
-                    text: widget.bannerText!,
-                    isDark: isDark,
-                    neuBase: neuBase,
-                    neuDark: neuDark,
-                  )
+                          key: ValueKey(widget.bannerText),
+                          text: widget.bannerText!,
+                          isDark: isDark,
+                          neuBase: neuBase,
+                          neuDark: neuDark,
+                        )
                       : const SizedBox.shrink(key: ValueKey('__empty__')),
                 ),
                 Flexible(
                   fit: FlexFit.tight,
                   child: isGraphic
                       ? _GraphicBody(
-                    title: widget.title,
-                    imagePath: widget.backgroundImage!,
-                    isNetworkImage: widget.isNetworkImage,
-                    labelBandFraction: widget.labelBandFraction,
-                    isDark: isDark,
-                  )
+                          title: widget.title,
+                          imagePath: widget.backgroundImage!,
+                          isNetworkImage: widget.isNetworkImage,
+                          labelBandFraction: widget.labelBandFraction,
+                          isDark: isDark,
+                        )
                       : _GridBody(
-                    title: widget.title,
-                    icon: widget.icon!,
-                    cs: cs,
-                    isDark: isDark,
-                    neuBase: neuBase,
-                    neuLight: neuLight,
-                    neuDark: neuDark,
-                  ),
+                          title: widget.title,
+                          icon: widget.icon!,
+                          cs: cs,
+                          isDark: isDark,
+                          neuBase: neuBase,
+                          neuLight: neuLight,
+                          neuDark: neuDark,
+                        ),
                 ),
               ],
             ),
@@ -261,8 +269,11 @@ class _DashboardTileCardState extends State<DashboardTileCard> {
               // ── Background icon, bottom-right, behind everything ──
               if (widget.icon != null)
                 Positioned(
-                  right: -18,
-                  bottom: -12,
+                  top: widget.iconTop,
+                  right: widget.iconRight ?? -18,
+                  bottom: widget.iconBottom ?? -12,
+                  left: widget.iconLeft,
+
                   child: Opacity(
                     opacity: 0.9,
                     child: Image.asset(
@@ -328,282 +339,6 @@ class _DashboardTileCardState extends State<DashboardTileCard> {
       ),
     );
   }
-  Widget _buildModern2(BuildContext context) {
-    const cardRadius = 20.0;
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => _handleTapDown(),
-      onTapCancel: _handleTapCancel,
-      onTapUp: (_) => _handleTapUp(),
-      child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOut,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(14, 14, 10, 12),
-          decoration: BoxDecoration(
-            color:_accent.withOpacity(0.10),
-            // color: Colors.white,
-            borderRadius: BorderRadius.circular(cardRadius),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(_pressed ? 0.03 : 0.06),
-                blurRadius: 22,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Text column (left) ──────────────────────────────
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    Text(
-                      widget.title,
-                      maxLines: 2,
-                      // overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w700,
-                        height: 1.15,
-                        color: _ink,
-                        letterSpacing: -0.1,
-                      ),
-                    ),
-                    if (widget.subtitle != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.subtitle!,
-                        maxLines: 2,
-                        // overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w500,
-                          height: 1.25,
-                          color: Colors.black.withOpacity(0.45),
-                        ),
-                      ),
-                    ],
-                    const Spacer(),
-                    Container(
-                      width: 30,
-                      height: 30,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFF1F3F9),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 15,
-                        color: _ink,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // ── Icon column (right) — always beside the text ────
-              if (widget.icon != null)
-                SizedBox(
-                  width: 30,
-                  height: 96, // matches the card's inner height roughly
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Positioned(
-                        right: -14,
-                        bottom: -6,
-                        child: Container(
-                          width: 84,
-                          height: 84,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _accent.withOpacity(0.10),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        right: -6,
-                        bottom: 4,
-                        child: Image.asset(
-                          widget.icon!,
-                          width: 64,
-                          height: 64,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
- /* Widget _buildModern(BuildContext context) {
-    const cardRadius = 24.0;
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => _handleTapDown(),
-      onTapCancel: _handleTapCancel,
-      onTapUp: (_) => _handleTapUp(),
-      child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOut,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(cardRadius),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(_pressed ? 0.03 : 0.06),
-                blurRadius: 22,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final h = constraints.maxHeight;
-              final iconZone = h * (1 - widget.labelBandFraction);
-              final iconSize = (iconZone * 0.92).clamp(48.0, 96.0);
-
-              return Stack(
-                children: [
-                  // Optional full-bleed decorative background.
-                  if (widget.backgroundImage != null)
-                    Positioned.fill(
-                      child: widget.isNetworkImage
-                          ? Image.network(widget.backgroundImage!,
-                          fit: BoxFit.cover)
-                          : Image.asset(widget.backgroundImage!,
-                          fit: BoxFit.cover),
-                    ),
-
-                  // Soft tinted glow behind the icon graphic.
-                  Positioned(
-                    right: -iconSize * 0.28,
-                    bottom: widget.bannerText != null
-                        ? iconSize * 0.34
-                        : -iconSize * 0.22,
-                    child: Container(
-                      width: iconSize * 1.5,
-                      height: iconSize * 1.5,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _accent.withOpacity(0.10),
-                      ),
-                    ),
-                  ),
-
-                  // The 3D icon graphic, seated bottom-right.
-                  Positioned(
-                    right: 10,
-                    bottom: widget.bannerText != null ? iconZone * 0.30 : 8,
-                    child: Image.asset(
-                      widget.icon!,
-                      width: iconSize,
-                      height: iconSize,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-
-                  // Title / subtitle / arrow affordance.
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 18, 14, 14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            height: 1.18,
-                            color: _ink,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                        if (widget.subtitle != null) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            widget.subtitle!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w500,
-                              height: 1.3,
-                              color: Colors.black.withOpacity(0.45),
-                            ),
-                          ),
-                        ],
-                        const Spacer(),
-                        Container(
-                          width: 34,
-                          height: 34,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFF1F3F9),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 17,
-                            color: _ink,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Optional bottom banner (e.g. "X bags with you").
-                  if (widget.bannerText != null)
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: _accent.withOpacity(0.12),
-                          borderRadius: const BorderRadius.only(
-                            bottomLeft: Radius.circular(cardRadius),
-                            bottomRight: Radius.circular(cardRadius),
-                          ),
-                        ),
-                        child: Text(
-                          widget.bannerText!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
-                            color: _accent.withOpacity(0.9),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }*/
 }
 
 // ── Legacy sub-widgets, unchanged from the original grid/graphic file ──
@@ -629,8 +364,10 @@ class _GraphicBody extends StatelessWidget {
       builder: (context, constraints) {
         // Bounded height is guaranteed here — the parent GridView always
         // gives this tile a fixed size via childAspectRatio.
-        final bandHeight =
-        (constraints.maxHeight * labelBandFraction).clamp(28.0, 44.0);
+        final bandHeight = (constraints.maxHeight * labelBandFraction).clamp(
+          28.0,
+          44.0,
+        );
 
         return Stack(
           fit: StackFit.expand,
@@ -952,14 +689,14 @@ class _GraphicBody extends StatelessWidget {
               child: Container(
 
                 decoration: const BoxDecoration(
-                  *//*gradient: LinearGradient(
+                  */ /*gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.black.withOpacity(0.0),
                       Colors.black.withOpacity(isDark ? 0.55 : 0.45),
                     ],
-                  ),*//*
+                  ),*/ /*
                 ),
                 alignment: Alignment.center,
                 padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -1154,7 +891,6 @@ class _NeuIconBox extends StatelessWidget {
 //   }
 // }
 
-
 class _MarqueeBanner extends StatefulWidget {
   final String text;
   final bool isDark;
@@ -1201,7 +937,10 @@ class _MarqueeBannerState extends State<_MarqueeBanner>
 
   double _textWidth(Color color) {
     final tp = TextPainter(
-      text: TextSpan(text: widget.text, style: _style.copyWith(color: color)),
+      text: TextSpan(
+        text: widget.text,
+        style: _style.copyWith(color: color),
+      ),
       maxLines: 1,
       textDirection: TextDirection.ltr,
     )..layout(maxWidth: double.infinity);
@@ -1213,7 +952,7 @@ class _MarqueeBannerState extends State<_MarqueeBanner>
     kPrint('🍫🍫🍫🍫Rendering marquue');
     final isDark = widget.isDark;
     // Inset: slightly darker than neuBase to look pressed in
-    final bg    = isDark ? const Color(0xFF16161F) : const Color(0xFFDDE1EA);
+    final bg = isDark ? const Color(0xFF16161F) : const Color(0xFFDDE1EA);
     final color = isDark ? const Color(0xFF7EC8F0) : const Color(0xFF1565C0);
     final divider = isDark
         ? Colors.white.withOpacity(0.06)
@@ -1227,9 +966,7 @@ class _MarqueeBannerState extends State<_MarqueeBanner>
           height: 22,
           decoration: BoxDecoration(
             color: bg,
-            border: Border(
-              bottom: BorderSide(color: divider, width: 1),
-            ),
+            border: Border(bottom: BorderSide(color: divider, width: 1)),
             // Inset shadow: dark on top, light on bottom
             boxShadow: [
               BoxShadow(
@@ -1242,23 +979,25 @@ class _MarqueeBannerState extends State<_MarqueeBanner>
           clipBehavior: Clip.hardEdge,
           child: tw <= avail
               ? Center(
-            child: Text(
-              widget.text.trim(),
-              style: _style.copyWith(color: color),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          )
+                  child: Text(
+                    widget.text.trim(),
+                    style: _style.copyWith(color: color),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                )
               : AnimatedBuilder(
-            animation: _ctrl,
-            builder: (_, __) {
-              final offset = (_ctrl.value * tw) % tw;
-              return Stack(children: [
-                _span(-offset, tw, color),
-                _span(tw - offset, tw, color),
-              ]);
-            },
-          ),
+                  animation: _ctrl,
+                  builder: (_, __) {
+                    final offset = (_ctrl.value * tw) % tw;
+                    return Stack(
+                      children: [
+                        _span(-offset, tw, color),
+                        _span(tw - offset, tw, color),
+                      ],
+                    );
+                  },
+                ),
         );
       },
     );

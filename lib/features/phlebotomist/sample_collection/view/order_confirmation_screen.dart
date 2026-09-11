@@ -88,6 +88,16 @@ class OrderConfirmationScreen extends GetView<OrderConfirmationController> {
                   order: order,
                   initiallyExpanded: true,
                 ),
+                const SizedBox(height: 14),
+                OrderInstructionsCard(
+                  fastingRequired: order.fastingRequired,
+                  fastingNote: order.fastingNote,
+                  specialInstructions: {
+                    for (final s in order.specialInstructions) s.instruction,
+                  }.toList(),
+                  initiallyExpanded: false,
+                ),
+
               ],
             ),
             Positioned(
@@ -195,169 +205,6 @@ class _ErrorState extends StatelessWidget {
     );
   }
 }
-/*class OrderConfirmationScreen extends GetView<SampleCollectionController> {
-  const OrderConfirmationScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.grayLight,
-      appBar: const CustomAppBar(title: 'Order Details'),
-      body: Obx(() {
-        if (!controller.isOrderAccepted) {
-          return NotAcceptedView(patient: controller.assignedPatient);
-        }
-        // Accepted, but route hasn't started — don't wait on orderDetails,
-        // there's nothing loaded yet.
-        if (controller.needsToStartRoute) {
-          return NeedsRouteStartView(patient: controller.assignedPatient);
-        }
-
-        // En route — full-screen live tile map with the destination pin,
-        // current GPS position, a floating expandable patient/test summary,
-        // and the "Arrived at Location" action.
-        if (controller.showRouteMap.value) {
-          return RouteTrackingMap(controller: controller);
-        }
-
-        if (controller.isLoadingOrder.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (controller.orderLoadError.value.isNotEmpty) {
-          return _ErrorState(
-            message: controller.orderLoadError.value,
-            onRetry: controller.fetchOrderDetails,
-          );
-        }
-        final order = controller.orderDetails.value;
-        if (order == null) return const SizedBox.shrink();
-
-        return Stack(
-          children: [
-            ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-              children: [
-                // Bag context: which open bag this collection will be
-                // tagged to (or a prompt to open one).
-                BagContextBanner(controller: controller),
-                const SizedBox(height: 14),
-
-                OrderPatientSummaryCard.fromOrder(
-                  order: order,
-                  initiallyExpanded: true,
-                ),
-              ],
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Obx(
-                    () =>
-                    _ConfirmBar(
-                      controller: controller,
-                      enabled:
-                      controller.hasOpenBag, // pass this through to the button
-                    ),
-              ),
-            ),
-          ],
-        );
-      }),
-    );
-  }
-}
-
-
-
-class _ConfirmBar extends StatelessWidget {
-  final SampleCollectionController controller;
-  final bool enabled;
-
-  const _ConfirmBar({required this.controller, required this.enabled});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SizedBox(
-        width: double.infinity,
-        height: 50,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.accent700,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(26),
-            ),
-            elevation: 0,
-          ),
-          onPressed: () {
-            if (enabled) {
-              controller.confirmAndCollect();
-            } else {
-              LiquidSnack.error(
-                'You need to open a bag first for sample collection',
-              );
-            }
-          },
-          child: const Text(
-          'Confirm & Collect',
-          style: TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.w700,
-          color: Colors.white,
-        ),
-      ),
-    ),)
-    ,
-    );
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-
-  const _ErrorState({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.error_outline_rounded,
-              size: 42,
-              color: AppColors.redText,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
-        ),
-      ),
-    );
-  }
-}*/
-
 
 
 

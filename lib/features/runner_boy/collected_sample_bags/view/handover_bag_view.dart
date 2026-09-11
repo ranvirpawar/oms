@@ -468,8 +468,8 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
         child: Column(
           children: [
             _row(Icons.location_on_outlined, 'Facility', person.facilityName),
-            const Divider(height: 30),
-            _row(Icons.layers_outlined, 'Ward', person.ward),
+           /* const Divider(height: 30),
+            _row(Icons.layers_outlined, 'Ward', person.ward),*/
             const Divider(height: 30),
             _row(Icons.badge_outlined, 'Type', person.fType),
           ],
@@ -484,8 +484,8 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
         Icon(icon, size: 20, color: AppColors.primary),
         const SizedBox(width: 12),
         Text(label, style: const TextStyle(color: Colors.grey)),
-        const Spacer(),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(width: 12),
+        Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.bold))),
       ],
     );
   }
