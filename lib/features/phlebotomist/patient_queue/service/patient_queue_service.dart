@@ -222,7 +222,7 @@ class PatientQueueService {
         final message = (body['message'] as String?)?.trim() ?? '';
         final output = body['output'];
 
-        if (output == null && _isNoDataMessage(message)) {
+        if (output == null || output.isEmpty && _isNoDataMessage(message)) {
           return const <AvailableSlot>[];
         }
 

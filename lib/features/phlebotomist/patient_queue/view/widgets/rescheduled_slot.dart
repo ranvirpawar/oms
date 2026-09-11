@@ -240,7 +240,7 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           const Text(
-            'Reschedule Visit',
+            'Reschedule Sample Collection',
             style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
           ),
           IconButton(
@@ -312,7 +312,7 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                     /* const SizedBox(height: 2),
 
                       Text(
                         p.orderId,
@@ -321,7 +321,7 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
                           color: AppColors.textTertiary,
                           fontWeight: FontWeight.w500,
                         ),
-                      ),
+                      ),*/
                       const SizedBox(height: 6),
 
                       Row(
@@ -385,8 +385,8 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
               },
             ),
           ),
-          const SizedBox(width: 8),
-          _CalendarButton(onTap: _openCalendarPicker),
+      /*    const SizedBox(width: 8),
+          _CalendarButton(onTap: _openCalendarPicker),*/
         ],
       ),
     );
