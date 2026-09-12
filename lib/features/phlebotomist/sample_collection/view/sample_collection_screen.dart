@@ -32,7 +32,7 @@ class SampleCollectionScreen extends GetView<SampleCollectionController> {
                   items: [
                     TapMenuItem(
                       icon: Icons.event_repeat_outlined,
-                      label: 'Reschedule visit',
+                      label: 'Reschedule Sample Collection',
                       onTap: () => RescheduleSheet.show(
                         context,
                         patient: controller.assignedPatient,

@@ -238,9 +238,9 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Reject order',
+                  'Reject Sample Collection Request',
                   style: TextStyle(
-                    fontSize: 17,
+                    fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),

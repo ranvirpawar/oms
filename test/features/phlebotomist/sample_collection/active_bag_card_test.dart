@@ -53,6 +53,7 @@ void main() {
     controller = Get.put(
       SampleCollectionController(
         assignedPatient: AssignedPatient.fromJson(_patientJson()),
+        orderId: AssignedPatient.fromJson(_patientJson()).orderId
       ),
     );
   });

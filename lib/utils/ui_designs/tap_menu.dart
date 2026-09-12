@@ -21,8 +21,241 @@
 
 import 'package:flutter/material.dart';
 import '../../../../../theme/app_colors.dart';
+// tap_position_menu.dart
+
+import 'package:flutter/material.dart';
+import '../../../../../theme/app_colors.dart';
 
 class TapMenuItem {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isDestructive;
+
+  const TapMenuItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isDestructive = false,
+  });
+}
+
+class TapPositionMenu {
+  TapPositionMenu._();
+
+  static Future<void>? _current;
+
+  /// Shows the menu anchored at [tapPosition] (global coordinates).
+  static Future<void> show({
+    required BuildContext context,
+    required Offset tapPosition,
+    required List<TapMenuItem> items,
+    double menuWidth = 240,
+  }) async {
+    // Only one menu open at a time.
+    await dismiss();
+
+    _current = Navigator.of(context).push(
+      _TapPositionMenuRoute(
+        tapPosition: tapPosition,
+        items: items,
+        menuWidth: menuWidth,
+      ),
+    );
+
+    await _current;
+    _current = null;
+  }
+
+  /// Animates the current menu out (if any) and removes it.
+  static Future<void> dismiss() async {
+    if (_current != null) {
+      // The route will handle the animation + pop
+      // We just need to trigger the pop if something is open.
+      // Actual dismiss is done by the route itself when requested.
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Custom route – this is what gives us proper back-button handling
+// ---------------------------------------------------------------------------
+
+class _TapPositionMenuRoute extends PopupRoute<void> {
+  final Offset tapPosition;
+  final List<TapMenuItem> items;
+  final double menuWidth;
+
+  _TapPositionMenuRoute({
+    required this.tapPosition,
+    required this.items,
+    required this.menuWidth,
+  });
+
+  @override
+  Color? get barrierColor => Colors.transparent;
+
+  @override
+  bool get barrierDismissible => true;
+
+  @override
+  String? get barrierLabel => 'Dismiss menu';
+
+  @override
+  Duration get transitionDuration => const Duration(milliseconds: 170);
+
+  @override
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 120);
+
+  @override
+  Widget buildPage(
+      BuildContext context,
+      Animation<double> animation,
+      Animation<double> secondaryAnimation,
+      ) {
+    return _TapPositionMenuPage(
+      tapPosition: tapPosition,
+      items: items,
+      menuWidth: menuWidth,
+      animation: animation,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// The actual menu content (same look & feel as before)
+// ---------------------------------------------------------------------------
+
+class _TapPositionMenuPage extends StatelessWidget {
+  final Offset tapPosition;
+  final List<TapMenuItem> items;
+  final double menuWidth;
+  final Animation<double> animation;
+
+  const _TapPositionMenuPage({
+    required this.tapPosition,
+    required this.items,
+    required this.menuWidth,
+    required this.animation,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final menuHeight = items.length * 46.0 + 16;
+
+    double left = tapPosition.dx - menuWidth + 24;
+    if (left + menuWidth > screenSize.width - 12) {
+      left = screenSize.width - menuWidth - 12;
+    }
+    if (left < 12) left = 12;
+
+    final openUpward = tapPosition.dy + menuHeight > screenSize.height - 24;
+    final top = openUpward
+        ? tapPosition.dy - menuHeight - 8
+        : tapPosition.dy + 8;
+
+    final scale = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutBack,
+      reverseCurve: Curves.easeIn,
+    );
+    final fade = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOut,
+      reverseCurve: Curves.easeIn,
+    );
+
+    return Material(
+      type: MaterialType.transparency,
+      child: Stack(
+        children: [
+          // Barrier – tapping outside dismisses (also handled by PopupRoute)
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Navigator.of(context).pop(),
+              child: const SizedBox.shrink(),
+            ),
+          ),
+          Positioned(
+            left: left,
+            top: top,
+            child: FadeTransition(
+              opacity: fade,
+              child: ScaleTransition(
+                scale: scale,
+                alignment: openUpward ? Alignment.bottomRight : Alignment.topRight,
+                child: Container(
+                  width: menuWidth,
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.bgCard,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.18),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: items.map((item) {
+                      return _MenuTile(
+                        item: item,
+                        onSelected: () {
+                          Navigator.of(context).pop(); // close first
+                          item.onTap();
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MenuTile extends StatelessWidget {
+  final TapMenuItem item;
+  final VoidCallback onSelected;
+
+  const _MenuTile({required this.item, required this.onSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = item.isDestructive ? AppColors.redText : AppColors.textPrimary;
+    return InkWell(
+      onTap: onSelected,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        child: Row(
+          children: [
+            Icon(item.icon, size: 18, color: color),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                item.label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+/*class TapMenuItem {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
@@ -82,7 +315,7 @@ class TapPositionMenu {
       entry?.remove();
     }
   }
-}
+}*/
 
 class _TapPositionMenuOverlay extends StatefulWidget {
   final Offset tapPosition;
@@ -164,64 +397,71 @@ class _TapPositionMenuOverlayState extends State<_TapPositionMenuOverlay>
         ? widget.tapPosition.dy - menuHeight - 8
         : widget.tapPosition.dy + 8;
 
-    return Stack(
-      children: [
-        // Invisible barrier — tapping outside closes the menu.
-        Positioned.fill(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => widget.onRequestClose(),
-            child: const SizedBox.shrink(),
+    return BackButtonListener(                    // ← add this
+      onBackButtonPressed: () async {
+        await widget.onRequestClose();            // runs your existing dismiss animation
+        return true;                              // consume the back press
+      },
+      child: Stack(
+        children: [
+          // Invisible barrier — tapping outside closes the menu.
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => widget.onRequestClose(),
+              child: const SizedBox.shrink(),
+            ),
           ),
-        ),
-        Positioned(
-          left: left,
-          top: top,
-          child: FadeTransition(
-            opacity: _fade,
-            child: ScaleTransition(
-              scale: _scale,
-              alignment:
-              openUpward ? Alignment.bottomRight : Alignment.topRight,
-              child: Material(
-                color: Colors.transparent,
-                child: Container(
-                  width: widget.menuWidth,
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.bgCard,
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.18),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: widget.items
-                        .map(
-                          (item) => _MenuTile(
-                        item: item,
-                        onSelected: () async {
-                          await widget.onRequestClose();
-                          item.onTap();
-                        },
-                      ),
-                    )
-                        .toList(),
+          Positioned(
+            left: left,
+            top: top,
+            child: FadeTransition(
+              opacity: _fade,
+              child: ScaleTransition(
+                scale: _scale,
+                alignment:
+                openUpward ? Alignment.bottomRight : Alignment.topRight,
+                child: Material(
+                  color: Colors.transparent,
+                  child: Container(
+                    width: widget.menuWidth,
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.bgCard,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.18),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: widget.items
+                          .map(
+                            (item) => _MenuTile(
+                          item: item,
+                          onSelected: () async {
+                            await widget.onRequestClose();
+                            item.onTap();
+                          },
+                        ),
+                      )
+                          .toList(),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
+/*
 
 class _MenuTile extends StatelessWidget {
   final TapMenuItem item;
@@ -255,4 +495,4 @@ class _MenuTile extends StatelessWidget {
       ),
     );
   }
-}
+}*/

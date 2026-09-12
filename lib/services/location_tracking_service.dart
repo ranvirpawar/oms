@@ -59,7 +59,15 @@ class LocationTrackingService {
       final Map<String, dynamic> respBody = response.data is String
           ? jsonDecode(response.data as String) as Map<String, dynamic>
           : response.data as Map<String, dynamic>;
-      return (respBody['status'] as String?)?.toLowerCase() == 'success';
+
+      final testStatus = respBody['A_testStatus'] as Map<String, dynamic>?;
+      final trackingResult = respBody['trackingResult'] as Map<String, dynamic>?;
+
+      final statusCodeOk = testStatus?['statusCode'] == 200;
+      final trackingStatusOk =
+          (trackingResult?['status'] as String?)?.toLowerCase() == 'success';
+
+      return statusCodeOk || trackingStatusOk;
     } catch (_) {
       throw LocationTrackingException(
         'Unable to update location. Please check your connection and try again.',

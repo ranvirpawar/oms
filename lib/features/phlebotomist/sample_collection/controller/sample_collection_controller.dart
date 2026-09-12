@@ -472,6 +472,7 @@ class SampleCollectionController extends GetxController with HasBagContext {
     isSubmitting.value = true;
     try {
       final payload = _buildPayload();
+
       await _service.submitSampleCollection(payload);
       // Refresh the shared bag state silently so capacity reflects this
       // submission for whatever screen looks at it next.
@@ -552,7 +553,7 @@ class SampleCollectionController extends GetxController with HasBagContext {
       final success = await action();
       if (success) {
         LiquidSnack.success(successMessage, title: 'Success');
-        RouteManager.redirectToHomeDashboard();
+        await RouteManager.redirectToHomeDashboard();
         RouteManager.navigateToPatientQueue();
       }
       return success;

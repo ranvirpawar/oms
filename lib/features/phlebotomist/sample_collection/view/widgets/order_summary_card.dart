@@ -375,9 +375,7 @@ class _BodyState extends State<_Body> {
 
   @override
   Widget build(BuildContext context) {
-    final hasInstructions =
-        (widget.fastingRequired && (widget.fastingNote?.isNotEmpty ?? false)) ||
-            widget.specialInstructions.isNotEmpty;
+
     final testCount =
     widget.sampleGroups.fold(0, (sum, g) => sum + g.tests.length);
 
@@ -414,119 +412,7 @@ class _BodyState extends State<_Body> {
           ..._buildGroups(),
         ],
 
-        if (hasInstructions) ...[
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: AppColors.amberLight.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.amberBorder),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Tappable header (keeps the original look + chevron)
-                InkWell(
-                  onTap: () {
-                    setState(() {
-                      _instructionsExpanded = !_instructionsExpanded;
-                    });
-                  },
-                  borderRadius: BorderRadius.circular(14),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.info_outline_rounded,
-                          size: 15,
-                          color: AppColors.amberText,
-                        ),
-                        const SizedBox(width: 6),
-                        const Expanded(
-                          child: Text(
-                            'Instructions',
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ),
-                        AnimatedRotation(
-                          turns: _instructionsExpanded ? 0.5 : 0.0,
-                          duration: const Duration(milliseconds: 200),
-                          child: const Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            size: 20,
-                            color: AppColors.textTertiary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
 
-                // Collapsible content
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeInOut,
-                  alignment: Alignment.topCenter,
-                  child: _instructionsExpanded
-                      ? Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (widget.fastingRequired &&
-                            (widget.fastingNote?.isNotEmpty ?? false)) ...[
-                          Text(
-                            widget.fastingNote!,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                        for (final instruction
-                        in widget.specialInstructions)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Row(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  '•  ',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    instruction,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  )
-                      : const SizedBox.shrink(),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
       ],
     );
   }

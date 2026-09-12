@@ -392,7 +392,7 @@ class _NoOpenBagCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'No open bag',
+                      'No Open Bag',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
@@ -444,7 +444,7 @@ class _NoOpenBagCard extends StatelessWidget {
                     ),
                     icon: const Icon(Icons.unarchive_rounded, size: 19),
                     label: Text(
-                      closedSessions.length == 1 ? 'Reopen Bag' : 'Reopen a Bag',
+                      closedSessions.length == 1 ? 'Re-open Bag' : 'Reopen a Bag',
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 13.5,
@@ -863,7 +863,7 @@ class _BagPickerSheet extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 6),
+        /*  const SizedBox(height: 6),
           Center(
             child: TextButton.icon(
               onPressed: () {
@@ -879,7 +879,7 @@ class _BagPickerSheet extends StatelessWidget {
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
-          ),
+          ),*/
         ],
       ),
     );

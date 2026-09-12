@@ -205,10 +205,11 @@ class LiquidSnack {
     duration: const Duration(seconds: 2),
   );
 
-  static Future<void> warning(String message, {String? title}) => show(
+  static Future<void> warning(String message,  {String? title,Duration? duration }) => show(
     message: message,
     title: title,
     variant: SnackVariant.warning,
+    duration: duration??const Duration(seconds: 2),
   );
 
   static Future<void> info(String message, {String? title}) => show(

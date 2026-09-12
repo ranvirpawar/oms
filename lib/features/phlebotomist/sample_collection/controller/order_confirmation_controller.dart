@@ -20,11 +20,13 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 
 import '../../../../componenents/otp_boxes_input.dart';
+import '../../../../routes/route_manager.dart';
 import '../../../../services/auth_manager.dart';
 import '../../../../services/location_tracking_service.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
 import '../../../../utils/ui_designs/liquid_snackbar.dart' hide SnackPosition;
 import '../../patient_queue/model/patient_queue_model.dart';
+import '../../patient_queue/service/patient_queue_service.dart';
 import '../binding/sample_collection_binding.dart';
 import '../model/sample_collection_models.dart';
 import '../service/sample_collection_service.dart';
@@ -37,7 +39,7 @@ import 'sample_collection_controller.dart';
 class OrderConfirmationController extends GetxController with HasBagContext {
   OrderConfirmationController({required this.assignedPatient})
       : orderId = assignedPatient.orderId.toString();
-
+  final PatientQueueService _patientQueueService = PatientQueueService();
   final AssignedPatient assignedPatient;
   final String orderId;
 
@@ -47,6 +49,7 @@ class OrderConfirmationController extends GetxController with HasBagContext {
       LocationTrackingService();
 
   final RxString empId = ''.obs;
+  final RxBool isRescheduling = false.obs;
   int get _userId => int.tryParse(empId.value) ?? 0;
 
   bool get isOrderAccepted =>
@@ -56,7 +59,7 @@ class OrderConfirmationController extends GetxController with HasBagContext {
       assignedPatient.status == PatientStatus.arrived;
 
   bool get needsToStartRoute =>
-      assignedPatient.status == PatientStatus.accepted;
+      assignedPatient.status == PatientStatus.accepted || assignedPatient.status == PatientStatus.rescheduled;
 
   // ---- Order details -------------------------------------------------
   final Rxn<OrderConfirmationDetails> orderDetails =
@@ -380,5 +383,60 @@ class OrderConfirmationController extends GetxController with HasBagContext {
       fetchOrderDetails(),
       bagController.checkBagSession(showFeedback: false),
     ]);
+  }
+  Future<List<RescheduleReason>> fetchRescheduleReasons() {
+    return _patientQueueService.fetchRescheduleReasons();
+  }
+
+  Future<List<AvailableSlot>> fetchAvailableSlots(DateTime date) {
+    return _patientQueueService.fetchAvailableSlots(
+      userId: empId.value,
+      appointmentDate: date,
+    );
+  }
+  Future<bool> _runAction(
+      Future<bool> Function() action, {
+        required String successMessage,
+      }) async {
+    isRescheduling.value = true;
+    try {
+      final success = await action();
+      if (success) {
+        LiquidSnack.success(successMessage, title: 'Success');
+        await RouteManager.redirectToHomeDashboard();
+        RouteManager.navigateToPatientQueue();
+      }
+      return success;
+    } on SampleCollectionException catch (e) {
+      LiquidSnack.error(e.message, title: 'Action failed');
+      return false;
+    } catch (e) {
+      LiquidSnack.error(
+        'Something went wrong. Please try again.',
+        title: 'Action failed',
+      );
+      return false;
+    } finally {
+      isRescheduling.value = false;
+    }
+  }
+
+  Future<bool> reschedule(
+      AssignedPatient patient, {
+        required DateTime newDate,
+        required AvailableSlot slot,
+        required int rescheduleReasonId,
+      }) {
+    return _runAction(
+          () => _service.reschedule(
+        orderId: patient.orderId,
+        userId: _userId,
+        createdBy: _userId,
+        appointmentDate: newDate,
+        slotId: slot.slotId,
+        rescheduleReasonId: rescheduleReasonId,
+      ),
+      successMessage: 'Visit rescheduled',
+    );
   }
 }
