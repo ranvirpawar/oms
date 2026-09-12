@@ -21,11 +21,11 @@ class _NoticeTickerState extends State<_NoticeTicker> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 4), (_) {
+  /*  _timer = Timer.periodic(const Duration(seconds: 4), (_) {
       final notices = widget.controller.notices;
       if (notices.isEmpty) return;
       setState(() => _index = (_index + 1) % notices.length);
-    });
+    });*/
   }
 
   @override
@@ -39,7 +39,7 @@ class _NoticeTickerState extends State<_NoticeTicker> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Obx(() {
-      final notices = widget.controller.notices;
+      final notices = [];
       if (notices.isEmpty) return const SizedBox.shrink();
       final safeIndex = _index % notices.length;
       final notice = notices[safeIndex];

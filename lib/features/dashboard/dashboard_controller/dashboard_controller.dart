@@ -41,27 +41,6 @@ class DashboardController extends GetxController {
   final RxBool isAvailable = true.obs;
   final RxString currentLocation = 'Fetching location…'.obs;
 
-  /// Drives the header's rotating notice banner ("New patient assigned",
-  /// "Visit soon" reminders, etc). TODO: populate from a real
-  /// notifications/orders API instead of the placeholder list below.
-  final RxList<DashboardNotice> notices = <DashboardNotice>[
-    const DashboardNotice(
-      icon: Icons.person_add_alt_1_rounded,
-      message: 'New patient assigned — Rahul Sharma, Bavdhan',
-      color: Color(0xFF3B82F6),
-    ),
-    const DashboardNotice(
-      icon: Icons.schedule_rounded,
-      message: 'Scheduled collection at 4:30 PM — please visit soon',
-      color: Color(0xFFF59E0B),
-    ),
-    const DashboardNotice(
-      icon: Icons.local_shipping_rounded,
-      message: '3 bags pending handover to the lab',
-      color: Color(0xFF8B5CF6),
-    ),
-  ].obs;
-
   // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
   @override

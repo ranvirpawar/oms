@@ -12,6 +12,9 @@ import '../../../theme/app_colors.dart';
 
 import 'package:flutter/services.dart';
 
+import '../../../utils/widgets/metrics_data.dart';
+import '../../../utils/widgets/metrics_strip.dart';
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -172,7 +175,40 @@ class _DashboardScreenState extends State<DashboardScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Obx(() => _buildStatsCard()),
+                      Obx(() {
+                        final items = <MetricData>[
+                          MetricData(
+                            value: controller.assignedPatientsCount.value.toString().padLeft(2, '0'),
+                            label: 'Assigned\nPatients',
+                            icon: Icons.people_alt_rounded,
+                            dot: const Color(0xFF3B82F6),
+                          ),
+                          MetricData(
+                            value: controller.testCollectedCount.value.toString().padLeft(2, '0'),
+                            label: 'Clinic Collections',
+                            icon: Icons.science_rounded,
+                            dot: const Color(0xFF22C55E),
+                          ),
+                          MetricData(
+                            value: controller.handoverCount.value.toString().padLeft(2, '0'),
+                            label: 'Home Requests',
+                            icon: Icons.swap_horiz_rounded,
+                            dot: const Color(0xFF8B5CF6),
+                          ),
+                          MetricData(
+                            value: controller.pendingHandoverCount.value.toString().padLeft(2, '0'),
+                            label: 'Pending\nHandover',
+                            icon: Icons.hourglass_bottom_rounded,
+                            dot: const Color(0xFFF59E0B),
+                          ),
+                        ];
+
+                        return MetricsStrip(
+                          items: items,
+                          animationBuilder: (child) => _FadeSlideIn(index: 0, child: child),
+                        );
+                      }),
+                      // Obx(() => _buildStatsCard()),
                       const SizedBox(height: 26),
                       _sectionLabel(cs, 'Quick Actions'),
                       const SizedBox(height: 14),
@@ -409,8 +445,8 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   // ── Compact elevated metrics card ──────────────────────────────────────
   Widget _buildStatsCard() {
-    final items = <_MetricData>[
-      _MetricData(
+    final items = <MetricData>[
+      MetricData(
         value: controller.assignedPatientsCount.value.toString().padLeft(
           2,
           '0',
@@ -419,19 +455,19 @@ class _DashboardScreenState extends State<DashboardScreen>
         icon: Icons.people_alt_rounded,
         dot: const Color(0xFF3B82F6),
       ),
-      _MetricData(
+      MetricData(
         value: controller.testCollectedCount.value.toString().padLeft(2, '0'),
         label: 'Clinic Collections',
         icon: Icons.science_rounded,
         dot: const Color(0xFF22C55E),
       ),
-      _MetricData(
+      MetricData(
         value: controller.handoverCount.value.toString().padLeft(2, '0'),
         label: 'Home Requests',
         icon: Icons.swap_horiz_rounded,
         dot: const Color(0xFF8B5CF6),
       ),
-      _MetricData(
+      MetricData(
         value: controller.pendingHandoverCount.value.toString().padLeft(2, '0'),
         label: 'Pending\nHandover',
         icon: Icons.hourglass_bottom_rounded,
@@ -463,7 +499,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 color: Colors.black.withOpacity(0.07),
               );
             }
-            return Expanded(child: _MetricCell(data: items[i ~/ 2]));
+            return Expanded(child: MetricCell(data: items[i ~/ 2]));
           }),
         ),
       ),
@@ -594,79 +630,7 @@ class _ShimmerGrid extends StatelessWidget {
 }
 
 // ── Small reusable pieces ────────────────────────────────────────────────
-class _MetricData {
-  final String value;
-  final String label;
-  final IconData icon;
-  final Color dot;
 
-  _MetricData({
-    required this.value,
-    required this.label,
-    required this.icon,
-    required this.dot,
-  });
-}
-
-class _MetricCell extends StatelessWidget {
-  final _MetricData data;
-
-  const _MetricCell({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 7,
-                height: 7,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: data.dot,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                data.value,
-                style: const TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF161A2B),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              /*Icon(data.icon, size: 14, color: Colors.black.withOpacity(0.4)),
-              const SizedBox(width: 4),*/
-              Expanded(
-                child: Text(
-                  data.label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    height: 1.2,
-                    color: Colors.black.withOpacity(0.5),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _DropdownAction extends StatelessWidget {
   final IconData icon;
