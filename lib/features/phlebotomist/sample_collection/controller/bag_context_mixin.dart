@@ -1,21 +1,10 @@
-// bag_context_mixin.dart
-//
-// Both OrderConfirmationController and SampleCollectionController need the
-// same read-only view onto the *shared* BagRegistrationController (which
-// genuinely is app-wide singleton state — a phlebotomist has one open bag
-// regardless of which screen they're looking at, so it correctly stays
-// outside this refactor). Rather than duplicating these getters in both
-// controllers, they're defined once here.
-//
-// Widgets like BagContextBanner should be typed against `HasBagContext`
-// instead of a concrete controller class, so the same widget works on both
-// the Order Confirmation screen and the Sample Collection screen.
+
 
 import 'package:get/get.dart';
 
-import '../../patient_registration/bag_status_dashboard/controller/registrarion_bag_controller.dart';
-import '../../patient_registration/bag_status_dashboard/model/qr_bag_details.dart';
-import '../../patient_registration/bag_status_dashboard/model/qr_bag_session.dart';
+import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/controller/registrarion_bag_controller.dart';
+import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/model/qr_bag_details.dart';
+import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/model/qr_bag_session.dart';
 
 mixin HasBagContext on GetxController {
   /// Lazily resolves the shared bag controller. Reused if the phlebotomist

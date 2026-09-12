@@ -15,9 +15,9 @@ import '../../../../utils/helper_functions/helper_methods.dart';
 
 import '../../patient_queue/model/patient_queue_model.dart';
 import '../../patient_queue/service/patient_queue_service.dart';
-import '../../patient_registration/bag_status_dashboard/controller/registrarion_bag_controller.dart';
-import '../../patient_registration/bag_status_dashboard/model/qr_bag_details.dart';
-import '../../patient_registration/bag_status_dashboard/model/qr_bag_session.dart';
+import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/controller/registrarion_bag_controller.dart';
+import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/model/qr_bag_details.dart';
+import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/model/qr_bag_session.dart';
 import '../model/barcode_formatter.dart';
 import '../model/barcode_validator.dart';
 import '../model/sample_collection_models.dart';

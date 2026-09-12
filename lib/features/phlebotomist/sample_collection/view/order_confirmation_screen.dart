@@ -21,32 +21,6 @@ import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../theme/app_colors.dart';
-import '../../../../utils/ui_designs/tap_menu.dart';
-import '../../patient_queue/view/widgets/rescheduled_slot.dart';
-import '../../patient_registration/bag_status_dashboard/view/scan_bag_page.dart';
-import '../../patient_queue/model/patient_queue_model.dart';
-import '../controller/sample_collection_controller.dart';
-import '../model/sample_collection_models.dart';
-import 'widgets/active_bag_card.dart';
-import 'widgets/otp_verification_screen.dart';
-// order_confirmation_screen.dart
-// order_confirmation_screen.dart
-//
-// Only change from the original: GetView<SampleCollectionController> ->
-// GetView<OrderConfirmationController>. Body logic is unchanged — this
-// screen still just renders whatever state the controller exposes.
-
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/bag_context_card.dart';
-import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/need_route_start_view.dart';
-import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/not_accepted_view.dart';
-import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/order_summary_card.dart';
-import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/route_tracking_map.dart';
-import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
-import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
-
-import '../../../../theme/app_colors.dart';
 import '../controller/order_confirmation_controller.dart';
 
 class OrderConfirmationScreen extends GetView<OrderConfirmationController> {

@@ -6,8 +6,8 @@ import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../../theme/app_colors.dart';
-import '../../../../runner_boy/collect_empty_bag/view/widget/animated_scan_line.dart';
-import '../../../../runner_boy/collect_empty_bag/view/widget/scanner_overlay_painter.dart';
+import '../../../runner_boy/collect_empty_bag/view/widget/animated_scan_line.dart';
+import '../../../runner_boy/collect_empty_bag/view/widget/scanner_overlay_painter.dart';
 import '../controller/registrarion_bag_controller.dart';
 
 

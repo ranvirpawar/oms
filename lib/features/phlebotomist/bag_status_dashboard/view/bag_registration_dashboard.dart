@@ -1,9 +1,8 @@
 // views/bag_registration_dashboard.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:lifenity_connect/features/phlebotomist/patient_registration/bag_status_dashboard/view/collected_orders_list.dart';
-import 'package:lifenity_connect/features/phlebotomist/patient_registration/bag_status_dashboard/view/scan_bag_page.dart';
-import 'package:lifenity_connect/features/phlebotomist/patient_registration/bag_status_dashboard/view/widget/bag_detail_view.dart';
+import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/view/scan_bag_page.dart';
+import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/view/widget/bag_detail_view.dart';
 import 'package:lifenity_connect/routes/route_manager.dart';
 import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 
@@ -16,20 +15,8 @@ import '../model/qr_bag_session.dart';
 // views/bag_registration_dashboard.dart
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:get/get.dart';
-import 'package:lifenity_connect/features/phlebotomist/patient_registration/bag_status_dashboard/view/collected_orders_list.dart';
-import 'package:lifenity_connect/features/phlebotomist/patient_registration/bag_status_dashboard/view/scan_bag_page.dart';
-import 'package:lifenity_connect/features/phlebotomist/patient_registration/bag_status_dashboard/view/widget/bag_detail_view.dart';
-import 'package:lifenity_connect/routes/route_manager.dart';
-import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 
-import '../../../../../constants/app_strings.dart';
-import '../../../../../theme/app_colors.dart';
-import '../controller/registrarion_bag_controller.dart';
-import '../model/qr_bag_details.dart';
-import '../model/qr_bag_session.dart';
+import 'package:flutter/services.dart';
 
 // ─── Local design tokens (spacing / radius) ───────────────────────────────────
 // Kept local to this file since the project theme folder only exposes colors;

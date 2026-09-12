@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:lifenity_connect/features/phlebotomist/patient_registration/bag_status_dashboard/view/widget/collected_order_card.dart';
+import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/view/widget/collected_order_card.dart';
 
 import '../../../../../componenents/c_textformfeild.dart';
 import '../../../../../constants/app_assets.dart';

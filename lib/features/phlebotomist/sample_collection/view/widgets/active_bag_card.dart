@@ -11,9 +11,9 @@ import 'package:get/get.dart';
 import 'package:lifenity_connect/routes/route_manager.dart';
 
 import '../../../../../theme/app_colors.dart';
-import '../../../patient_registration/bag_status_dashboard/controller/registrarion_bag_controller.dart';
-import '../../../patient_registration/bag_status_dashboard/model/qr_bag_session.dart';
-import '../../../patient_registration/bag_status_dashboard/view/scan_bag_page.dart';
+import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/controller/registrarion_bag_controller.dart';
+import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/model/qr_bag_session.dart';
+import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/view/scan_bag_page.dart';
 import '../../controller/bag_context_mixin.dart';
 import '../../controller/sample_collection_controller.dart';
 // active_bag_card.dart
@@ -30,9 +30,9 @@ import 'package:get/get.dart';
 import 'package:lifenity_connect/routes/route_manager.dart';
 
 import '../../../../../theme/app_colors.dart';
-import '../../../patient_registration/bag_status_dashboard/controller/registrarion_bag_controller.dart';
-import '../../../patient_registration/bag_status_dashboard/model/qr_bag_session.dart';
-import '../../../patient_registration/bag_status_dashboard/view/scan_bag_page.dart';
+import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/controller/registrarion_bag_controller.dart';
+import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/model/qr_bag_session.dart';
+import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/view/scan_bag_page.dart';
 import '../../controller/sample_collection_controller.dart';
 
 /// Card that renders the open-bag state (capacity, status, bag-switch

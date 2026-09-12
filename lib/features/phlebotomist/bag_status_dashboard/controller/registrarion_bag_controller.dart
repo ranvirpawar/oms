@@ -3,12 +3,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:lifenity_connect/features/phlebotomist/patient_registration/bag_status_dashboard/service/bag_registration_service.dart';
+import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/service/bag_registration_service.dart';
 import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart' hide SnackPosition;
 
 import '../../../../../constants/bag_process_ids.dart';
 import '../../../../../services/user_service.dart';
-import '../../../../auth/model/login_response_model.dart';
+import '../../../auth/model/login_response_model.dart';
 import '../model/qr_bag_details.dart';
 import '../model/qr_bag_session.dart';
 

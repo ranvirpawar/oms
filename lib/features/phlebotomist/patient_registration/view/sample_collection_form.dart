@@ -21,7 +21,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../componenents/success_dialog.dart';
 import '../../../../constants/app_strings.dart';
 import '../../../../utils/widgets/modern_dropdown.dart';
-import '../bag_status_dashboard/controller/registrarion_bag_controller.dart';
+import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/controller/registrarion_bag_controller.dart';
 import '../controller/sample_collection_controller.dart';
 import '../models/tests_model.dart';
 
