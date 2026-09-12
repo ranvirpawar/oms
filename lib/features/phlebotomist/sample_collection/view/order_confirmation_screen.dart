@@ -14,6 +14,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/bag_context_card.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/need_route_start_view.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/not_accepted_view.dart';
+import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/order_instruction_card.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/order_summary_card.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/route_tracking_map.dart';
 import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';

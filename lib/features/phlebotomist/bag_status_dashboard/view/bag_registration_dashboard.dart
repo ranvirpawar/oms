@@ -16,16 +16,15 @@ import '../../../../utils/widgets/metrics_strip.dart';
 import '../controller/registrarion_bag_controller.dart';
 import '../model/qr_bag_details.dart';
 import '../model/qr_bag_session.dart';
+
 // views/bag_registration_dashboard.dart
 import 'dart:math' as math;
-
 
 import 'package:flutter/services.dart';
 
 // ─── Local design tokens (spacing / radius) ───────────────────────────────────
 // Kept local to this file since the project theme folder only exposes colors;
 // these follow a 4pt scale so nothing here is an arbitrary magic number.
-
 
 class BagRegistrationDashboard extends StatelessWidget {
   const BagRegistrationDashboard({super.key});
@@ -38,7 +37,7 @@ class BagRegistrationDashboard extends StatelessWidget {
       backgroundColor: const Color(0xFFF0F4F8),
       appBar: const CustomAppBar(
         title: AppStrings.bagStatusDashboard,
-       /* actions: [
+        /* actions: [
           Semantics(
             label: 'View collected orders',
             button: true,
@@ -59,28 +58,28 @@ class BagRegistrationDashboard extends StatelessWidget {
         ],*/
       ),
       floatingActionButton: Obx(
-            () => controller.isLoading.value
+        () => controller.isLoading.value
             ? const SizedBox.shrink()
             : _EntranceFab(
-          child: FloatingActionButton.extended(
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              Get.to(
-                    () => const ScanBagPage(),
-                transition: Transition.downToUp,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic,
-              );
-            },
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            icon: const Icon(Icons.qr_code_scanner),
-            label: const Text(
-              'Open New Bag',
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ),
+                child: FloatingActionButton.extended(
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    Get.to(
+                      () => const ScanBagPage(),
+                      transition: Transition.downToUp,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutCubic,
+                    );
+                  },
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  icon: const Icon(Icons.qr_code_scanner),
+                  label: const Text(
+                    'Open New Bag',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
@@ -104,8 +103,10 @@ class BagRegistrationDashboard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
-                _StaggerIn(index: 0, child: _SummaryStrip(controller: controller)),
+                _StaggerIn(
+                  index: 0,
+                  child: _SummaryStrip(controller: controller),
+                ),
                 const SizedBox(height: BagDashboardSpacing.xxl),
                 if (controller.hasBags) ...[
                   const Padding(
@@ -121,16 +122,22 @@ class BagRegistrationDashboard extends StatelessWidget {
                     ),
                   ),
                   ...controller.allSessions.asMap().entries.map(
-                        (entry) => Padding(
+                    (entry) => Padding(
                       padding: const EdgeInsets.only(bottom: 14),
                       child: _StaggerIn(
                         index: entry.key + 1,
-                        child: _BagCard(session: entry.value, controller: controller),
+                        child: _BagCard(
+                          session: entry.value,
+                          controller: controller,
+                        ),
                       ),
                     ),
                   ),
                 ] else
-                  _StaggerIn(index: 1, child: _EmptyState(controller: controller)),
+                  _StaggerIn(
+                    index: 1,
+                    child: _EmptyState(controller: controller),
+                  ),
               ],
             ),
           ),
@@ -179,6 +186,7 @@ class _StaggerIn extends StatelessWidget {
 /// rather than just appearing.
 class _EntranceFab extends StatefulWidget {
   final Widget child;
+
   const _EntranceFab({required this.child});
 
   @override
@@ -303,8 +311,19 @@ class _SummaryStrip extends StatelessWidget {
   }
 }
 
-
-
+// ─── Design tokens used below (add to your AppColors/AppRadii/AppSpacing) ────
+//
+// class AppColors {
+//   static const openAccent    = Color(0xFF0F8F82); // muted teal, calmer than green
+//   static const closedAccent  = Color(0xFF64748B); // slate, neutral rather than alarm-orange
+//   static const fullAccent    = Color(0xFFD97757); // warm terracotta, softer than red
+//   static const surface       = Color(0xFFFCFCFD); // barely-off-white, not flat #FFF
+//   static const hairline      = Color(0xFFECEEF1);
+//   static const textPrimary   = Color(0xFF15181D);
+//   static const textSecondary = Color(0xFF80868F);
+// }
+//
+// Radii: card 14 (AppRadii.md), pill 999. Spacing: 4/8/12/16/24 scale.
 
 // ─── Individual Bag Card ──────────────────────────────────────────────────────
 
@@ -319,6 +338,375 @@ class _BagCard extends StatefulWidget {
 }
 
 class _BagCardState extends State<_BagCard>
+    with SingleTickerProviderStateMixin {
+  bool _expanded = false;
+  late AnimationController _animController;
+  late Animation<double> _expandAnim;
+  late Animation<double> _rotateAnim;
+
+  static const _openAccent = Color(0xFF0F8F82);
+  static const _closedAccent = Color(0xFF64748B);
+  static const _fullAccent = Color(0xFFD97757);
+  static const _surface = Color(0xFFFCFCFD);
+  static const _hairline = Color(0xFFECEEF1);
+  static const _textPrimary = Color(0xFF15181D);
+  static const _textSecondary = Color(0xFF80868F);
+
+  @override
+  void initState() {
+    super.initState();
+    _expanded = widget.session.isOpen;
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 240),
+      value: _expanded ? 1.0 : 0.0,
+    );
+    _expandAnim = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeInOutCubic,
+    );
+    _rotateAnim = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  void _toggle() {
+    HapticFeedback.selectionClick();
+    setState(() => _expanded = !_expanded);
+    _expanded ? _animController.forward() : _animController.reverse();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final session = widget.session;
+    final ctrl = widget.controller;
+    final isOpen = session.isOpen;
+    final Color accent = isOpen ? _openAccent : _closedAccent;
+
+    return Obx(() {
+      final details = ctrl.bagDetailsMap[session.bagId];
+      final isFull = isOpen && ctrl.isBagFull(session.bagId);
+      final stripeColor = isFull ? _fullAccent : accent;
+
+      return RepaintBoundary(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            color: _surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _hairline, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // ── Status accent stripe (replaces heavy border ring) ──────
+                  Container(width: 3, color: stripeColor),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Pressable(
+                          onTap: _toggle,
+                          haptic: HapticFeedbackType.none,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(13, 12, 12, 12),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: accent.withOpacity(0.10),
+                                    borderRadius: BorderRadius.circular(9),
+                                  ),
+                                  child: Icon(
+                                    isOpen
+                                        ? Icons.inventory_2
+                                        : Icons.inventory_2_outlined,
+                                    color: accent,
+                                    size: 16,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          session.bagcode,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: _textPrimary,
+                                            letterSpacing: -0.2,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        details != null
+                                            ? '${details.patientCount}/${details.capacity}'
+                                            : (isOpen ? 'Open' : 'Closed'),
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          color: _textSecondary,
+                                        ),
+                                      ),
+                                      if (isFull) ...[
+                                        const SizedBox(width: 6),
+                                        const _FullChip(),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                RotationTransition(
+                                  turns: Tween<double>(
+                                    begin: 0,
+                                    end: 0.5,
+                                  ).animate(_rotateAnim),
+                                  child: Icon(
+                                    Icons.keyboard_arrow_down_rounded,
+                                    color: _textSecondary.withOpacity(0.7),
+                                    size: 20,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SizeTransition(
+                          sizeFactor: _expandAnim,
+                          child: Column(
+                            children: [
+                              Container(height: 1, color: _hairline),
+                              if (details != null)
+                                _DetailsBody(details: details, accent: accent),
+                              _ActionRow(
+                                session: session,
+                                controller: ctrl,
+                                isOpen: isOpen,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+  }
+}
+
+// ─── Full chip (small warning tag, shown inline next to the counts) ─────────
+
+class _FullChip extends StatelessWidget {
+  const _FullChip();
+
+  static const _fullAccent = Color(0xFFD97757);
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Bag is full',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: _fullAccent.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: const Text(
+          'Full',
+          style: TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            color: _fullAccent,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Bag Details Body (inside expanded card) ──────────────────────────────────
+
+class _DetailsBody extends StatelessWidget {
+  final QRBagDetails details;
+  final Color accent;
+
+  const _DetailsBody({required this.details, required this.accent});
+
+  static const _textSecondary = Color(0xFF80868F);
+  static const _fullAccent = Color(0xFFD97757);
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = details.capacity > 0
+        ? (details.patientCount / details.capacity).clamp(0.0, 1.0)
+        : 0.0;
+    final Color fillColor = pct >= 0.9 ? _fullAccent : accent;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(13, 12, 12, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _MiniStat(
+                label: 'Capacity',
+                value: details.capacity.toString(),
+                icon: Icons.all_inbox_rounded,
+                color: const Color(0xFF5B6472),
+              ),
+              _MiniStat(
+                label: 'Tubes',
+                value: details.patientCount.toString(),
+                icon: Icons.colorize_rounded,
+                color: accent,
+              ),
+              _MiniStat(
+                label: 'Vacant',
+                value: details.spaceVacant.toString(),
+                icon: Icons.inbox_rounded,
+                color: const Color(0xFF5B6472),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Space Utilization',
+                style: TextStyle(fontSize: 11, color: _textSecondary),
+              ),
+              Text(
+                '${(pct * 100).toStringAsFixed(0)}%',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: fillColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: pct),
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, _) => LinearProgressIndicator(
+                value: value,
+                backgroundColor: const Color(0xFFF0F1F3),
+                valueColor: AlwaysStoppedAnimation<Color>(fillColor),
+                minHeight: 5,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniStat extends StatelessWidget {
+  final String label, value;
+  final IconData icon;
+  final Color color;
+
+  const _MiniStat({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 15),
+          ),
+          const SizedBox(width: 8),
+
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF15181D),
+                  letterSpacing: -0.2,
+                ),
+              ),
+              const SizedBox(height: 2),
+
+              Text(
+                label,
+                style: const TextStyle(fontSize: 9.5, color: Color(0xFF80868F)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Individual Bag Card ──────────────────────────────────────────────────────
+
+/*class _BagCard extends StatefulWidget {
+  final QRBagSession session;
+  final BagRegistrationController controller;
+
+  const _BagCard({required this.session, required this.controller});
+
+  @override
+  State<_BagCard> createState() => _BagCardState();
+}*/
+
+/*class _BagCardState extends State<_BagCard>
     with SingleTickerProviderStateMixin {
   bool _expanded = false;
   late AnimationController _animController;
@@ -710,7 +1098,7 @@ class _MiniStat extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
 // ─── Action Row per card ──────────────────────────────────────────────────────
 
@@ -728,7 +1116,12 @@ class _ActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(BagDashboardSpacing.lg, 0, BagDashboardSpacing.lg, BagDashboardSpacing.lg),
+      padding: const EdgeInsets.fromLTRB(
+        BagDashboardSpacing.lg,
+        0,
+        BagDashboardSpacing.lg,
+        BagDashboardSpacing.lg,
+      ),
       child: Row(
         children: [
           // View Details — always visible
@@ -739,7 +1132,7 @@ class _ActionRow extends StatelessWidget {
               color: AppColors.primary,
               outlined: true,
               onTap: () => Get.to(
-                    () => const BagDetailView(),
+                () => const BagDetailView(),
                 transition: Transition.rightToLeftWithFade,
                 duration: const Duration(milliseconds: 280),
                 curve: Curves.easeOutCubic,
@@ -777,9 +1170,7 @@ class _ActionRow extends StatelessWidget {
                   if (controller.isBagFull(session.bagId)) {
                     _showBagFullSheet(context);
                   } else {
-                    RouteManager.navigateToPatientQueue(
-                      isCollectionTrue: true,
-                    );
+                    RouteManager.navigateToPatientQueue(isCollectionTrue: true);
                   }
                 },
               ),
@@ -813,37 +1204,15 @@ class _ActionRow extends StatelessWidget {
   void _confirmClose(BuildContext context) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(BagDashboardRadius.xl)),
-        title: const Text(
-          'Close Bag?',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
-        content: Text(
-          'Are you sure you want to close bag ${session.bagcode}? '
-              'You can reopen it later if needed.',
-          style: const TextStyle(color: Color(0xFF718096)),
-        ),
-        actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              HapticFeedback.mediumImpact();
-              Get.back();
-              controller.closeBag(session);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.secondary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(BagDashboardRadius.sm),
-              ),
-            ),
-            child: const Text(
-              'Close Bag',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
+      builder: (_) => _ActionDialog(
+        title: 'Close Bag?',
+        message:
+            'Are you sure you want to close bag ${session.bagcode}? '
+            'You can reopen it later if needed.',
+        confirmLabel: 'Close Bag',
+        confirmColor: AppColors.secondary,
+        confirmIcon: Icons.lock_outline,
+        onConfirm: () => controller.closeBag(session),
       ),
     );
   }
@@ -855,24 +1224,84 @@ class _ActionRow extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(BagDashboardRadius.xl)),
-        title: const Text(
-          'Reopen Bag?',
-          style: TextStyle(fontWeight: FontWeight.w700),
+      builder: (_) => _ActionDialog(
+        title: 'Reopen Bag?',
+        message: 'Do you want to reopen ${session.bagcode}?',
+        confirmLabel: 'Reopen',
+        confirmColor: const Color(0xFFED8936),
+        confirmIcon: Icons.lock_open_rounded,
+        onConfirm: () => controller.reopenBag(session),
+        warning: willAutoClose
+            ? 'Bag ${currentlyOpen.bagcode} will be automatically closed.'
+            : null,
+      ),
+    );
+  }
+}
+
+
+class _ActionDialog extends StatelessWidget {
+  final String title;
+  final String message;
+  final String confirmLabel;
+  final Color confirmColor;
+  final IconData confirmIcon;
+  final VoidCallback onConfirm;
+  final String? warning;
+
+  const _ActionDialog({
+    required this.title,
+    required this.message,
+    required this.confirmLabel,
+    required this.confirmColor,
+    required this.confirmIcon,
+    required this.onConfirm,
+    this.warning,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 22, 20, 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(BagDashboardRadius.xl),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.10),
+              blurRadius: 28,
+              offset: const Offset(0, 12),
+            ),
+          ],
         ),
-        content: Column(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Reopen bag ${session.bagcode}?',
-              style: const TextStyle(color: Color(0xFF718096)),
+              title,
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1A202C),
+              ),
             ),
-            if (willAutoClose) ...[
-              const SizedBox(height: BagDashboardSpacing.md),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.4,
+                color: Color(0xFF718096),
+              ),
+            ),
+            if (warning != null) ...[
+              const SizedBox(height: 14),
               Container(
-                padding: const EdgeInsets.all(BagDashboardSpacing.md),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFF3CD),
                   borderRadius: BorderRadius.circular(BagDashboardRadius.sm),
@@ -888,7 +1317,7 @@ class _ActionRow extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Bag ${currentlyOpen.bagcode} will be automatically closed.',
+                        warning!,
                         style: const TextStyle(
                           fontSize: 12,
                           color: Color(0xFF7B341E),
@@ -900,25 +1329,117 @@ class _ActionRow extends StatelessWidget {
                 ),
               ),
             ],
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: _DialogButton(
+                    label: 'Cancel',
+                    variant: _DialogButtonVariant.ghost,
+                    onTap: () => Get.back(),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _DialogButton(
+                    label: confirmLabel,
+                    icon: confirmIcon,
+                    variant: _DialogButtonVariant.filled,
+                    color: confirmColor,
+                    onTap: () {
+                      Get.back();
+                      onConfirm();
+                    },
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              HapticFeedback.mediumImpact();
-              Get.back();
-              controller.reopenBag(session);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFED8936),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(BagDashboardRadius.sm),
-              ),
-            ),
-            child: const Text('Reopen', style: TextStyle(color: Colors.white)),
+      ),
+    );
+  }
+}
+
+enum _DialogButtonVariant { filled, ghost }
+
+
+class _DialogButton extends StatefulWidget {
+  final String label;
+  final IconData? icon;
+  final _DialogButtonVariant variant;
+  final Color? color;
+  final VoidCallback onTap;
+
+  const _DialogButton({
+    required this.label,
+    required this.variant,
+    required this.onTap,
+    this.icon,
+    this.color,
+  });
+
+  @override
+  State<_DialogButton> createState() => _DialogButtonState();
+}
+
+class _DialogButtonState extends State<_DialogButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isFilled = widget.variant == _DialogButtonVariant.filled;
+    final accent = widget.color ?? AppColors.primary;
+
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        HapticFeedback.mediumImpact();
+        widget.onTap();
+      },
+      child: AnimatedScale(
+        scale: _pressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOut,
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isFilled
+                ? accent.withOpacity(_pressed ? 0.88 : 1.0)
+                : const Color(0xFFF2F4F7),
+            borderRadius: BorderRadius.circular(BagDashboardRadius.sm),
           ),
-        ],
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.icon != null) ...[
+                Icon(
+                  widget.icon,
+                  size: 16,
+                  color: isFilled ? Colors.white : const Color(0xFF4A5568),
+                ),
+                const SizedBox(width: 6),
+              ],
+              Flexible(
+                child: Text(
+                  widget.label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isFilled ? Colors.white : const Color(0xFF4A5568),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -942,7 +1463,12 @@ class _BagFullSheet extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      padding: const EdgeInsets.fromLTRB(BagDashboardSpacing.xxl, 12, BagDashboardSpacing.xxl, 40),
+      padding: const EdgeInsets.fromLTRB(
+        BagDashboardSpacing.xxl,
+        12,
+        BagDashboardSpacing.xxl,
+        40,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1006,7 +1532,9 @@ class _BagFullSheet extends StatelessWidget {
                       side: const BorderSide(color: Color(0xFFE2E8F0)),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(BagDashboardRadius.md),
+                        borderRadius: BorderRadius.circular(
+                          BagDashboardRadius.md,
+                        ),
                       ),
                     ),
                     child: const Text(
@@ -1024,7 +1552,7 @@ class _BagFullSheet extends StatelessWidget {
                   onTap: () {
                     Get.back();
                     Get.to(
-                          () => const ScanBagPage(),
+                      () => const ScanBagPage(),
                       transition: Transition.downToUp,
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeOutCubic,
@@ -1040,7 +1568,9 @@ class _BagFullSheet extends StatelessWidget {
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(BagDashboardRadius.md),
+                        borderRadius: BorderRadius.circular(
+                          BagDashboardRadius.md,
+                        ),
                       ),
                     ),
                     icon: const Icon(Icons.qr_code_scanner, size: 18),
@@ -1249,44 +1779,47 @@ class _SmallButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final content = outlined
         ? OutlinedButton.icon(
-      onPressed: null,
-      style: OutlinedButton.styleFrom(
-        disabledForegroundColor: color,
-        foregroundColor: color,
-        side: BorderSide(color: color.withOpacity(0.6)),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(BagDashboardRadius.sm),
-        ),
-      ),
-      icon: Icon(icon, size: 15),
-      label: Text(
-        label,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-      ),
-    )
+            onPressed: null,
+            style: OutlinedButton.styleFrom(
+              disabledForegroundColor: color,
+              foregroundColor: color,
+              side: BorderSide(color: color.withOpacity(0.6)),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(BagDashboardRadius.sm),
+              ),
+            ),
+            icon: Icon(icon, size: 15),
+            label: Text(
+              label,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          )
         : ElevatedButton.icon(
-      onPressed: null,
-      style: ElevatedButton.styleFrom(
-        disabledBackgroundColor: color,
-        disabledForegroundColor: Colors.white,
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(BagDashboardRadius.sm),
-        ),
-      ),
-      icon: Icon(icon, size: 15),
-      label: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-        ),
-      ),
-    );
+            onPressed: null,
+            style: ElevatedButton.styleFrom(
+              disabledBackgroundColor: color,
+              disabledForegroundColor: Colors.white,
+              backgroundColor: color,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(BagDashboardRadius.sm),
+              ),
+            ),
+            icon: Icon(icon, size: 15),
+            label: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          );
 
     return SizedBox(
       height: 44, // ≥44 logical px tap target
@@ -1358,5 +1891,3 @@ class _EmptyState extends StatelessWidget {
 
 /// Shimmering placeholder shaped like the real content, shown while the
 /// dashboard's initial data is loading — replaces the bare spinner.
-
-

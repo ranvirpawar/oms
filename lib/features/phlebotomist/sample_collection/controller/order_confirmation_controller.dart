@@ -220,7 +220,7 @@ class OrderConfirmationController extends GetxController with HasBagContext {
       LiquidSnack.error(e.message, title: 'Action failed');
     } catch (_) {
       LiquidSnack.error(
-        'Please check your connection and try again.',
+        'Please try again.',
         title: 'Action failed',
       );
     } finally {

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
+import 'package:intl/intl.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/controller/patient_queue_controller.dart';
 import 'package:lifenity_connect/network/app_urls.dart';
 import 'package:lifenity_connect/utils/helper_functions/helper_methods.dart';
@@ -47,22 +48,28 @@ class PatientQueueService {
 
   Future<List<AssignedPatient>> fetchAssignedPatients({
     required String userId,
+    required String fromDate,
+    required String toDate,
   }) async {
     try {
+      final queryParameters = {
+        'userId': userId,
+        'fromDate': fromDate,
+        'toDate': toDate,
+      };
       final response = await _apiClient.get(
-        '${AppUrls.getOrdersList}?userId=$userId',
+        AppUrls.getOrdersList,
+        queryParameters: queryParameters,
       );
 
       final Map<String, dynamic> body = response.data is String
           ? jsonDecode(response.data as String) as Map<String, dynamic>
           : response.data as Map<String, dynamic>;
 
-      final isSuccess =
-          (body['status'] as String?)?.toLowerCase() == 'success';
+      final isSuccess = (body['status'] as String?)?.toLowerCase() == 'success';
       if (!isSuccess) {
         final message = (body['message'] as String?)?.trim() ?? '';
         final output = body['output'];
-
 
         if (output == null && _isNoDataMessage(message)) {
           return const <AssignedPatient>[];
@@ -73,11 +80,8 @@ class PatientQueueService {
         );
       }
 
-
       final output = body['output'];
       // final output = dummyPatientList['output'];
-
-
 
       final List<dynamic> list = output is List ? output : [output];
 
@@ -113,38 +117,41 @@ class PatientQueueService {
         String? rescheduleEndTime,
       }) async {
     final body = {
-      'Type_SampleOrderchnags': [
-        {
-          'OrderAssignDetailID': patient.orderAssignDetailId ?? 0,
-          'SampleCollectionOrderID': patient.sampleCollectionOrderId ?? 0,
-          'PatientID': patient.patientId ?? '',
-          'OMSOrderID': patient.omsOrderId ?? patient.orderId ?? '',
-          'UserID': updatedBy,
-          'UserRosterID': patient.userRosterId ?? 0,
-        },
-      ],
+      'OrderID': patient.omsOrderId ?? patient.orderId ?? '',
+      'UserID': updatedBy,
       'AssignStatusID': assignStatusId,
-      'SlotID': slotId ?? 0,
-      'RescheduleReasoneID': rescheduleReasonId ?? 0,
-      'RescheduleDate': rescheduleDate?.toIso8601String(),
+      'SlotID': slotId,
+      'RescheduleReasoneID': rescheduleReasonId,
+      'RescheduleDate': rescheduleDate != null
+          ? DateFormat('yyyy-MM-dd').format(rescheduleDate)
+          : null,
       'RescheduleStartTime': rescheduleStartTime,
       'RescheduleEndTime': rescheduleEndTime,
       'AssignRejectReasonID': rejectReasonId ?? 0,
       'UpdatedBy': updatedBy,
     };
 
+    Map<String, dynamic> respBody;
     try {
       final response = await _apiClient.post(AppUrls.updateOrder, data: body);
-      final Map<String, dynamic> respBody = response.data is String
+      respBody = response.data is String
           ? jsonDecode(response.data as String) as Map<String, dynamic>
           : response.data as Map<String, dynamic>;
-      return (respBody['status'] as String?)?.toLowerCase() == 'success';
     } catch (_) {
       throw PatientQueueException(
-        'Unable to update this order. Please check your connection and try again.',
+        'Unable to update this order. Please try again.',
         isNetworkError: true,
       );
     }
+
+    final isSuccess = (respBody['status'] as String?)?.toLowerCase() == 'success';
+    if (!isSuccess) {
+      throw PatientQueueException(
+        (respBody['message'] as String?) ?? 'Unable to update this order.',
+        isNetworkError: false,
+      );
+    }
+    return true;
   }
 
   Future<bool> acceptAndStart(
@@ -170,16 +177,17 @@ class PatientQueueService {
       rejectReasonId: reasonId,
     );
   }
+
   /// Reschedules via the shared `updateOrder` endpoint (AssignStatusID = 4)
   /// instead of the dedicated appointment-reschedule API. Takes the picked
   /// slot's id/time window and the mandatory reason id straight from the sheet.
   Future<bool> rescheduleAssignment(
-      AssignedPatient patient, {
-        required int updatedBy,
-        required DateTime rescheduleDate,
-        required AvailableSlot slot,
-        required int rescheduleReasonId,
-      }) {
+    AssignedPatient patient, {
+    required int updatedBy,
+    required DateTime rescheduleDate,
+    required AvailableSlot slot,
+    required int rescheduleReasonId,
+  }) {
     return _updateAssignStatus(
       patient,
       assignStatusId: AssignStatus.rescheduled,
@@ -215,8 +223,7 @@ class PatientQueueService {
           ? jsonDecode(response.data as String) as Map<String, dynamic>
           : response.data as Map<String, dynamic>;
 
-      final isSuccess =
-          (body['status'] as String?)?.toLowerCase() == 'success';
+      final isSuccess = (body['status'] as String?)?.toLowerCase() == 'success';
 
       if (!isSuccess) {
         final message = (body['message'] as String?)?.trim() ?? '';
@@ -243,7 +250,7 @@ class PatientQueueService {
     } catch (e) {
       kPrint(e.toString());
       throw PatientQueueException(
-        'Unable to load available slots. Please check your connection and try again.',
+        'Unable to load available slots. Please try again.',
         isNetworkError: true,
       );
     }
@@ -275,15 +282,12 @@ class PatientQueueService {
       return const <RescheduleReason>[];
     }
   }
-
-
-
 }
 
 final dummyPatientList = {
   'status': 'Success',
   'message': 'Order details',
-  'output':[
+  'output': [
     {
       "SampleCollectionOrderID": 162,
       "OMSOrderID": "CL26090600000162",
@@ -328,7 +332,7 @@ final dummyPatientList = {
           "SampleTypeName": "Serum",
           "TubeId": 3,
           "TubeContent": "Plain Tube",
-          "FastingRequired": "Fasting Not Required"
+          "FastingRequired": "Fasting Not Required",
         },
         {
           "OrderID": "ORD-CL3-20260907-10",
@@ -337,9 +341,9 @@ final dummyPatientList = {
           "SampleTypeName": "Serum",
           "TubeId": 3,
           "TubeContent": "Plain Tube",
-          "FastingRequired": "Fasting Not Required"
-        }
-      ]
+          "FastingRequired": "Fasting Not Required",
+        },
+      ],
     },
     {
       "SampleCollectionOrderID": 163,
@@ -385,7 +389,7 @@ final dummyPatientList = {
           "SampleTypeName": "Serum",
           "TubeId": 3,
           "TubeContent": "Plain Tube",
-          "FastingRequired": "Fasting Not Required"
+          "FastingRequired": "Fasting Not Required",
         },
         {
           "OrderID": "ORD-CL3-20260908-01",
@@ -394,9 +398,9 @@ final dummyPatientList = {
           "SampleTypeName": "Serum",
           "TubeId": 3,
           "TubeContent": "Plain Tube",
-          "FastingRequired": "Fasting Not Required"
-        }
-      ]
+          "FastingRequired": "Fasting Not Required",
+        },
+      ],
     },
     {
       "SampleCollectionOrderID": 164,
@@ -442,7 +446,7 @@ final dummyPatientList = {
           "SampleTypeName": "Serum",
           "TubeId": 3,
           "TubeContent": "Plain Tube",
-          "FastingRequired": "Fasting Not Required"
+          "FastingRequired": "Fasting Not Required",
         },
         {
           "OrderID": "ORD-CL3-20260908-02",
@@ -451,9 +455,9 @@ final dummyPatientList = {
           "SampleTypeName": "Serum",
           "TubeId": 3,
           "TubeContent": "Plain Tube",
-          "FastingRequired": "Fasting Not Required"
-        }
-      ]
+          "FastingRequired": "Fasting Not Required",
+        },
+      ],
     },
     {
       "SampleCollectionOrderID": 165,
@@ -499,7 +503,7 @@ final dummyPatientList = {
           "SampleTypeName": "Serum",
           "TubeId": 3,
           "TubeContent": "Plain Tube",
-          "FastingRequired": "Fasting Required"
+          "FastingRequired": "Fasting Required",
         },
         {
           "OrderID": "ORD-CL3-20260908-03",
@@ -508,9 +512,9 @@ final dummyPatientList = {
           "SampleTypeName": "Serum",
           "TubeId": 3,
           "TubeContent": "Plain Tube",
-          "FastingRequired": "Fasting Required"
-        }
-      ]
+          "FastingRequired": "Fasting Required",
+        },
+      ],
     },
     {
       "SampleCollectionOrderID": 166,
@@ -556,7 +560,7 @@ final dummyPatientList = {
           "SampleTypeName": "Serum",
           "TubeId": 3,
           "TubeContent": "Plain Tube",
-          "FastingRequired": "Fasting Required"
+          "FastingRequired": "Fasting Required",
         },
         {
           "OrderID": "ORD-CL3-20260908-04",
@@ -565,9 +569,9 @@ final dummyPatientList = {
           "SampleTypeName": "Serum",
           "TubeId": 3,
           "TubeContent": "Plain Tube",
-          "FastingRequired": "Fasting Not Required"
-        }
-      ]
+          "FastingRequired": "Fasting Not Required",
+        },
+      ],
     },
     {
       "SampleCollectionOrderID": 168,
@@ -613,7 +617,7 @@ final dummyPatientList = {
           "SampleTypeName": "Plasma R",
           "TubeId": 6,
           "TubeContent": "Sodium fluoride vial",
-          "FastingRequired": "Fasting Not Required"
+          "FastingRequired": "Fasting Not Required",
         },
         {
           "OrderID": "ORD-CL3-20260908-06",
@@ -622,9 +626,9 @@ final dummyPatientList = {
           "SampleTypeName": "Serum",
           "TubeId": 3,
           "TubeContent": "Plain Tube",
-          "FastingRequired": "Fasting Not Required"
-        }
-      ]
+          "FastingRequired": "Fasting Not Required",
+        },
+      ],
     },
     {
       "SampleCollectionOrderID": 185,
@@ -670,11 +674,9 @@ final dummyPatientList = {
           "SampleTypeName": "Serum",
           "TubeId": 3,
           "TubeContent": "Plain Tube",
-          "FastingRequired": "Fasting Not Required"
-        }
-      ]
-    }
+          "FastingRequired": "Fasting Not Required",
+        },
+      ],
+    },
   ],
 };
-
-

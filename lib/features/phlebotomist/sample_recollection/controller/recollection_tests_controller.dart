@@ -321,7 +321,7 @@ class RecollectTestsController extends GetxController {
       debugPrint('Error denying recollection: $e');
       SnackBarService.to.showMessage(
         message:
-            'Error denying recollection. Please check your connection and try again.',
+            'Error denying recollection. Please try again.',
       );
       return false;
     } finally {
@@ -401,7 +401,7 @@ class RecollectTestsController extends GetxController {
       debugPrint('Error accepting recollection: $e');
       SnackBarService.to.showMessage(
         message:
-            'Error accepting recollection. Please check your connection and try again.',
+            'Error accepting recollection. Please try again.',
         backgroundColor: Colors.red,
       );
       return false;

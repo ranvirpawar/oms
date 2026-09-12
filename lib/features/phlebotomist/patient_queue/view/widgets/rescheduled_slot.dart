@@ -197,8 +197,8 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
                     children: [
                       _buildPatientSummary(),
-                      const SizedBox(height: 20),
-                      _buildReasonSection(),
+                      const SizedBox(height: 12),
+                      _buildWarningBanner(),
                       const SizedBox(height: 24),
                       _sectionTitle('Select new date'),
                       const SizedBox(height: 10),
@@ -207,6 +207,9 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
                       _sectionTitle('Select time slot'),
                       const SizedBox(height: 10),
                       _buildSlotGrid(),
+                      const SizedBox(height: 20),
+                      _buildReasonSection(),
+
                     ],
                   ),
                 ),
@@ -354,7 +357,65 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
       ),
     );
   }
+  Widget _buildWarningBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.warningContainer.withOpacity(0.55),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: AppColors.warning.withOpacity(0.14)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.85),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.info,
+              size: 19,
+              color: AppColors.warning,
+            ),
+          ),
 
+          const SizedBox(width: 11),
+
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /*Text(
+                  'This action cannot be undone',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.redText,
+                  ),
+                ),
+
+                SizedBox(height: 4),*/
+
+                Text(
+                  'Please inform the coordinator before re-scheduling if fasting or eligibility requirements are not met.',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    height: 1.45,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
   Widget _sectionTitle(String text) => Text(
     text,
     style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.textPrimary),

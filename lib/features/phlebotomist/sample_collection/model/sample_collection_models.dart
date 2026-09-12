@@ -2,24 +2,54 @@
 // Tests / special instructions
 // ---------------------------------------------------------------------------
 enum SampleCollectionStatus { pending, collected, incomplete }
+/// A tube type associated with a test (new in the sample-requirements
+/// response — a single test can list more than one acceptable tube).
+class TubeTypeInfo {
+  final int tubeTypeId;
+  final String tubeType;
+
+  TubeTypeInfo({
+    required this.tubeTypeId,
+    required this.tubeType,
+  });
+
+  factory TubeTypeInfo.fromJson(Map<String, dynamic> json) {
+    return TubeTypeInfo(
+      tubeTypeId: json['tubeTypeId'] is int
+          ? json['tubeTypeId'] as int
+          : int.tryParse('${json['tubeTypeId']}') ?? 0,
+      tubeType: json['tubeType'] as String? ?? '',
+    );
+  }
+}
+
 class TestInfo {
   final int testId;
   final String testCode;
   final String testName;
+  final List<TubeTypeInfo> tubeTypes;
 
   TestInfo({
     required this.testId,
     required this.testCode,
     required this.testName,
+    required this.tubeTypes,
   });
 
   factory TestInfo.fromJson(Map<String, dynamic> json) {
+    final tubeTypesList = json['tubeTypes'];
     return TestInfo(
       testId: json['testId'] is int
           ? json['testId'] as int
           : int.tryParse('${json['testId']}') ?? 0,
       testCode: json['testCode'] as String? ?? '',
       testName: json['testName'] as String? ?? '',
+      tubeTypes: tubeTypesList is List
+          ? tubeTypesList
+          .whereType<Map<String, dynamic>>()
+          .map(TubeTypeInfo.fromJson)
+          .toList()
+          : <TubeTypeInfo>[],
     );
   }
 }

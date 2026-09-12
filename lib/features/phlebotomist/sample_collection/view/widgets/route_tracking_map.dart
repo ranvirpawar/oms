@@ -216,16 +216,14 @@ class _RouteBottomSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Column(
               children: [
-                Expanded(
-                  child: Text(
-                    _distanceLabel(distance),
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
+                Text(
+                  _distanceLabel(distance),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 Text(
@@ -268,7 +266,7 @@ class _RouteBottomSheet extends StatelessWidget {
                         : controller.markArrived,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.accent700,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     child: controller.isMarkingArrived.value
                         ? const SizedBox(

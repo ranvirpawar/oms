@@ -170,57 +170,61 @@ class _Segment extends StatelessWidget {
           // cluster stays visually centered as the badge fades in/out,
           // instead of drifting toward one edge.
           child: Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AnimatedScale(
-                  scale: selected ? 1.0 : 0.88,
-                  duration: const Duration(milliseconds: 220),
-                  curve: Curves.easeOutCubic,
-                  child: Icon(
-                    icon,
-                    size: 16,
-                    color: selected ? color : AppColors.textTertiary,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 220),
-                  style: TextStyle(
-                    fontSize: selected ? 13.5 : 13,
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    letterSpacing: -0.1,
-                    color: fg,
-                  ),
-                  child: Text(label),
-                ),
-                if (count > 0) ...[
-                  const SizedBox(width: 5),
-                  AnimatedOpacity(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedScale(
+                    scale: selected ? 1.0 : 0.88,
                     duration: const Duration(milliseconds: 220),
-                    opacity: selected ? 1 : 0.55,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 5.5, vertical: 1.5),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? color.withOpacity(0.12)
-                            : AppColors.border.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '$count',
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          color: fg,
+                    curve: Curves.easeOutCubic,
+                    child: Icon(
+                      icon,
+                      size: 16,
+                      color: selected ? color : AppColors.textTertiary,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 220),
+                    style: TextStyle(
+                      fontSize: selected ? 13.5 : 13,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      letterSpacing: -0.1,
+                      color: fg,
+                    ),
+                    child: Text(label),
+                  ),
+                  if (count > 0) ...[
+                    const SizedBox(width: 5),
+                    AnimatedOpacity(
+                      duration: const Duration(milliseconds: 220),
+                      opacity: selected ? 1 : 0.55,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5.5, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? color.withOpacity(0.12)
+                              : AppColors.border.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '$count',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: fg,
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),

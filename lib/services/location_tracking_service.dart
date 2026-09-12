@@ -70,7 +70,7 @@ class LocationTrackingService {
       return statusCodeOk || trackingStatusOk;
     } catch (_) {
       throw LocationTrackingException(
-        'Unable to update location. Please check your connection and try again.',
+        'Unable to update location. Please try again.',
       );
     }
   }
