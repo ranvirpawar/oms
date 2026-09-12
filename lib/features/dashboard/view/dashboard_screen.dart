@@ -185,19 +185,19 @@ class _DashboardScreenState extends State<DashboardScreen>
                           ),
                           MetricData(
                             value: controller.testCollectedCount.value.toString().padLeft(2, '0'),
-                            label: 'Clinic Collections',
+                            label: 'Clinic\nCollections',
                             icon: Icons.science_rounded,
                             dot: const Color(0xFF22C55E),
                           ),
                           MetricData(
                             value: controller.handoverCount.value.toString().padLeft(2, '0'),
-                            label: 'Home Requests',
+                            label: 'Home\nCollections',
                             icon: Icons.swap_horiz_rounded,
                             dot: const Color(0xFF8B5CF6),
                           ),
                           MetricData(
                             value: controller.pendingHandoverCount.value.toString().padLeft(2, '0'),
-                            label: 'Pending\nHandover',
+                            label: 'Served\nRequests',
                             icon: Icons.hourglass_bottom_rounded,
                             dot: const Color(0xFFF59E0B),
                           ),
@@ -205,6 +205,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
                         return MetricsStrip(
                           items: items,
+                          cellAlignment: CrossAxisAlignment.start,
                           animationBuilder: (child) => _FadeSlideIn(index: 0, child: child),
                         );
                       }),

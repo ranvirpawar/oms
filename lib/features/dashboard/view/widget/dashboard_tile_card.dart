@@ -75,7 +75,6 @@ class DashboardTileCard extends StatefulWidget {
   final double? iconBottom;
   final double? iconLeft;
 
-
   DashboardTileCard({
     super.key,
     required this.variant,
@@ -292,15 +291,18 @@ class _DashboardTileCardState extends State<DashboardTileCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.max,
                   children: [
-                    Text(
-                      widget.title,
-                      maxLines: 2,
-                      style: const TextStyle(
-                        fontSize: 14.5,
-                        fontWeight: FontWeight.w700,
-                        height: 1.15,
-                        color: _ink,
-                        letterSpacing: -0.1,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        widget.title,
+                        maxLines: 2,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          height: 1.19,
+                          color: _ink,
+                          letterSpacing: -0.1,
+                        ),
                       ),
                     ),
                     if (widget.subtitle != null) ...[
@@ -309,7 +311,7 @@ class _DashboardTileCardState extends State<DashboardTileCard> {
                         widget.subtitle!,
                         maxLines: 2,
                         style: TextStyle(
-                          fontSize: 10.5,
+                          fontSize: 10,
                           fontWeight: FontWeight.w500,
                           height: 1.25,
                           color: Colors.black.withOpacity(0.45),

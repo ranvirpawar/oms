@@ -10,8 +10,7 @@ class MetricsStrip extends StatelessWidget {
   final List<BoxShadow>? boxShadow;
   final double dividerHeight;
   final Color? dividerColor;
-
-  /// Optional animation wrapper (pass null if you don’t want fade/slide)
+  final CrossAxisAlignment cellAlignment; // ← new
   final Widget Function(Widget child)? animationBuilder;
 
   const MetricsStrip({
@@ -23,6 +22,7 @@ class MetricsStrip extends StatelessWidget {
     this.boxShadow,
     this.dividerHeight = 40,
     this.dividerColor,
+    this.cellAlignment = CrossAxisAlignment.center, // default center
     this.animationBuilder,
   });
 
@@ -51,7 +51,12 @@ class MetricsStrip extends StatelessWidget {
               color: dividerColor ?? Colors.black.withOpacity(0.07),
             );
           }
-          return Expanded(child: MetricCell(data: items[i ~/ 2]));
+          return Expanded(
+            child: MetricCell(
+              data: items[i ~/ 2],
+              alignment: cellAlignment, // pass it down
+            ),
+          );
         }),
       ),
     );

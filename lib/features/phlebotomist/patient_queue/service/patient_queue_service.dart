@@ -90,7 +90,7 @@ class PatientQueueService {
     } catch (e) {
       kPrint(e.toString());
       throw PatientQueueException(
-        'Unable to load your patient queue. Please check your connection and try again.',
+        'Unable to load your patient queue. Please try again.',
         isNetworkError: true,
       );
     }

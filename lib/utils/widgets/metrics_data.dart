@@ -18,24 +18,31 @@ class MetricCell extends StatelessWidget {
   final MetricData data;
   final double valueFontSize;
   final double labelFontSize;
+  final CrossAxisAlignment alignment; // ← new
 
   const MetricCell({
     super.key,
     required this.data,
     this.valueFontSize = 19,
     this.labelFontSize = 11,
+    this.alignment = CrossAxisAlignment.center, // default = center
   });
 
   @override
   Widget build(BuildContext context) {
+    final isCenter = alignment == CrossAxisAlignment.center;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: alignment,
         children: [
           Row(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment:
+            isCenter ? MainAxisAlignment.center : MainAxisAlignment.start,
             children: [
               Container(
                 width: 7,
@@ -57,25 +64,15 @@ class MetricCell extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              /*if (data.icon != null) ...[
-                Icon(data.icon, size: 14, color: Colors.black.withOpacity(0.4)),
-                const SizedBox(width: 4),
-              ],*/
-              Expanded(
-                child: Text(
-                  data.label,
-                  style: TextStyle(
-                    fontSize: labelFontSize,
-                    fontWeight: FontWeight.w500,
-                    height: 1.2,
-                    color: Colors.black.withOpacity(0.5),
-                  ),
-                ),
-              ),
-            ],
+          Text(
+            data.label,
+            textAlign: isCenter ? TextAlign.center : TextAlign.start,
+            style: TextStyle(
+              fontSize: labelFontSize,
+              fontWeight: FontWeight.w500,
+              height: 1.2,
+              color: Colors.black.withOpacity(0.5),
+            ),
           ),
         ],
       ),

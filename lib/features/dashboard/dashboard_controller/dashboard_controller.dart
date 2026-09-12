@@ -176,8 +176,8 @@ class DashboardController extends GetxController {
   List<DashboardTileCard> _phlebotomistCards() => [
     DashboardTileCard(
       variant: DashboardTileVariant.modern,
-      title: AppStrings.collectSample,
-      subtitle: 'Collect sample from patient',
+      title: AppStrings.manageBags,
+      subtitle: 'Open, close, re-open,\nview bags',
       icon: AppAssets.collectSampleIcon,
       borderColor: const Color(0xFF3B82F6),
       // blue
@@ -186,7 +186,7 @@ class DashboardController extends GetxController {
     DashboardTileCard(
       variant: DashboardTileVariant.modern,
       title: AppStrings.orderManagement,
-      subtitle: 'View and manage assigned orders',
+      subtitle: 'View and manage\nsample collection orders',
       icon: AppAssets.manageOrderIcon,
       borderColor: const Color(0xFF14B8A6),
       // teal
@@ -194,8 +194,8 @@ class DashboardController extends GetxController {
     ),
     DashboardTileCard(
       variant: DashboardTileVariant.modern,
-      title: AppStrings.sampleRecollection,
-      subtitle: 'Handle recollection requests',
+      title: AppStrings.manageSampleRecollections,
+      subtitle: 'View & manage sample\n re-collection orders',
       icon: AppAssets.sampleRecollectionIconOg,
       borderColor: Colors.purple,
       onTap: RouteManager.navigateToSampleRecollection,
