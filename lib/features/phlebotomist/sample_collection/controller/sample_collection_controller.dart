@@ -408,6 +408,11 @@ class SampleCollectionController extends GetxController with HasBagContext {
           (e) => e.barcodeController.text.trim().isNotEmpty,
     );
 
+    final totalTubeCount = collected.fold<int>(
+      0,
+          (sum, e) => sum + e.tubeCount,
+    );
+
     final incompleteTests = <IncompleteTestEntry>[];
     for (final entry in sampleEntries) {
       entry.testIncompleteMap.forEach((testId, info) {
@@ -434,7 +439,7 @@ class SampleCollectionController extends GetxController with HasBagContext {
       // controller at submit time.
       bagId: activeBagId,
       sessionId: activeSessionId,
-      tubeCount: collected.length,
+      tubeCount: totalTubeCount,
       notes: notesController.text.trim(),
       collectedAt: DateTime.now(),
       sampleCollectionDetails: collected

@@ -276,7 +276,7 @@ class _PatientCardState extends State<PatientCard> {
               QueueInfoChip(
                 icon: Icons.event_outlined,
                 iconColor: AppColors.purple,
-                label: 'Slot',
+                label: 'Slot Date & Time',
                 value: widget.patient.slotDateTime != null
                     ? '${DateFormat('dd MMM').format(widget.patient.slotDateTime!)} • '
                     '${DateFormat('hh:mm a').format(widget.patient.slotDateTime!)}'
@@ -290,29 +290,35 @@ class _PatientCardState extends State<PatientCard> {
           ),
           if (hasTubes) ...[
             const SizedBox(height: 6),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.vaccines_outlined,
-                  size: 13,
-                  color: AppColors.purpleText,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    widget.patient.tubes.map((t) => t.label).join(', '),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textSecondary,
-                      height: 1.3,
+            Tooltip(
+              decoration: BoxDecoration(
+
+              ),
+              message: "${widget.patient.tubes.map((t) => t.label).join(', ')}",
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.vaccines_outlined,
+                    size: 13,
+                    color: AppColors.purpleText,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      widget.patient.tubes.map((t) => t.label).join(', '),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                        height: 1.3,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ],
@@ -581,11 +587,11 @@ class _PatientCardState extends State<PatientCard> {
   String _confirmMessage(_ConfirmKind kind) {
     switch (kind) {
       case _ConfirmKind.accept:
-        return 'Accept this order and start the visit?';
+        return 'Are you sure you want to accept this order?';
       case _ConfirmKind.startRoute:
-        return "Start the route to ${widget.patient.name}'s location?";
+        return 'Are you ready to start your sample collection route?';
       case _ConfirmKind.arrived:
-        return "Mark yourself as arrived at ${widget.patient.name}'s location?";
+        return 'Have you arrived at the sample collection location?';
     }
   }
 
@@ -685,7 +691,18 @@ class _PatientCardState extends State<PatientCard> {
   }
 
   String _identitySubtitle() {
-    return widget.patient.age != null ? 'Age: ${widget.patient.age} Years' : ' ';
+    // todo agetitle
+    final age = widget.patient.age != null ? 'Age: ${widget.patient.age} Years' : '';
+    final gender = widget.patient.gender?.isNotEmpty == true ? widget.patient.gender! : '';
+    final orderId = widget.patient.orderId?.isNotEmpty == true
+        ? 'Order ID: ${widget.patient.orderId}'
+        : '';
+
+    final firstLine = [age, gender].where((e) => e.isNotEmpty).join('  ');
+
+    if (firstLine.isEmpty && orderId.isEmpty) return ' ';
+
+    return orderId.isEmpty ? firstLine : '$firstLine\n$orderId';
   }
 
   String _initials(String name) {

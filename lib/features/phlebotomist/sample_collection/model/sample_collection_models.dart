@@ -1,6 +1,8 @@
 // ---------------------------------------------------------------------------
 // Tests / special instructions
 // ---------------------------------------------------------------------------
+import 'package:flutter/cupertino.dart';
+
 enum SampleCollectionStatus { pending, collected, incomplete }
 /// A tube type associated with a test (new in the sample-requirements
 /// response — a single test can list more than one acceptable tube).
@@ -106,7 +108,30 @@ class PatientHeader {
     );
   }
 }
+/// A single tube row shown in the UI — either derived from the API's
+/// per-test tube types, or added manually by the phlebotomist.
+class TubeRowData {
+  TubeRowData({
+    required this.id,
+    required this.name,
+    required this.isManual,
+    this.nameController,
+  });
 
+  final String id;
+  final String name;
+  final bool isManual;
+
+  /// Only set for manual rows — lets the phlebotomist type the tube name.
+  final TextEditingController? nameController;
+}
+
+class ManualTubeEntry {
+  ManualTubeEntry({required this.id}) : nameController = TextEditingController();
+  final String id;
+  final TextEditingController nameController;
+  void dispose() => nameController.dispose();
+}
 /// A required sample type for the order, now carrying the full list of
 /// tests it feeds — needed so the phlebotomist can flag individual tests
 /// as unsuitable rather than the whole sample.

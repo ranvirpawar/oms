@@ -158,6 +158,7 @@ class DashboardController extends GetxController {
   List<DashboardTileCard> getRoleBasedStatCards() {
     switch (userRole.value) {
       case UserRole.phlebotomist:
+      case UserRole.paramedic:
         return _phlebotomistCards();
       case UserRole.runnerBoy:
         return _runnerBoyCards();
@@ -199,7 +200,6 @@ class DashboardController extends GetxController {
       icon: AppAssets.sampleRecollectionIconOg,
       borderColor: Colors.purple,
       onTap: RouteManager.navigateToSampleRecollection,
-
     ),
     DashboardTileCard(
       variant: DashboardTileVariant.modern,
@@ -261,7 +261,6 @@ class DashboardController extends GetxController {
       onTap: RouteManager.navigateToAcceptBagInLaboratory,
       iconRight: 4,
       iconBottom: 2,
-
     ),
 
     DashboardTileCard(
@@ -270,7 +269,6 @@ class DashboardController extends GetxController {
       subtitle: 'Track bag movement',
       icon: AppAssets.bagHistoryIcon,
       onTap: RouteManager.navigateToBagStatus,
-
     ),
   ];
 

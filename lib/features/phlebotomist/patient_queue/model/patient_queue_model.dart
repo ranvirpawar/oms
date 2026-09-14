@@ -476,10 +476,10 @@ class AssignedPatient {
       phone: json['MobileNumber'] as String?,
       distanceKm: (json['DistanceInKM'] as num?)?.toDouble(),
       destinationLat:
-      (json['Latitude'] as num?)?.toDouble() ?? puneLocation.lat,
+      (json['Latitude'] as num?)?.toDouble() /*?? puneLocation.lat*/,
 
       destinationLng:
-      (json['Longitude'] as num?)?.toDouble() ?? puneLocation.lng,
+      (json['Longitude'] as num?)?.toDouble() /*?? puneLocation.lng*/,
       tests: rawTests.map((t) => t.testName).toList(),
       rawTests: rawTests,
       tubes: _buildTubes(rawTests),

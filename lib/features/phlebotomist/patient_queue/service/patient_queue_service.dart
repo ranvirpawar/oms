@@ -117,7 +117,7 @@ class PatientQueueService {
         String? rescheduleEndTime,
       }) async {
     final body = {
-      'OrderID': patient.omsOrderId ?? patient.orderId ?? '',
+      'OrderID': patient.orderId ,
       'UserID': updatedBy,
       'AssignStatusID': assignStatusId,
       'SlotID': slotId,

@@ -21,13 +21,6 @@ import '../../model/sample_stype_style.dart';
 import 'barcode_input_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get.dart';
-
-import '../../../../../theme/app_colors.dart';
-import '../../../../../utils/ui_designs/tap_menu.dart';
-import '../../controller/sample_collection_controller.dart';
-import '../../model/sample_stype_style.dart';
-import 'barcode_input_field.dart';
 
 class SampleItemCard extends StatelessWidget {
   final SampleBarcodeEntry entry;
@@ -82,43 +75,37 @@ class SampleItemCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        entry.sampleType,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
+                      Text(entry.sampleType, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                       if (entry.volumeRequiredMl.trim().isNotEmpty)
-                        Text(
-                          '${entry.volumeRequiredMl.trim()} required',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: AppColors.textTertiary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                        Text('${entry.volumeRequiredMl.trim()} required',
+                            style: const TextStyle(fontSize: 10, color: AppColors.textTertiary, fontWeight: FontWeight.w500)),
                     ],
                   ),
                 ),
-
+                if (status != SampleCollectionStatus.incomplete)
+                  TextButton.icon(
+                    onPressed: entry.addManualTube,
+                    icon: const Icon(Icons.add_rounded, size: 14, color: AppColors.accent700),
+                    label: const Text('Tube', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.accent700)),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      minimumSize: const Size(0, 28),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 12),
             if (status == SampleCollectionStatus.incomplete)
               _buildFullyUnusableBanner(context)
             else ...[
-              BarcodeInputField(
-                entry: entry,
-                onScanTap: () => controller.openBarcodeScanner(entry),
-                onChanged: (value) => controller.onBarcodeChanged(entry, value),
-              ),
+              TubeBarcodeGroup(entry: entry, controller: controller),
               if (entry.hasPartialIncomplete) ...[
                 const SizedBox(height: 10),
                 _buildPartialBanner(context),
               ],
             ],
+
           ],
         ),
       );

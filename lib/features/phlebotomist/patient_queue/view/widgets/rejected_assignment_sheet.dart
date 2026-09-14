@@ -1011,7 +1011,7 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
                               const SizedBox(width: 8),
 
                               Text(
-                                'Reject order',
+                                'Reject Order',
                                 style: TextStyle(
                                   fontSize: 14.5,
                                   fontWeight: FontWeight.w700,

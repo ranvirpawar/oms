@@ -23,9 +23,7 @@ class SampleCollectionService {
         orderId.toString(),
       );
       final response = await _apiClient.get('$url?userId=$userId');
-      return OrderConfirmationDetails.fromJson(
-        dummyOrder['output'] as Map<String, dynamic>,
-      );
+
       final Map<String, dynamic> body = response.data is String
           ? jsonDecode(response.data as String) as Map<String, dynamic>
           : response.data as Map<String, dynamic>;

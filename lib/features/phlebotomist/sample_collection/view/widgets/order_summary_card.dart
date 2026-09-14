@@ -20,7 +20,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-
 class OrderPatientSummaryCard extends StatefulWidget {
   final String name;
   final String? avatarUrl;
@@ -66,21 +65,27 @@ class OrderPatientSummaryCard extends StatefulWidget {
     bool initiallyExpanded = false,
     bool floating = false,
   }) {
+    final groups = <String, List<SummaryTestItem>>{};
+    for (final t in patient.rawTests) {
+      final sampleType = (t.sampleTypeName?.trim().isNotEmpty ?? false)
+          ? t.sampleTypeName!.trim()
+          : 'Other';
+      groups
+          .putIfAbsent(sampleType, () => [])
+          .add(SummaryTestItem(t.testName, null, t.tubeContent));
+    }
+
     return OrderPatientSummaryCard(
       name: patient.name,
       avatarUrl: patient.avatarUrl,
       orderId: patient.orderId.toString(),
+      subtitle: 'Age ${patient.age} • ${patient.gender}',
       slotLabel: patient.slotDateTime != null
           ? DateFormat('dd MMM yyyy, hh:mm a').format(patient.slotDateTime!)
           : null,
-      sampleGroups: patient.tests.isEmpty
-          ? const []
-          : [
-              SummarySampleGroup(
-                sampleType: 'Tests',
-                tests: patient.tests.map((t) => SummaryTestItem(t)).toList(),
-              ),
-            ],
+      sampleGroups: groups.entries
+          .map((e) => SummarySampleGroup(sampleType: e.key, tests: e.value))
+          .toList(),
       initiallyExpanded: initiallyExpanded,
       floating: floating,
     );
@@ -210,6 +215,7 @@ class _OrderPatientSummaryCardState extends State<OrderPatientSummaryCard> {
                         fastingNote: widget.fastingNote,
                         specialInstructions: widget.specialInstructions,
                         sampleGroups: widget.sampleGroups,
+                        floating: widget.floating,
                       ),
                     ),
             ),
@@ -311,7 +317,7 @@ class _Header extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 subtitle != null && subtitle!.isNotEmpty
-                    ? '$subtitle • Order #$orderId'
+                    ? '$subtitle \n• Order #$orderId'
                     : 'Order #$orderId',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -393,52 +399,63 @@ class _Body extends StatelessWidget {
   final String? fastingNote;
   final List<String> specialInstructions;
   final List<SummarySampleGroup> sampleGroups;
+  final bool floating;
 
   const _Body({
     required this.fastingRequired,
     required this.fastingNote,
     required this.specialInstructions,
     required this.sampleGroups,
+    required this.floating,
+
   });
 
   int get _testCount => sampleGroups.fold(0, (sum, g) => sum + g.tests.length);
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Divider(height: 20),
 
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: floating
+            ? MediaQuery.of(context).size.height * 0.45 // Takes up to 45% of screen when floating
+            : double.infinity, // Normal behavior when in a standard list
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Divider(height: 20),
 
-
-        if (sampleGroups.isNotEmpty) ...[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Tests ($_testCount)',
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              if (sampleGroups.length > 1)
-                Text(
-                  '${sampleGroups.length} samples',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textTertiary,
+            if (sampleGroups.isNotEmpty) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Tests ($_testCount)',
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                ),
+                  if (sampleGroups.length > 1)
+                    Text(
+                      '${sampleGroups.length} samples',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ...sampleGroups.map((g) => _SampleGroupTable(group: g)),
             ],
-          ),
-          const SizedBox(height: 10),
-          ...sampleGroups.map((g) => _SampleGroupTable(group: g)),
-        ],
-      ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -506,6 +523,7 @@ class _SampleGroupTable extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
       ),
+
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -514,7 +532,7 @@ class _SampleGroupTable extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-              color: AppColors.bgCard,
+              // color: AppColors.bgCard,
               child: Row(
                 children: [
                   const Icon(
@@ -639,7 +657,7 @@ class _TestRow extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Align(
               alignment: Alignment.centerRight,
               child: _TubeTypeBadge(tube: tube),
@@ -749,25 +767,31 @@ class TubeTypeInfo {
     if (key.contains('blood') || key.contains('tests'))
       return const TubeTypeInfo('EDTA (Lavender)', Color(0xFF8B7FD1));
 
-    return const TubeTypeInfo('Confirm at collection', Color(0xFF9AA0A6));
+    return const TubeTypeInfo('N/A', Color(0xFF9AA0A6));
   }
 
   static Color _colorForLabel(String label) {
     final key = label.toLowerCase();
-    if (key.contains('lavender') || key.contains('edta'))
+    if (key.contains('lavender') || key.contains('edta')) {
       return const Color(0xFF8B7FD1);
-    if (key.contains('gold') || key.contains('red') || key.contains('serum'))
+    }
+    if (key.contains('gold') || key.contains('red') || key.contains('serum')) {
       return const Color(0xFFD4A017);
-    if (key.contains('blue') || key.contains('citrate'))
+    }
+    if (key.contains('blue') || key.contains('citrate')) {
       return const Color(0xFF5B9BD5);
+    }
     if (key.contains('grey') ||
         key.contains('gray') ||
-        key.contains('fluoride'))
+        key.contains('fluoride')) {
       return const Color(0xFF9AA0A6);
-    if (key.contains('green') || key.contains('heparin'))
+    }
+    if (key.contains('green') || key.contains('heparin')) {
       return const Color(0xFF4CAF50);
-    if (key.contains('black') || key.contains('esr'))
+    }
+    if (key.contains('black') || key.contains('esr')) {
       return const Color(0xFF3A3A3C);
+    }
     if (key.contains('urine')) return const Color(0xFFE8A33D);
     if (key.contains('stool')) return const Color(0xFF8D6E63);
     if (key.contains('swab')) return const Color(0xFF7E57C2);

@@ -290,7 +290,7 @@ class _DateFilterMenu extends StatelessWidget {
                           ),
                           _MenuItem(
                             icon: Icons.calendar_month_rounded,
-                            label: 'Pick a date',
+                            label: 'Pick Date',
                             selected: active == QueueDateFilter.custom,
                             onTap: onPickDate,
                           ),

@@ -170,7 +170,7 @@ class _ConfirmBar extends StatelessWidget {
             }
           },
           child: const Text(
-            'Confirm & Collect',
+            'Confirm Test Details',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
