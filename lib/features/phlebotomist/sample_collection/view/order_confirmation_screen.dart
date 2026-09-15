@@ -154,7 +154,7 @@ class _ConfirmBar extends StatelessWidget {
         height: 50,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.accent700,
+            backgroundColor: AppColors.secondary700,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(26),
             ),

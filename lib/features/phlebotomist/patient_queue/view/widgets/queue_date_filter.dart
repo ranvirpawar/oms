@@ -6,10 +6,10 @@ enum QueueDateFilter { today, thisWeek, future, past, custom }
 extension QueueDateFilterX on QueueDateFilter {
   String get label => switch (this) {
     QueueDateFilter.today => 'Today',
-    QueueDateFilter.thisWeek => 'This week',
+    QueueDateFilter.thisWeek => 'This Week',
     QueueDateFilter.future => 'Upcoming',
-    QueueDateFilter.past => 'Past orders',
-    QueueDateFilter.custom => 'Pick a date',
+    QueueDateFilter.past => 'Past Orders',
+    QueueDateFilter.custom => 'Pick Date',
   };
 
   IconData get icon => switch (this) {

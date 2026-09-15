@@ -38,8 +38,8 @@ class SampleItemCard extends StatelessWidget {
       final status = entry.status.value;
       final style = SampleTypeStyles.forType(entry.sampleType);
       final borderColor = switch (status) {
-        SampleCollectionStatus.collected => AppColors.greenBorder,
-        SampleCollectionStatus.incomplete => AppColors.redText,
+        SampleCollectionStatus.collected => AppColors.border,
+        SampleCollectionStatus.incomplete => AppColors.border,
         SampleCollectionStatus.pending => AppColors.border,
       };
 

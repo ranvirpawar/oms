@@ -278,7 +278,7 @@ class _RouteBottomSheet extends StatelessWidget {
                       ),
                     )
                         : const Text(
-                      'Arrived at Location',
+                      'Mark Arrived',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,

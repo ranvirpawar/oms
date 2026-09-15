@@ -401,8 +401,8 @@ class _PatientCardState extends State<PatientCard> {
             Expanded(
               child: QueueActionButton(
                 label: isClinic ? 'Collect' : 'Start Route',
-                color: AppColors.accent700,
-                gradient: AppColors.accentGradient,
+                color: AppColors.secondary700,
+                gradient: AppColors.secondaryGradient,
                 style: QueueActionStyle.gradient,
                 isDisabled: widget.isProcessing,
                 onPressed: isClinic
@@ -429,8 +429,8 @@ class _PatientCardState extends State<PatientCard> {
             Expanded(
               child: QueueActionButton(
                 label: 'Start Route',
-                color: AppColors.accent700,
-                gradient: AppColors.accentGradient,
+                color: AppColors.secondary700,
+                gradient: AppColors.secondaryGradient,
                 style: QueueActionStyle.gradient,
                 isDisabled: widget.isProcessing,
                 onPressed: _handleStartRouteTap,
@@ -459,8 +459,8 @@ class _PatientCardState extends State<PatientCard> {
             Expanded(
               child: QueueActionButton(
                 label: 'Mark Arrived',
-                color: AppColors.accent700,
-                gradient: AppColors.accentGradient,
+                color: AppColors.secondary700,
+                gradient: AppColors.secondaryGradient,
                 style: QueueActionStyle.gradient,
                 isDisabled: widget.isProcessing,
                 onPressed: () => _requestConfirm(_ConfirmKind.arrived),
@@ -472,8 +472,8 @@ class _PatientCardState extends State<PatientCard> {
       case PatientStatus.arrived:
         return QueueActionButton(
           label: 'Collect',
-          color: AppColors.accent700,
-          gradient: AppColors.accentGradient,
+          color: AppColors.secondary700,
+          gradient: AppColors.secondaryGradient,
           style: QueueActionStyle.gradient,
           isDisabled: false,
           onPressed: widget.onTapDetails,
@@ -487,8 +487,8 @@ class _PatientCardState extends State<PatientCard> {
             const SizedBox(height: 8),
             QueueActionButton(
               label: 'Sync to LIS',
-              color: AppColors.accent700,
-              gradient: AppColors.accentGradient,
+              color: AppColors.secondary700,
+              gradient: AppColors.secondaryGradient,
               style: QueueActionStyle.gradient,
               isLoading: widget.isProcessing,
               onPressed: widget.onSyncToLis,
@@ -514,8 +514,8 @@ class _PatientCardState extends State<PatientCard> {
             Expanded(
               child: QueueActionButton(
                 label: 'Accept',
-                color: AppColors.accent700,
-                gradient: AppColors.accentGradient,
+                color: AppColors.secondary700,
+                gradient: AppColors.secondaryGradient,
                 style: QueueActionStyle.gradient,
                 isDisabled: widget.isProcessing,
                 onPressed: () => _requestConfirm(_ConfirmKind.accept),
@@ -537,9 +537,9 @@ class _PatientCardState extends State<PatientCard> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.grayLight,
+          color: AppColors.warningContainer.withOpacity(0.85),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: AppColors.warning),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -569,8 +569,8 @@ class _PatientCardState extends State<PatientCard> {
                 Expanded(
                   child: QueueActionButton(
                     label: 'Yes',
-                    color: AppColors.accent700,
-                    gradient: AppColors.accentGradient,
+                    color: AppColors.secondary700,
+                    gradient: AppColors.secondaryGradient,
                     style: QueueActionStyle.gradient,
                     isLoading: widget.isProcessing,
                     onPressed: () => _confirmYes(kind),
@@ -1042,8 +1042,8 @@ class _PatientCardState extends State<PatientCard> {
             Expanded(
               child: QueueActionButton(
                 label: 'Collect',
-                color: AppColors.accent700,
-                gradient: AppColors.accentGradient,
+                color: AppColors.secondary700,
+                gradient: AppColors.secondaryGradient,
                 style: QueueActionStyle.gradient,
                 isDisabled: false,
                 onPressed: onTapDetails,
@@ -1068,8 +1068,8 @@ class _PatientCardState extends State<PatientCard> {
             Expanded(
               child: QueueActionButton(
                 label: 'Start Route',
-                color: AppColors.accent700,
-                gradient: AppColors.accentGradient,
+                color: AppColors.secondary700,
+                gradient: AppColors.secondaryGradient,
                 style: QueueActionStyle.gradient,
                 isLoading: isProcessing,
                 onPressed: onStartRoute,
@@ -1100,8 +1100,8 @@ class _PatientCardState extends State<PatientCard> {
             Expanded(
               child: QueueActionButton(
                 label: 'Mark Arrived',
-                color: AppColors.accent700,
-                gradient: AppColors.accentGradient,
+                color: AppColors.secondary700,
+                gradient: AppColors.secondaryGradient,
                 style: QueueActionStyle.gradient,
                 isLoading: isProcessing,
                 onPressed: onTapDetails,
@@ -1112,8 +1112,8 @@ class _PatientCardState extends State<PatientCard> {
       case PatientStatus.arrived:
         return QueueActionButton(
           label: 'Collect',
-          color: AppColors.accent700,
-          gradient: AppColors.accentGradient,
+          color: AppColors.secondary700,
+          gradient: AppColors.secondaryGradient,
           style: QueueActionStyle.gradient,
           isDisabled: false,
           onPressed: onTapDetails,
@@ -1127,8 +1127,8 @@ class _PatientCardState extends State<PatientCard> {
             const SizedBox(height: 8), // was 10
             QueueActionButton(
               label: 'Sync to LIS',
-              color: AppColors.accent700,
-              gradient: AppColors.accentGradient,
+              color: AppColors.secondary700,
+              gradient: AppColors.secondaryGradient,
               style: QueueActionStyle.gradient,
               isLoading: isProcessing,
               onPressed: onSyncToLis,
@@ -1154,8 +1154,8 @@ class _PatientCardState extends State<PatientCard> {
             Expanded(
               child: QueueActionButton(
                 label: 'Accept',
-                color: AppColors.accent700,
-                gradient: AppColors.accentGradient,
+                color: AppColors.secondary700,
+                gradient: AppColors.secondaryGradient,
                 style: QueueActionStyle.gradient,
                 isLoading: isProcessing,
                 onPressed: onPrimaryAction,

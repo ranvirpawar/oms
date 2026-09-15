@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:lifenity_connect/routes/route_manager.dart';
 
 // login_controller.dart
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 
 
 import '../../../componenents/otp_boxes_input.dart';
@@ -231,7 +231,7 @@ class LoginController extends GetxController with CodeAutoFill {
         _startResendCooldown();
         await _startSmsListener();
       } else {
-        LiquidSnack.error(loginResponse.message, title: 'Login failed');
+        LiquidSnack.error(loginResponse.message, title: 'Login failed',position: SnackPosition.top );
       }
     } catch (e) {
       if (e is AppError && e.isSessionTerminal) {

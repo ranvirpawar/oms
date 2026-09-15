@@ -317,9 +317,9 @@ class _Header extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 subtitle != null && subtitle!.isNotEmpty
-                    ? '$subtitle \n• Order #$orderId'
+                    ? '• $subtitle \n• Order #$orderId'
                     : 'Order #$orderId',
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 11.5,

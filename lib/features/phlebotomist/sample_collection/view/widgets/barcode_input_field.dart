@@ -132,7 +132,7 @@ class _TubeRow extends StatelessWidget {
               ? (hasError
               ? AppColors.redText
               : status == BarcodeCheckStatus.available
-              ? AppColors.greenBorder
+              ? Colors.transparent
               : Colors.transparent)
               : Colors.transparent,
           width: 1.2,
@@ -152,6 +152,7 @@ class _TubeRow extends StatelessWidget {
                 ? TextField(
               controller: barcodeController,
               onChanged: onChanged,
+              onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
               maxLength: 15,
               keyboardType: TextInputType.number,
               textCapitalization: TextCapitalization.characters,
@@ -496,7 +497,7 @@ class _ScanButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.accent700,
+      color: AppColors.primary700,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),

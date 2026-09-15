@@ -301,7 +301,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // ── Availability pill (existing behaviour, fixed position) ────────────
+// ── Availability pill (existing behaviour, fixed position) ────────────
   Widget _buildAvailabilityPill() {
     return CompositedTransformTarget(
       link: _pillLink,
@@ -337,8 +337,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: available
-                          ? const Color(0xFF22C55E)
-                          : const Color(0xFFEF4444),
+                          ? const Color(0xFF22C55E) // Green for Punch In
+                          : Colors.orange, // Orange for Punch Out
                     ),
                   ),
                 ),
@@ -346,7 +346,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 220),
                   child: Text(
-                    available ? 'Online' : 'Offline',
+                    available ? 'Punch In' : 'Punch Out',
                     key: ValueKey(available),
                     style: const TextStyle(
                       fontSize: 14,
@@ -397,53 +397,57 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildPillDropdown() {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 210, maxWidth: 260),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.12),
-              blurRadius: 22,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Obx(
-              () => _DropdownAction(
-                icon: controller.isAvailable.value
-                    ? Icons.pause_circle_outline_rounded
-                    : Icons.play_circle_outline_rounded,
-                label: controller.isAvailable.value
-                    ? 'Go offline'
-                    : 'Go online',
+    // Wrapped the entire dropdown in a Material widget to provide default
+    // text styling and remove the yellow fallback lines in the Overlay.
+    return Material(
+      type: MaterialType.transparency,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 210, maxWidth: 260),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.12),
+                blurRadius: 22,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Obx(
+                    () => _DropdownAction(
+                  icon: controller.isAvailable.value
+                      ? Icons.pause_circle_outline_rounded
+                      : Icons.play_circle_outline_rounded,
+                  label: controller.isAvailable.value
+                      ? 'Punch Out'
+                      : 'Punch In',
+                  onTap: () {
+                    controller.toggleAvailability();
+                    _removeDropdown();
+                  },
+                ),
+              ),
+              Divider(height: 1, color: Colors.black.withOpacity(0.06)),
+              _DropdownAction(
+                icon: Icons.my_location_rounded,
+                label: 'Refresh location',
                 onTap: () {
-                  controller.toggleAvailability();
+                  controller.refreshLocation();
                   _removeDropdown();
                 },
               ),
-            ),
-            Divider(height: 1, color: Colors.black.withOpacity(0.06)),
-            _DropdownAction(
-              icon: Icons.my_location_rounded,
-              label: 'Refresh location',
-              onTap: () {
-                controller.refreshLocation();
-                _removeDropdown();
-              },
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
-
   // ── Compact elevated metrics card ──────────────────────────────────────
   Widget _buildStatsCard() {
     final items = <MetricData>[

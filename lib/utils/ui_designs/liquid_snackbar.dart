@@ -198,10 +198,11 @@ class LiquidSnack {
     variant: SnackVariant.success,
   );
 
-  static Future<void> error(String message, {String? title}) => show(
+  static Future<void> error(String message, {String? title, SnackPosition? position}) => show(
     message: message,
     title: title,
     variant: SnackVariant.error,
+    position: position?? SnackPosition.bottom,
     duration: const Duration(seconds: 2),
   );
 

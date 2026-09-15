@@ -439,4 +439,8 @@ class OrderConfirmationController extends GetxController with HasBagContext {
       successMessage: 'Visit rescheduled',
     );
   }
+  @override
+  int get requiredSampleCount {
+    return orderDetails.value?.totalSampleTypes ?? 0;
+  }
 }

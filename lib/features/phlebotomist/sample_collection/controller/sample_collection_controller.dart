@@ -101,7 +101,10 @@ class SampleCollectionController extends GetxController with HasBagContext {
 
   /// Number of sample types this order requires — compared against the
   /// active bag's remaining capacity to warn if it won't all fit.
-  int get requiredSampleCount => sampleEntries.length;
+  @override
+  int get requiredSampleCount {
+    return orderDetails.value?.totalSampleTypes ?? 0;
+  }
 
   bool get bagCapacityInsufficient =>
       hasOpenBag && bagCapacity > 0 && bagVacant < requiredSampleCount;
@@ -605,4 +608,5 @@ class SampleCollectionController extends GetxController with HasBagContext {
       appointmentDate: date,
     );
   }
+
 }

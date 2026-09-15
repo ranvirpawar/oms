@@ -183,9 +183,9 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
                     children: [
-                      _buildWarningBanner(),
+                    /*  _buildWarningBanner(),
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 16),*/
 
                       _buildPatientSummary(),
 
