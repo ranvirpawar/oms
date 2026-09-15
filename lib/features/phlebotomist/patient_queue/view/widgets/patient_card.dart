@@ -400,14 +400,15 @@ class _PatientCardState extends State<PatientCard> {
             const SizedBox(width: 8),
             Expanded(
               child: QueueActionButton(
-                label: isClinic ? 'Collect' : 'Start Route',
+                label: 'Accept',
                 color: AppColors.secondary700,
                 gradient: AppColors.secondaryGradient,
                 style: QueueActionStyle.gradient,
                 isDisabled: widget.isProcessing,
-                onPressed: isClinic
-                    ? widget.onTapDetails          // same as the arrived → Collect path
-                    : _handleStartRouteTap,
+                onPressed: ()=>_requestConfirm(_ConfirmKind.accept),
+                // onPressed: isClinic
+                //     ? widget.onTapDetails          // same as the arrived → Collect path
+                //     : _handleStartRouteTap,
               ),
             ),
           ],
@@ -691,10 +692,10 @@ class _PatientCardState extends State<PatientCard> {
   }
 
   String _identitySubtitle() {
-    // todo agetitle
-    final age = widget.patient.age != null ? 'Age: ${widget.patient.age} Years' : '';
+
+    final age = widget.patient.age != null ? 'Age: ${widget.patient.age}' : '';
     final gender = widget.patient.gender?.isNotEmpty == true ? widget.patient.gender! : '';
-    final orderId = widget.patient.orderId?.isNotEmpty == true
+    final orderId = widget.patient.orderId.isNotEmpty == true
         ? 'Order ID: ${widget.patient.orderId}'
         : '';
 

@@ -1,9 +1,10 @@
 import 'dart:convert';
 
 import 'package:get/get.dart';
+import 'package:lifenity_connect/utils/helper_functions/helper_methods.dart';
 
-import '../network/api_client.dart';
-import '../network/app_urls.dart';
+import '../../../../network/api_client.dart';
+import '../../../../network/app_urls.dart';
 
 /// Thrown when the tracking endpoint can't be reached or errors out —
 /// controllers catch this to surface a friendly message without leaking
@@ -52,6 +53,7 @@ class LocationTrackingService {
       'CreatedBy': createdBy,
     };
     try {
+      kPrint(body.toString() );
       final response = await _apiClient.post(
         AppUrls.locationTracking,
         data: body,

@@ -22,14 +22,16 @@ import 'package:get/get.dart';
 import '../../../../componenents/otp_boxes_input.dart';
 import '../../../../routes/route_manager.dart';
 import '../../../../services/auth_manager.dart';
-import '../../../../services/location_tracking_service.dart';
+import '../../patient_queue/service/location_tracking_service.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
 import '../../../../utils/ui_designs/liquid_snackbar.dart' hide SnackPosition;
 import '../../patient_queue/model/patient_queue_model.dart';
 import '../../patient_queue/service/patient_queue_service.dart';
 import '../binding/sample_collection_binding.dart';
+import '../model/pre_collection_checklist.dart';
 import '../model/sample_collection_models.dart';
 import '../service/sample_collection_service.dart';
+import '../view/collection_checklist_screen.dart';
 import '../view/sample_collection_screen.dart';
 import '../view/widgets/otp_verification_screen.dart';
 import 'bag_context_mixin.dart';
@@ -340,22 +342,29 @@ class OrderConfirmationController extends GetxController with HasBagContext {
     kPrint('isOTPVerified ${details.isOtpVerified}');
 
     // NOTE: preserved verbatim from the original controller — when
-    // `isOtpVerified` is explicitly `false`, OTP is skipped entirely and we
-    // go straight to collection. That reads backwards for a flag named
-    // "isOtpVerified" (true usually means "already verified, skip"). Kept
-    // as-is because behaviour must not change — worth confirming with
-    // whoever owns this field that the sense isn't inverted.
-    if (details.isOtpVerified == 'Yes') {
-      await _goToSampleCollection();
-      return;
+    // `isOtpVerified` is explicitly `false`, OTP runs; when it's 'Yes',
+    // it's skipped. Kept as-is because behaviour must not change — worth
+    // confirming with whoever owns this field that the sense isn't inverted.
+    if (details.isOtpVerified != 'Yes') {
+      _otpVerifiedThisSession = false;
+      await sendOtp();
+      await Get.to(() => const OtpVerificationScreen());
+      if (!_otpVerifiedThisSession) return; // backed out without verifying
     }
 
-    _otpVerifiedThisSession = false;
-    await sendOtp();
-    await Get.to(() => const OtpVerificationScreen());
+    // final checklistCompleted = await _goToChecklist();
+    // if (!checklistCompleted) return; // backed out without completing it
 
-    if (!_otpVerifiedThisSession) return; // backed out without verifying
     await _goToSampleCollection();
+  }
+
+  /// Loads and pushes the collection checklist. Returns true only if the
+  /// phlebotomist submitted it successfully.
+  Future<bool> _goToChecklist() async {
+    _checklistCompletedThisSession = false;
+    await fetchChecklist();
+    await Get.to(() => const CollectionChecklistScreen());
+    return _checklistCompletedThisSession;
   }
 
   Future<void> _goToSampleCollection() async {
@@ -442,5 +451,94 @@ class OrderConfirmationController extends GetxController with HasBagContext {
   @override
   int get requiredSampleCount {
     return orderDetails.value?.totalSampleTypes ?? 0;
+  }
+  // ---------------------------------------------------------------------
+// Collection checklist
+// ---------------------------------------------------------------------
+  final RxList<ChecklistItem> checklistItems = <ChecklistItem>[].obs;
+  final RxBool isLoadingChecklist = false.obs;
+  final RxBool isSubmittingChecklist = false.obs;
+  final RxString checklistError = ''.obs;
+
+  bool get isChecklistComplete =>
+      checklistItems.isNotEmpty &&
+          checklistItems.every((item) => item.value.isNotEmpty);
+
+  /// Mirrors [_otpVerifiedThisSession] — set only for the lifetime of a
+  /// single checklist-screen visit, read right after it's popped.
+  bool _checklistCompletedThisSession = false;
+
+  Future<void> fetchChecklist() async {
+    isLoadingChecklist.value = true;
+    checklistError.value = '';
+    try {
+      final items = await _service.fetchCollectionChecklist(
+        orderId: orderId,
+        userId: empId.value,
+      );
+      checklistItems.assignAll(items);
+    } on SampleCollectionException catch (e) {
+      checklistError.value = e.message;
+    } catch (e) {
+      kPrint(e.toString());
+      checklistError.value =
+      'Something went wrong while loading the checklist.';
+    } finally {
+      isLoadingChecklist.value = false;
+    }
+  }
+
+  void setChecklistAnswer(int checklistId, String value) {
+    final index =
+    checklistItems.indexWhere((i) => i.checklistId == checklistId);
+    if (index == -1) return;
+    checklistItems[index].value = value;
+    // ChecklistItem is a mutable plain object inside an RxList, so mutating
+    // a field in place doesn't trigger a rebuild on its own — nudge it.
+    checklistItems.refresh();
+  }
+
+  Future<bool> _submitChecklist() async {
+    if (!isChecklistComplete) {
+      LiquidSnack.error('Please answer every checklist item before continuing');
+      return false;
+    }
+    isSubmittingChecklist.value = true;
+    try {
+      final answers = checklistItems
+          .map((i) => ChecklistAnswer(
+        checklistId: i.checklistId,
+        checklistValue: i.value,
+      ))
+          .toList();
+      return await _service.submitCollectionChecklist(
+        orderId: orderId,
+        userId: _userId,
+        createdBy: _userId,
+        answers: answers,
+      );
+    } on SampleCollectionException catch (e) {
+      LiquidSnack.error(e.message, title: 'Action failed');
+      return false;
+    } catch (_) {
+      LiquidSnack.error(
+        'Something went wrong. Please try again.',
+        title: 'Action failed',
+      );
+      return false;
+    } finally {
+      isSubmittingChecklist.value = false;
+    }
+  }
+
+  /// Called by the checklist screen's Continue button. Submits, and only
+  /// pops back to [confirmAndCollect] on success — a failed submit leaves
+  /// the phlebotomist on the checklist screen to fix/retry.
+  Future<void> completeChecklist() async {
+    final success = await _submitChecklist();
+    if (success) {
+      _checklistCompletedThisSession = true;
+      Get.back();
+    }
   }
 }

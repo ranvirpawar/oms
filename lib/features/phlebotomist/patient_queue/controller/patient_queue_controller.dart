@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:lifenity_connect/services/auth_manager.dart';
 
-import '../../../../services/location_tracking_service.dart';
+import '../service/location_tracking_service.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
 import '../../sample_collection/model/sample_collection_models.dart';
 import '../../sample_collection/service/sample_collection_service.dart';
@@ -18,7 +18,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
 import 'package:lifenity_connect/services/auth_manager.dart';
 
-import '../../../../services/location_tracking_service.dart';
+import '../service/location_tracking_service.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
 import '../../sample_collection/model/sample_collection_models.dart';
 import '../../sample_collection/service/sample_collection_service.dart';

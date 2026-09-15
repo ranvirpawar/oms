@@ -26,7 +26,7 @@ class VisitTypeBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isHome = visitType == VisitType.home;
-    final color = isHome ? AppColors.success : AppColors.purple;
+    final color = isHome ? AppColors.success : AppColors.primary;
     final icon = isHome ? Icons.home_rounded : Icons.local_hospital_rounded;
     final label = isHome ? 'Home Collection' : 'Clinic Collection';
 

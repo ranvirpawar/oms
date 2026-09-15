@@ -8,6 +8,7 @@ import '../../../../network/app_error.dart';
 import '../../../../network/app_urls.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
 import '../../patient_queue/model/order_reject_reasons.dart';
+import '../model/pre_collection_checklist.dart';
 import '../model/sample_collection_models.dart';
 
 class SampleCollectionService {
@@ -422,6 +423,87 @@ class SampleCollectionService {
       kPrint(e.toString());
       throw SampleCollectionException(
         'Unable to verify barcode. Please try again.',
+        isNetworkError: true,
+      );
+    }
+  }
+  Future<List<ChecklistItem>> fetchCollectionChecklist({
+    required String orderId,
+    required String userId,
+  }) async {
+    try {
+      final reqBody = {
+        'orderID' : orderId,
+        'userID' : userId,
+      };
+      final response = await _apiClient.post(
+        AppUrls.collectionChecklist,
+        data: reqBody,
+      );
+
+      final Map<String, dynamic> body = response.data is String
+          ? jsonDecode(response.data as String) as Map<String, dynamic>
+          : response.data as Map<String, dynamic>;
+
+      if ((body['status'] as String?)?.toLowerCase() != 'success') {
+        throw SampleCollectionException(
+          body['message'] as String? ?? 'Unable to load checklist.',
+        );
+      }
+
+      final output = body['output'];
+      final List<dynamic> list = output is List ? output : [];
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map(ChecklistItem.fromJson)
+          .toList();
+    } on SampleCollectionException {
+      rethrow;
+    } catch (e) {
+      kPrint(e.toString());
+      throw SampleCollectionException(
+        'Unable to load checklist. Please try again.',
+        isNetworkError: true,
+      );
+    }
+  }
+
+  Future<bool> submitCollectionChecklist({
+    required String orderId,
+    required int userId,
+    required int createdBy,
+    required List<ChecklistAnswer> answers,
+  }) async {
+    try {
+      final body = {
+        'OrderID': orderId,
+        'UserID': userId,
+        'ChecklistDetails': answers.map((a) => a.toJson()).toList(),
+        'CreatedBy': createdBy,
+      };
+      final url = AppUrls.insertCollectionCheckList.replaceFirst('{order-id}', orderId);
+
+      final response = await _apiClient.post(
+        url,
+        data: body,
+      );
+
+      final Map<String, dynamic> respBody = response.data is String
+          ? jsonDecode(response.data as String) as Map<String, dynamic>
+          : response.data as Map<String, dynamic>;
+
+      if ((respBody['status'] as String?)?.toLowerCase() != 'success') {
+        throw SampleCollectionException(
+          respBody['message'] as String? ?? 'Unable to save checklist.',
+        );
+      }
+      return true;
+    } on SampleCollectionException {
+      rethrow;
+    } catch (e) {
+      kPrint(e.toString());
+      throw SampleCollectionException(
+        'Unable to save checklist. Please try again.',
         isNetworkError: true,
       );
     }

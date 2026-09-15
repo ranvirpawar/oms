@@ -44,7 +44,7 @@ class AppStrings {
   static const String visitDetails = 'Visit Details';
   static const String sampleRemark = 'Sample Remark';
   static const String zeroSampleCalendar = 'Zero Sample Calendar';
-  static const String collectDestinationBag = 'Collect Destination Bag';
+  static const String collectDestinationBag = 'Collect Destination\nBag';
   static const String collectedSampleBags = 'Collected Bags';
   static const String invoiceTracking = 'Invoice Tracking';
   static const String mergeBarcode = 'Merge Barcode';

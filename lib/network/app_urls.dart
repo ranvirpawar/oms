@@ -381,6 +381,8 @@ class AppUrls {
       '$_asmxBase/GetRescheduleReasone';
 
   static String get checkBarcodeAvailability => '$_asmxBase/barcode/availability';
+  static String get collectionChecklist => '$_asmxBase/collection-checklist';
+  static String get insertCollectionCheckList => '$_asmxBase/orders/{order-id}/collection-checklist';
 
 
   ///  dashboard

@@ -10,7 +10,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../componenents/otp_boxes_input.dart';
 import '../../../../services/auth_manager.dart';
-import '../../../../services/location_tracking_service.dart';
+import '../../patient_queue/service/location_tracking_service.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
 
 import '../../patient_queue/model/patient_queue_model.dart';

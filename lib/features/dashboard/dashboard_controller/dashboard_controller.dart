@@ -225,7 +225,7 @@ class DashboardController extends GetxController {
     ),
     DashboardTileCard(
       variant: DashboardTileVariant.modern,
-      title: 'Collect Bag From Phlebotomist',
+      title: 'Collect Bag From\nPhlebotomist',
       subtitle: 'Receive samples for transfer',
 
       icon: AppAssets.collectBagIcon,
@@ -235,7 +235,7 @@ class DashboardController extends GetxController {
     ),
     DashboardTileCard(
       variant: DashboardTileVariant.modern,
-      title: AppStrings.collectedSampleBags,
+      title: 'Collected\nBags',
       subtitle: 'Hand over samples to lab',
       icon: AppAssets.collectedBagsIcon,
       onTap: RouteManager.navigateToCollectedBags,
