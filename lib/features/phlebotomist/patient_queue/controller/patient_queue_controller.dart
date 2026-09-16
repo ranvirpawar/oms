@@ -13,20 +13,7 @@ import '../../../../utils/ui_designs/liquid_snackbar.dart' hide SnackPosition;
 
 import '../view/widgets/queue_date_filter.dart';
 
-import 'package:get/get.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
-import 'package:lifenity_connect/services/auth_manager.dart';
-
-import '../service/location_tracking_service.dart';
-import '../../../../utils/helper_functions/helper_methods.dart';
-import '../../sample_collection/model/sample_collection_models.dart';
-import '../../sample_collection/service/sample_collection_service.dart';
-import '../model/patient_queue_model.dart';
-import '../service/patient_queue_service.dart';
-import '../../../../utils/ui_designs/liquid_snackbar.dart' hide SnackPosition;
-
-import '../view/widgets/queue_date_filter.dart';
 
 
 
@@ -96,8 +83,11 @@ class PatientQueueController extends GetxController {
   /// Which visit-type tab is active — Clinic or Home. This is the screen's
   /// primary context switch, so it lives above the status chips and isn't
   /// treated as a "clearable" filter the way search/status/date are.
-  final Rx<VisitType> activeVisitType = VisitType.clinic.obs;
+  final AuthManager _authManager = Get.find<AuthManager>();
 
+  final Rx<UserRole?> userRole = Rx<UserRole?>(null);
+
+  final Rx<VisitType> activeVisitType = VisitType.clinic.obs;
   /// Date horizon for the queue. Defaults to Today. Unlike before, changing
   /// this now triggers a fresh network fetch scoped to the resolved
   /// from/to window (see [_dateRangeFor]) — the backend filters by date,
@@ -122,6 +112,12 @@ class PatientQueueController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    userRole.value = _authManager.getUserRole();
+
+    activeVisitType.value =
+    userRole.value == UserRole.phlebotomist
+        ? VisitType.home
+        : VisitType.clinic;
     getUserdata().then((_) => fetchPatients());
   }
 

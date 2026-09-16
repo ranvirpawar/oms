@@ -253,7 +253,7 @@ class AssignedPatient {
   final String name; // PatientName, display-ready
   final int? userRosterId;
 
-  final int? age;
+  final String? age;
   final String? gender;
   final String? avatarUrl;
 
@@ -452,7 +452,8 @@ class AssignedPatient {
         ' ',
       ) ??
           'Unknown Patient',
-      age: _parseAge(json['Age'] as String?),
+      age: json['Age'],
+      // age: _parseAge(json['Age'] as String?),
       gender: json['Gender'] as String?,
       avatarUrl: json['photoUrl'] as String?,
       visitType: (json['VisitType'] as String?)?.toLowerCase() == 'clinic'

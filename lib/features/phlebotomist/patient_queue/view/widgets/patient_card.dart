@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../theme/app_colors.dart';
@@ -128,7 +129,10 @@ class _PatientCardState extends State<PatientCard> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            VisitTypeBadge(visitType: widget.patient.visitType, cornerRadius: 16),
+            VisitTypeBadge(
+              visitType: widget.patient.visitType,
+              cornerRadius: 16,
+            ),
             Padding(
               padding: const EdgeInsets.only(right: 10, top: 5, bottom: 5),
               child: StatusBadge(status: widget.patient.status, compact: true),
@@ -160,7 +164,9 @@ class _PatientCardState extends State<PatientCard> {
                   color: AppColors.textPrimary,
                 ),
               ),
-              if (widget.patient.age != null) ...[
+              if (widget.patient.age != null ||
+                  widget.patient.gender?.trim().isNotEmpty == true ||
+                  widget.patient.orderId.trim().isNotEmpty) ...[
                 const SizedBox(height: 2),
                 Text(
                   _identitySubtitle(),
@@ -193,13 +199,13 @@ class _PatientCardState extends State<PatientCard> {
           : null,
       child: widget.patient.avatarUrl == null
           ? Text(
-        _initials(widget.patient.name),
-        style: const TextStyle(
-          color: AppColors.primary800,
-          fontWeight: FontWeight.w700,
-          fontSize: 13,
-        ),
-      )
+              _initials(widget.patient.name),
+              style: const TextStyle(
+                color: AppColors.primary800,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            )
           : null,
     );
   }
@@ -279,7 +285,7 @@ class _PatientCardState extends State<PatientCard> {
                 label: 'Slot Date & Time',
                 value: widget.patient.slotDateTime != null
                     ? '${DateFormat('dd MMM').format(widget.patient.slotDateTime!)} • '
-                    '${DateFormat('hh:mm a').format(widget.patient.slotDateTime!)}'
+                          '${DateFormat('hh:mm a').format(widget.patient.slotDateTime!)}'
                     : 'Not set',
               ),
               if (widget.patient.isFastingRequired) ...[
@@ -291,9 +297,7 @@ class _PatientCardState extends State<PatientCard> {
           if (hasTubes) ...[
             const SizedBox(height: 6),
             Tooltip(
-              decoration: BoxDecoration(
-
-              ),
+              decoration: BoxDecoration(),
               message: "${widget.patient.tubes.map((t) => t.label).join(', ')}",
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,16 +378,16 @@ class _PatientCardState extends State<PatientCard> {
       child: _pendingConfirm != null
           ? _buildInlineConfirm(_pendingConfirm!)
           : KeyedSubtree(
-        key: ValueKey('actions_${widget.patient.status}'),
-        child: _buildNormalActions(context),
-      ),
+              key: ValueKey('actions_${widget.patient.status}'),
+              child: _buildNormalActions(context),
+            ),
     );
   }
 
   Widget _buildNormalActions(BuildContext context) {
     switch (widget.patient.status) {
       case PatientStatus.rescheduled:
-      // Clinic visits don't need a route — show Reschedule + Collect instead of Start Route
+        // Clinic visits don't need a route — show Reschedule + Collect instead of Start Route
         final isClinic = widget.patient.visitType == VisitType.clinic;
 
         return Row(
@@ -405,7 +409,7 @@ class _PatientCardState extends State<PatientCard> {
                 gradient: AppColors.secondaryGradient,
                 style: QueueActionStyle.gradient,
                 isDisabled: widget.isProcessing,
-                onPressed: ()=>_requestConfirm(_ConfirmKind.accept),
+                onPressed: () => _requestConfirm(_ConfirmKind.accept),
                 // onPressed: isClinic
                 //     ? widget.onTapDetails          // same as the arrived → Collect path
                 //     : _handleStartRouteTap,
@@ -499,6 +503,36 @@ class _PatientCardState extends State<PatientCard> {
 
       case PatientStatus.assigned:
       case PatientStatus.pending:
+      case PatientStatus.notAssigned:
+        final notAssigned = widget.patient.status == PatientStatus.notAssigned;
+        return Row(
+          children: [
+            Expanded(
+              child: QueueActionButton(
+                label: 'Reject',
+                color: AppColors.redText,
+                style: QueueActionStyle.outlined,
+                isDisabled: widget.isProcessing,
+                onPressed: () => notAssigned
+                    ? LiquidSnack.error(
+                        'You are not allowed to reject this order',
+                      )
+                    : widget.onReject,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: QueueActionButton(
+                label: 'Accept',
+                color: AppColors.secondary700,
+                gradient: AppColors.secondaryGradient,
+                style: QueueActionStyle.gradient,
+                isDisabled: widget.isProcessing,
+                onPressed: () => _requestConfirm(_ConfirmKind.accept),
+              ),
+            ),
+          ],
+        );
       default:
         return Row(
           children: [
@@ -676,7 +710,7 @@ class _PatientCardState extends State<PatientCard> {
                 SizedBox(height: 2),
                 Text(
                   'Sample data was saved, but sharing with the lab failed. '
-                      'Tap Sync to LIS to retry.',
+                  'Tap Sync to LIS to retry.',
                   style: TextStyle(
                     fontSize: 11,
                     height: 1.3,
@@ -692,18 +726,29 @@ class _PatientCardState extends State<PatientCard> {
   }
 
   String _identitySubtitle() {
+    final age = widget.patient.age != null
+        ? 'Age: ${widget.patient.age}'
+        : null;
 
-    final age = widget.patient.age != null ? 'Age: ${widget.patient.age}' : '';
-    final gender = widget.patient.gender?.isNotEmpty == true ? widget.patient.gender! : '';
-    final orderId = widget.patient.orderId.isNotEmpty == true
-        ? 'Order ID: ${widget.patient.orderId}'
-        : '';
+    final gender = widget.patient.gender?.trim().isNotEmpty == true
+        ? widget.patient.gender!.trim()
+        : null;
 
-    final firstLine = [age, gender].where((e) => e.isNotEmpty).join('  ');
+    final orderId = widget.patient.orderId.trim().isNotEmpty
+        ? 'Order ID: ${widget.patient.orderId.trim()}'
+        : null;
 
-    if (firstLine.isEmpty && orderId.isEmpty) return ' ';
+    final firstLine = [
+      if (age != null) age,
+      if (gender != null) gender,
+    ].join('  ');
 
-    return orderId.isEmpty ? firstLine : '$firstLine\n$orderId';
+    final lines = [
+      if (firstLine.isNotEmpty) firstLine,
+      if (orderId != null) orderId,
+    ];
+
+    return lines.isNotEmpty ? lines.join('\n') : ' ';
   }
 
   String _initials(String name) {
@@ -714,6 +759,7 @@ class _PatientCardState extends State<PatientCard> {
         .toUpperCase();
   }
 }
+
 /*class PatientCard extends StatelessWidget {
   final AssignedPatient patient;
   final bool isProcessing;
@@ -1239,4 +1285,3 @@ class _PatientCardState extends State<PatientCard> {
         .toUpperCase();
   }
 }*/
-

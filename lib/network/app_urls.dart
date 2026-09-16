@@ -336,7 +336,7 @@ class AppUrls {
 
   //----------------------- Lab technician qr code -----------------------//
 
-  static String getScanQRBag = '$_asmxBase/GETScanQRBag';
+  static String get getScanQRBag => '$_asmxBase/GETScanQRBag';
 
   // Step 2 — Fetch detailed bag info for lab team
   static String getBagDetailsForLabTeam =
@@ -369,15 +369,15 @@ class AppUrls {
   static String get locationTracking =>
       '$_asmxBase/UserSampleOrderLocationTracking';
 
-  static String dishaSampleCollectionSync =
-      '$_asmxBase/orders/{orderId}/Recolled_DishaSampleCollection_API';
+  static String  get dishaSampleCollectionSync =>
+      '$_asmxBase/orders/Recolled_DishaSampleCollection_API/{orderId}';
 
-  static String rescheduledSlots = '$_asmxBase/user/available-slots';
+  static String get rescheduledSlots => '$_asmxBase/user/available-slots';
 
-  static String appointmentRescheduled =
+  static String get appointmentRescheduled =>
       '$_asmxBase/InsertSampleCollAppoinmentReschedule';
 
-  static String appointmentRescheduledReason =
+  static String get appointmentRescheduledReason =>
       '$_asmxBase/GetRescheduleReasone';
 
   static String get checkBarcodeAvailability => '$_asmxBase/barcode/availability';

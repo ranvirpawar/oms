@@ -24,14 +24,14 @@ class QueueInfoChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(5),
+            /*padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
               color: iconColor.withOpacity(0.12),
               borderRadius: BorderRadius.circular(8),
-            ),
+            ),*/
             child: Icon(icon, size: 13, color: iconColor),
           ),
           const SizedBox(width: 6),

@@ -20,7 +20,7 @@ import 'package:flutter/material.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 class DashboardController extends GetxController {
-  final AuthManager _authManager = Get.put(AuthManager());
+  final AuthManager _authManager = Get.find<AuthManager>();
   final UserService _userService = Get.put(UserService());
   final CollectedBagsService _bagsService = CollectedBagsService();
 

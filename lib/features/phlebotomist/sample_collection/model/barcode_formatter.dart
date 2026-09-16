@@ -29,7 +29,7 @@ class SampleBarcodeEntry {
 
   void debounceBarcodeCheck(
       VoidCallback action, {
-        Duration delay = const Duration(milliseconds: 500),
+        Duration delay = const Duration(milliseconds: 1000),
       }) {
     _barcodeDebounce?.cancel();
     _barcodeDebounce = Timer(delay, action);

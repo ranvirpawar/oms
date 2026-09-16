@@ -480,6 +480,8 @@ class SampleCollectionController extends GetxController with HasBagContext {
     isSubmitting.value = true;
     try {
       final payload = _buildPayload();
+      kPrint('Save Payload: ${payload.toJson().toString()}');
+      return null;
 
       await _service.submitSampleCollection(payload);
       // Refresh the shared bag state silently so capacity reflects this

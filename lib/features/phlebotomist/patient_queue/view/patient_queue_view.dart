@@ -173,7 +173,7 @@ class PatientQueueView extends GetView<PatientQueueController> {
 
               return ListView.builder(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                 itemCount: patients.length,
                 itemBuilder: (context, index) {
                   final patient = patients[index];

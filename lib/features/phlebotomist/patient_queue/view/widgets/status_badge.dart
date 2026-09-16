@@ -188,7 +188,7 @@ class StatusBadge extends StatelessWidget {
       // OrderStatusID 1 / NAS — order exists but hasn't been assigned
       // to anyone yet.
         return const _StatusStyle(
-          'Not Assigned',
+          'Acceptance Pending',
           AppColors.amberText,
           AppColors.amberLight,
           Icons.assignment_late_outlined,
