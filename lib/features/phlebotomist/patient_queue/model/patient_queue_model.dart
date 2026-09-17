@@ -388,7 +388,7 @@ class AssignedPatient {
     return match != null ? int.tryParse(match.group(0)!) : null;
   }
 
-  static DateTime? _parseSlot(String? date, String? time) {
+  /*static DateTime? _parseSlot(String? date, String? time) {
     if (date == null) return null;
     try {
       final datePart = DateTime.parse(date); // handles the trailing time too
@@ -405,8 +405,30 @@ class AssignedPatient {
     } catch (_) {
       return null;
     }
-  }
+  }*/
+  static DateTime? _parseSlot(String? date, String? time) {
+    if (date == null || date.isEmpty) return null;
+    try {
+      final datePart = DateTime.parse(date);
 
+      // No start time → return date-only (midnight)
+      if (time == null || time.trim().isEmpty) {
+        return DateTime(datePart.year, datePart.month, datePart.day);
+      }
+
+      final t = time.split(':').map(int.parse).toList();
+      return DateTime(
+        datePart.year,
+        datePart.month,
+        datePart.day,
+        t.isNotEmpty ? t[0] : 0,
+        t.length > 1 ? t[1] : 0,
+        t.length > 2 ? t[2] : 0,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
   static bool _parseFasting(String? raw) {
     final v = (raw ?? '').toLowerCase();
     if (v.contains('not')) return false;
@@ -416,14 +438,14 @@ class AssignedPatient {
   /// Groups the raw test list's tube info into the summary chips shown
   /// on the card (e.g. "2 Plain Tube").
   static List<TubeRequirement> _buildTubes(List<OrderTest> tests) {
-    final counts = <String, int>{};
+    final unique = <String>{};
     for (final t in tests) {
       final label = t.tubeContent?.trim();
       if (label == null || label.isEmpty) continue;
-      counts[label] = (counts[label] ?? 0) + 1;
+      unique.add(label);
     }
-    return counts.entries
-        .map((e) => TubeRequirement(type: e.key, count: e.value))
+    return unique
+        .map((type) => TubeRequirement(type: type, count: 1))
         .toList();
   }
 

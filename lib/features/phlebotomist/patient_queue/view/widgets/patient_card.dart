@@ -284,8 +284,7 @@ class _PatientCardState extends State<PatientCard> {
                 iconColor: AppColors.purple,
                 label: 'Slot Date & Time',
                 value: widget.patient.slotDateTime != null
-                    ? '${DateFormat('dd MMM').format(widget.patient.slotDateTime!)} • '
-                          '${DateFormat('hh:mm a').format(widget.patient.slotDateTime!)}'
+                    ? _formatSlotDateTime(widget.patient.slotDateTime!)
                     : 'Not set',
               ),
               if (widget.patient.isFastingRequired) ...[
@@ -329,7 +328,16 @@ class _PatientCardState extends State<PatientCard> {
       ),
     );
   }
+  String _formatSlotDateTime(DateTime dt) {
+    final datePart = DateFormat('dd MMM').format(dt);
 
+    // Midnight means "date only" (no SlotStartTime was provided)
+    if (dt.hour == 0 && dt.minute == 0 && dt.second == 0) {
+      return datePart;
+    }
+
+    return '$datePart • ${DateFormat('hh:mm a').format(dt)}';
+  }
   Widget _buildFastingChip() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),

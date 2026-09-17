@@ -247,6 +247,7 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
         _startResendTimer();
         LiquidSnack.success(
           isResend ? 'OTP re-sent to patient' : 'OTP sent to patient mobile',
+          position: SnackPosition.top
         );
       } else {
         setState(() {
@@ -287,7 +288,7 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
           _otpError = '';
         });
         _resendTimer?.cancel();
-        LiquidSnack.success('OTP verified successfully');
+        LiquidSnack.success('OTP verified successfully', position: SnackPosition.top);
       } else {
         setState(() {
           _otpVerifying = false;

@@ -74,7 +74,16 @@ class OrderPatientSummaryCard extends StatefulWidget {
           .putIfAbsent(sampleType, () => [])
           .add(SummaryTestItem(t.testName, null, t.tubeContent));
     }
+    String formatSlotLabel(DateTime dt) {
+      final datePart = DateFormat('dd MMM yyyy').format(dt);
 
+      // Midnight means "date only" (no SlotStartTime was provided)
+      if (dt.hour == 0 && dt.minute == 0 && dt.second == 0) {
+        return datePart;
+      }
+
+      return '$datePart, ${DateFormat('hh:mm a').format(dt)}';
+    }
     return OrderPatientSummaryCard(
       name: patient.name,
       avatarUrl: patient.avatarUrl,
@@ -91,7 +100,7 @@ class OrderPatientSummaryCard extends StatefulWidget {
       ].join(' • ')
           : null,
       slotLabel: patient.slotDateTime != null
-          ? DateFormat('dd MMM yyyy, hh:mm a').format(patient.slotDateTime!)
+          ? formatSlotLabel(patient.slotDateTime!)
           : null,
       sampleGroups: groups.entries
           .map((e) => SummarySampleGroup(sampleType: e.key, tests: e.value))
@@ -442,8 +451,7 @@ class _Body extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Divider(height: 20),
-            /// fasting tag
-            
+
 
             if (sampleGroups.isNotEmpty) ...[
               Row(
