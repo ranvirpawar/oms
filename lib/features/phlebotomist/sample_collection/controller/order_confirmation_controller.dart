@@ -17,14 +17,14 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 
 import '../../../../componenents/otp_boxes_input.dart';
 import '../../../../routes/route_manager.dart';
 import '../../../../services/auth_manager.dart';
 import '../../patient_queue/service/location_tracking_service.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
-import '../../../../utils/ui_designs/liquid_snackbar.dart' hide SnackPosition;
+import '../../../../utils/ui_designs/liquid_snackbar.dart';
 import '../../patient_queue/model/patient_queue_model.dart';
 import '../../patient_queue/service/patient_queue_service.dart';
 import '../binding/sample_collection_binding.dart';
@@ -267,7 +267,7 @@ class OrderConfirmationController extends GetxController with HasBagContext {
         userId: empId.value,
         collectionOrderId: orderDetails.value?.sampleCollectionOrderId ?? '',
       );
-      LiquidSnack.success('OTP has been send successfully');
+      LiquidSnack.success('OTP has been send successfully',position: SnackPosition.top );
       _startResendTimer();
     } catch (e) {
       otpError.value = 'Unable to send OTP. Please try again.';
@@ -430,6 +430,31 @@ class OrderConfirmationController extends GetxController with HasBagContext {
     }
   }
 
+
+  Future<bool> sendRescheduleOtp({
+    required String mobileNo,
+    required int sampleCollectionOrderId,
+  }) {
+    return _patientQueueService.sendRescheduleOtp(
+      mobileNo: mobileNo,
+      createdBy: _userId,
+      sampleCollectionOrderId: sampleCollectionOrderId,
+    );
+  }
+
+  Future<bool> verifyRescheduleOtp({
+    required String mobileNo,
+    required String otp,
+    required int sampleCollectionOrderId,
+  }) {
+    return _patientQueueService.verifyRescheduleOtp(
+      mobileNo: mobileNo,
+      otp: otp,
+      sampleCollectionOrderId: sampleCollectionOrderId,
+      verifyBy: _userId,
+    );
+  }
+
   Future<bool> reschedule(
       AssignedPatient patient, {
         required DateTime newDate,
@@ -448,8 +473,10 @@ class OrderConfirmationController extends GetxController with HasBagContext {
       successMessage: 'Visit rescheduled',
     );
   }
+  /// Tube count for the active order. Each sampleRequirement entry corresponds
+  /// to exactly one tube, so totalSampleTypes == tubes needed.
   @override
-  int get requiredSampleCount {
+  int get requiredTubeCount {
     return orderDetails.value?.totalSampleTypes ?? 0;
   }
   // ---------------------------------------------------------------------

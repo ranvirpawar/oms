@@ -578,7 +578,7 @@ class _CollectedMetaRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Collected On',
+                  'Collected Date & Time',
                   style: TextStyle(
                     fontSize: 10.5,
                     color: AppColors.textQuaternary,
@@ -714,7 +714,7 @@ class CollectedOrderDetailSheet extends StatelessWidget {
                     _InfoTile(
                       icon: Icons.check_circle_outline_rounded,
                       iconColor: AppColors.tealText,
-                      label: 'Collected on',
+                      label: 'Collected Date & Time',
                       value: reg.collectionDateTime != null
                           ? DateFormat(
                               'dd MMM yyyy · hh:mm a',

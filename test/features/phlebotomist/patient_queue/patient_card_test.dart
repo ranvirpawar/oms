@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/model/patient_queue_model.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/widgets/patient_card.dart';
 
-/// Minimal JSON for a "collect" (LIS sync failed) order — enough to render
+/// Minimal JSON for a "collect" (LIMS sync failed) order — enough to render
 /// the queue card in isolation.
 Map<String, dynamic> _collectOrderJson() => {
   'SampleCollectionOrderID': 33,
@@ -32,7 +32,7 @@ Widget _wrap(AssignedPatient patient, {VoidCallback? onSyncToLis}) {
 
 void main() {
   testWidgets(
-      'a "collect" order shows the LIS-sync-pending UI and no regular actions',
+      'a "collect" order shows the LIMS-sync-pending UI and no regular actions',
       (tester) async {
     final patient = AssignedPatient.fromJson(_collectOrderJson());
 
@@ -42,10 +42,10 @@ void main() {
     expect(find.text('Rakul Patil'), findsOneWidget);
     expect(find.textContaining('ORD-SYNC'), findsOneWidget);
 
-    // "Action Needed" badge + LIS callout + Sync button.
+    // "Action Needed" badge + LIMS callout + Sync button.
     expect(find.text('Action Needed'), findsOneWidget);
-    expect(find.text('LIS sync pending'), findsOneWidget);
-    expect(find.text('Sync to LIS'), findsOneWidget);
+    expect(find.text('LIMS sync pending'), findsOneWidget);
+    expect(find.text('Sync to LIMS'), findsOneWidget);
 
     // The regular assignment actions are hidden for this state.
     expect(find.text('Accept'), findsNothing);
@@ -53,7 +53,7 @@ void main() {
     expect(find.text('Reschedule'), findsNothing);
   });
 
-  testWidgets('the Sync to LIS button fires onSyncToLis for a collect order',
+  testWidgets('the Sync to LIMS button fires onSyncToLis for a collect order',
       (tester) async {
     final patient = AssignedPatient.fromJson(_collectOrderJson());
     var synced = false;
@@ -62,7 +62,7 @@ void main() {
       _wrap(patient, onSyncToLis: () => synced = true),
     );
 
-    await tester.tap(find.text('Sync to LIS'));
+    await tester.tap(find.text('Sync to LIMS'));
     await tester.pump();
 
     expect(synced, isTrue);

@@ -282,6 +282,88 @@ class PatientQueueService {
       return const <RescheduleReason>[];
     }
   }
+
+  /// Sends an OTP to the patient's mobile for reschedule verification.
+  /// POST `send-otp-SampleReschedule`.
+  Future<bool> sendRescheduleOtp({
+    required String mobileNo,
+    required int createdBy,
+    required int sampleCollectionOrderId,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        AppUrls.sendOtpSampleReschedule,
+        data: {
+          'MobileNo': mobileNo,
+          'CreatedBy': createdBy,
+          'SampleCollectionOrderID': sampleCollectionOrderId,
+        },
+      );
+
+      final Map<String, dynamic> body = response.data is String
+          ? jsonDecode(response.data as String) as Map<String, dynamic>
+          : response.data as Map<String, dynamic>;
+
+      final isSuccess =
+          (body['status'] as String?)?.toLowerCase() == 'success';
+      if (!isSuccess) {
+        throw PatientQueueException(
+          (body['message'] as String?) ?? 'Unable to send OTP.',
+        );
+      }
+      return true;
+    } on PatientQueueException {
+      rethrow;
+    } catch (e) {
+      kPrint(e.toString());
+      throw PatientQueueException(
+        'Unable to send OTP. Please try again.',
+        isNetworkError: true,
+      );
+    }
+  }
+
+  /// Verifies the OTP entered by the patient for reschedule.
+  /// POST `verify-otp-SampleReschedule`.
+  Future<bool> verifyRescheduleOtp({
+    required String mobileNo,
+    required String otp,
+    required int sampleCollectionOrderId,
+    required int verifyBy,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        AppUrls.verifyOtpSampleReschedule,
+        data: {
+          'MobileNo': mobileNo,
+          'OTP': otp,
+          'SampleCollectionOrderID': sampleCollectionOrderId,
+          'VerifyBy': verifyBy,
+        },
+      );
+
+      final Map<String, dynamic> body = response.data is String
+          ? jsonDecode(response.data as String) as Map<String, dynamic>
+          : response.data as Map<String, dynamic>;
+
+      final isSuccess =
+          (body['status'] as String?)?.toLowerCase() == 'success';
+      if (!isSuccess) {
+        throw PatientQueueException(
+          (body['message'] as String?) ?? 'OTP verification failed.',
+        );
+      }
+      return true;
+    } on PatientQueueException {
+      rethrow;
+    } catch (e) {
+      kPrint(e.toString());
+      throw PatientQueueException(
+        'Unable to verify OTP. Please try again.',
+        isNetworkError: true,
+      );
+    }
+  }
 }
 
 final dummyPatientList = {

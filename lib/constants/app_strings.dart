@@ -50,7 +50,7 @@ class AppStrings {
   static const String mergeBarcode = 'Merge Barcode';
   static const String sampleLiveTracking = 'Sample Live Tracking';
   static const String acceptBag = 'Accept Bag';
-  static const String acceptBagInLab = 'Accept Bag In Laboratory';
+  static const String acceptBagInLab = 'Accept Bag In\nLaboratory';
   static const String handOverToInventory = 'Hand Over To Inventory';
 
 

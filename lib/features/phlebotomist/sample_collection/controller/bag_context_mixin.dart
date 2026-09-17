@@ -31,7 +31,9 @@ mixin HasBagContext on GetxController {
 
   int get bagCapacity => activeBagDetails?.capacity ?? 0;
   int get bagUsed => activeBagDetails?.patientCount ?? 0;
-  int get bagVacant => activeBagDetails?.spaceVacant ?? 0;
+  /// Clamped to 0 — the API can return a negative spaceVacant when the bag is
+  /// over-capacity; we never want to render a negative vacancy in the UI.
+  int get bagVacant => (activeBagDetails?.spaceVacant ?? 0).clamp(0, 9999);
 
   /// 0..1 — drives the capacity bar on the active-bag card.
   double get bagFillRatio {
@@ -42,13 +44,13 @@ mixin HasBagContext on GetxController {
 
   bool get isBagFull => activeBagDetails != null && bagUsed >= bagCapacity;
 
-  /// Number of sample types the current order needs.
+  /// Number of tubes the current order needs (= sampleRequirements.length).
   /// Default 0 so Order Confirmation (which has no sample entries) never
   /// triggers the capacity warning. SampleCollectionController overrides this.
-  int get requiredSampleCount => 0;
+  int get requiredTubeCount => 0;
 
-  /// True when an open bag exists, its capacity is known, and it doesn't
-  /// have enough vacant slots for every sample this order needs.
+  /// True when an open bag exists, its capacity is known, and the bag
+  /// does not have enough vacant slots for every tube this order needs.
   bool get bagCapacityInsufficient =>
-      hasOpenBag && bagCapacity > 0 && bagVacant < requiredSampleCount;
+      hasOpenBag && bagCapacity > 0 && bagVacant < requiredTubeCount;
 }

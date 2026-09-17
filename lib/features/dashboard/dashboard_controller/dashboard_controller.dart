@@ -10,16 +10,16 @@ import '../../../routes/route_manager.dart';
 import '../../../utils/helper_functions/helper_methods.dart';
 import '../../runner_boy/collected_sample_bags/service/collected_bags_service.dart';
 import '../model/dashboard_summary_model.dart';
-import '../model/notice_model.dart';
 import '../service/dashboard_service.dart';
 import '../view/widget/dashboard_tile_card.dart';
+import '../../../utils/widgets/metrics_data.dart';
 import 'package:flutter/material.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DashboardController
 // ─────────────────────────────────────────────────────────────────────────────
 
-class DashboardController extends GetxController {
+class   DashboardController extends GetxController {
   final AuthManager _authManager = Get.find<AuthManager>();
   final UserService _userService = Get.put(UserService());
   final CollectedBagsService _bagsService = CollectedBagsService();
@@ -37,6 +37,16 @@ class DashboardController extends GetxController {
   final RxInt handoverCount = 0.obs;
   final RxInt pendingHandoverCount = 0.obs;
   final RxBool isLoadingStats = false.obs;
+
+  // ── Role-specific Metric Observables (API pending - kept at 0) ──────────────
+  // Runner-Boy
+  final RxInt runnerPickupCount = 0.obs;
+  final RxInt runnerSubmitToLabCount = 0.obs;
+  final RxInt runnerAcceptedByLabCount = 0.obs;
+
+  // Lab Accession / Technician
+  final RxInt labBagsSubmittedCount = 0.obs;
+  final RxInt labAcceptedBagsCount = 0.obs;
 
   final RxBool isAvailable = true.obs;
   final RxString currentLocation = 'Fetching location…'.obs;
@@ -235,7 +245,7 @@ class DashboardController extends GetxController {
     ),
     DashboardTileCard(
       variant: DashboardTileVariant.modern,
-      title: 'Collected\nBags',
+      title: 'Handover\nBags',
       subtitle: 'Hand over samples to lab',
       icon: AppAssets.collectedBagsIcon,
       onTap: RouteManager.navigateToCollectedBags,
@@ -258,6 +268,7 @@ class DashboardController extends GetxController {
       variant: DashboardTileVariant.modern,
       title: AppStrings.acceptBagInLab,
       icon: AppAssets.acceptInLabIcon,
+      subtitle: 'Accept submitted bags',
       onTap: RouteManager.navigateToAcceptBagInLaboratory,
       iconRight: 4,
       iconBottom: 2,
@@ -265,7 +276,7 @@ class DashboardController extends GetxController {
 
     DashboardTileCard(
       variant: DashboardTileVariant.modern,
-      title: AppStrings.bagStatus,
+      title: 'Bag\nHistory',
       subtitle: 'Track bag movement',
       icon: AppAssets.bagHistoryIcon,
       onTap: RouteManager.navigateToBagStatus,
@@ -296,6 +307,102 @@ class DashboardController extends GetxController {
     ),
   ];
 
+  // ── Role-based Metrics ────────────────────────────────────────────────────────
+
+  List<MetricData> getRoleBasedMetrics() {
+    switch (userRole.value) {
+      case UserRole.phlebotomist:
+      case UserRole.paramedic:
+        return _phlebotomistMetrics();
+
+      case UserRole.runnerBoy:
+        return _runnerBoyMetrics();
+
+      case UserRole.labTechnician:
+      case UserRole.labAccession:
+        return _labTechnicianMetrics();
+
+      default:
+        return const [];
+    }
+  }
+
+  List<MetricData> _phlebotomistMetrics() => [
+    MetricData(
+      value: assignedPatientsCount.value.toString().padLeft(2, '0'),
+      label: 'Assigned\nPatients',
+      icon: Icons.people_alt_rounded,
+      dot: const Color(0xFF3B82F6),
+    ),
+    MetricData(
+      value: testCollectedCount.value.toString().padLeft(2, '0'),
+      label: 'Clinic\nCollections',
+      icon: Icons.science_rounded,
+      dot: const Color(0xFF22C55E),
+    ),
+    MetricData(
+      value: handoverCount.value.toString().padLeft(2, '0'),
+      label: 'Home\nCollections',
+      icon: Icons.swap_horiz_rounded,
+      dot: const Color(0xFF8B5CF6),
+    ),
+    MetricData(
+      value: pendingHandoverCount.value.toString().padLeft(2, '0'),
+      label: 'Served\nRequests',
+      icon: Icons.hourglass_bottom_rounded,
+      dot: const Color(0xFFF59E0B),
+    ),
+  ];
+
+  List<MetricData> _runnerBoyMetrics() => [
+    MetricData(
+      value: runnerPickupCount.value.toString().padLeft(2, '0'),
+      label: 'Pick Up',
+      icon: Icons.local_shipping_rounded,
+      dot: const Color(0xFF3B82F6),
+    ),
+    MetricData(
+      value: runnerSubmitToLabCount.value.toString().padLeft(2, '0'),
+      label: 'Submit to lab',
+      icon: Icons.send_rounded,
+      dot: const Color(0xFF8B5CF6),
+    ),
+    MetricData(
+      value: runnerAcceptedByLabCount.value.toString().padLeft(2, '0'),
+      label: 'Accepted by lab',
+      icon: Icons.task_alt_rounded,
+      dot: const Color(0xFF22C55E),
+    ),
+  ];
+
+  List<MetricData> _labTechnicianMetrics() => [
+    MetricData(
+      value: labBagsSubmittedCount.value.toString().padLeft(2, '0'),
+      label: 'Bags submitted\nto lab',
+      icon: Icons.inventory_2_outlined,
+      dot: const Color(0xFF3B82F6),
+    ),
+    MetricData(
+      value: labAcceptedBagsCount.value.toString().padLeft(2, '0'),
+      label: 'Bags accepted\nby lab',
+      icon: Icons.task_alt_rounded,
+      dot: const Color(0xFF22C55E),
+    ),
+  ];
+
+  void _fetchRunnerBoyStats() {
+    // API pending — keep zero for now
+    runnerPickupCount.value = 0;
+    runnerSubmitToLabCount.value = 0;
+    runnerAcceptedByLabCount.value = 0;
+  }
+
+  void _fetchLabStats() {
+    // API pending — keep zero for now
+    labBagsSubmittedCount.value = 0;
+    labAcceptedBagsCount.value = 0;
+  }
+
   /// Call this to signal a rebuild-triggered refresh
   void onDashboardBuild() {
     // Debounce: only re-fetch if not already loading
@@ -311,8 +418,19 @@ class DashboardController extends GetxController {
   void tickRefresh() => refreshTick.value++;
 
   /// Fetches the "orders board" numbers shown in the header stat strip.
-  /// TODO: wire to real API — this only shows the phlebotomist's own counts.
   Future<void> _fetchDashboardStats() async {
+    // Only phlebotomist and paramedic currently have dashboard summary API
+    if (userRole.value != UserRole.phlebotomist &&
+        userRole.value != UserRole.paramedic) {
+      if (userRole.value == UserRole.runnerBoy) {
+        _fetchRunnerBoyStats();
+      } else if (userRole.value == UserRole.labTechnician ||
+          userRole.value == UserRole.labAccession) {
+        _fetchLabStats();
+      }
+      return;
+    }
+
     try {
       isLoadingStats.value = true;
 

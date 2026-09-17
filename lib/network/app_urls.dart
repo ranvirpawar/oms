@@ -380,6 +380,12 @@ class AppUrls {
   static String get appointmentRescheduledReason =>
       '$_asmxBase/GetRescheduleReasone';
 
+  static String get sendOtpSampleReschedule =>
+      '$_asmxBase/send-otp-SampleReschedule';
+
+  static String get verifyOtpSampleReschedule =>
+      '$_asmxBase/verify-otp-SampleReschedule';
+
   static String get checkBarcodeAvailability => '$_asmxBase/barcode/availability';
   static String get collectionChecklist => '$_asmxBase/collection-checklist';
   static String get insertCollectionCheckList => '$_asmxBase/orders/{order-id}/collection-checklist';

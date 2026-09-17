@@ -130,7 +130,7 @@ class PatientQueueController extends GetxController {
   /// How far "Upcoming" and "Past" look beyond/behind their natural
   /// boundary, now that the API requires a bounded window instead of an
   /// open-ended one.
-  static const int _futureWindowDays = 30;
+
   static const int _pastWindowDays = 30;
 
   /// Resolves the active date filter (or an explicit [filter], used when
@@ -141,28 +141,51 @@ class PatientQueueController extends GetxController {
   /// window so the request always has both bounds.
   _DateRange _dateRangeFor(QueueDateFilter filter) {
     final today = _midnight(DateTime.now());
-    final weekStart = today.subtract(Duration(days: today.weekday - 1));
-    final weekEnd = weekStart.add(const Duration(days: 7)); // exclusive (next Monday)
 
     switch (filter) {
       case QueueDateFilter.today:
         return _DateRange(today, today);
+
       case QueueDateFilter.thisWeek:
-        return _DateRange(weekStart, weekEnd.subtract(const Duration(days: 1)));
-      case QueueDateFilter.future:
+        final weekStart =
+        today.subtract(Duration(days: today.weekday - 1));
+        final weekEnd = weekStart.add(const Duration(days: 7));
+
         return _DateRange(
-          weekEnd,
-          weekEnd.add(const Duration(days: _futureWindowDays)),
+          weekStart,
+          weekEnd.subtract(const Duration(days: 1)),
         );
+
+      case QueueDateFilter.future:
+        final tomorrow = today.add(const Duration(days: 1));
+        final oneMonthLater = DateTime(
+          tomorrow.year,
+          tomorrow.month + 1,
+          tomorrow.day,
+        );
+
+        return _DateRange(
+          tomorrow,
+          oneMonthLater.subtract(const Duration(days: 1)),
+        );
+
       case QueueDateFilter.past:
         return _DateRange(
           today.subtract(const Duration(days: _pastWindowDays)),
           today.subtract(const Duration(days: 1)),
         );
+
       case QueueDateFilter.custom:
         final picked = customRange.value;
-        if (picked == null) return _DateRange(today, today);
-        return _DateRange(_midnight(picked.start), _midnight(picked.end));
+
+        if (picked == null) {
+          return _DateRange(today, today);
+        }
+
+        return _DateRange(
+          _midnight(picked.start),
+          _midnight(picked.end),
+        );
     }
   }
 
@@ -538,7 +561,7 @@ class PatientQueueController extends GetxController {
       await _sampleCollectionService.resubmitToDisha(orderId: patient.orderId,userId: empId.value);
       LiquidSnack.success(
         'Order ${patient.orderId} was pushed to Disha successfully.',
-        title: 'Synced to LIS',
+        title: 'Synced to LIMS',
       );
       await fetchPatients(); // refresh from server
     } on SampleCollectionException catch (e) {
@@ -567,6 +590,32 @@ class PatientQueueController extends GetxController {
   /// as the mandatory dropdown inside the reschedule sheet.
   Future<List<RescheduleReason>> fetchRescheduleReasons() {
     return _service.fetchRescheduleReasons();
+  }
+
+  /// Sends an OTP to the patient's mobile for reschedule verification.
+  Future<bool> sendRescheduleOtp({
+    required String mobileNo,
+    required int sampleCollectionOrderId,
+  }) {
+    return _service.sendRescheduleOtp(
+      mobileNo: mobileNo,
+      createdBy: int.tryParse(empId.value) ?? 0,
+      sampleCollectionOrderId: sampleCollectionOrderId,
+    );
+  }
+
+  /// Verifies the reschedule OTP entered by the patient.
+  Future<bool> verifyRescheduleOtp({
+    required String mobileNo,
+    required String otp,
+    required int sampleCollectionOrderId,
+  }) {
+    return _service.verifyRescheduleOtp(
+      mobileNo: mobileNo,
+      otp: otp,
+      sampleCollectionOrderId: sampleCollectionOrderId,
+      verifyBy: int.tryParse(empId.value) ?? 0,
+    );
   }
 
   Future<bool> reject(AssignedPatient patient, {int? reasonId}) => _runAction(

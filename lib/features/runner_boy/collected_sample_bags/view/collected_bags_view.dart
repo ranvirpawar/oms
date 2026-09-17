@@ -57,8 +57,8 @@ class CollectedBagsView extends StatelessWidget {
   Widget _buildMainView(BuildContext context) {
     return Column(
       children: [
-        _AttentionBanner(controller: controller),
-        _FilterBar(controller: controller),
+        // _AttentionBanner(controller: controller),
+        // _FilterBar(controller: controller),
         _buildSelectionHeader(),
         Expanded(
           child: Obx(() {
@@ -815,7 +815,7 @@ class _BagCardState extends State<_BagCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _TatStrip(info: info, color: statusColor),
+                // _TatStrip(info: info, color: statusColor),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                   child: Column(
@@ -875,14 +875,14 @@ class _BagCardState extends State<_BagCard> {
                             value: isEmpty ? 'Empty Bag' : '${widget.bag.tubeCount} tubes',
                             color: isEmpty ? _TatColors.empty : Colors.teal,
                           ),
-                          const SizedBox(width: 8),
+                          /*const SizedBox(width: 8),
                           Expanded(
                             child: _MetaChip(
                               icon: Icons.schedule_rounded,
                               value: 'Collected ${_formatDateTime(widget.bag.collectedAt)}',
                               color: Colors.blueGrey,
                             ),
-                          ),
+                          ),*/
                         ],
                       ),
                     ],

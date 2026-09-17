@@ -71,8 +71,13 @@ class AvailableSlot {
 class RescheduleReason {
   final int id;
   final String reason;
+  final bool isOtpRequired;
 
-  const RescheduleReason({required this.id, required this.reason});
+  const RescheduleReason({
+    required this.id,
+    required this.reason,
+    this.isOtpRequired = false,
+  });
 
   factory RescheduleReason.fromJson(Map<String, dynamic> json) {
     return RescheduleReason(
@@ -84,6 +89,7 @@ class RescheduleReason {
           json['Reason'] as String? ??
           '') as String? ??
           '',
+      isOtpRequired: json['IsOtpRequired'] == true,
     );
   }
 

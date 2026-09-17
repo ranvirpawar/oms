@@ -87,7 +87,7 @@ class CustomDrawer extends StatelessWidget {
                   // Profile Avatar
                   GestureDetector(
                     onTap: () {
-                      RouteManager.navigateToProfilePage(controller.userProfile.value);
+                      // RouteManager.navigateToProfilePage(controller.userProfile.value);
                     },
                     child: Stack(
                       children: [
@@ -327,16 +327,13 @@ class CustomDrawer extends StatelessWidget {
   String _getOrgFacilityInfo() {
     final profile = controller.userProfile.value;
     final org = profile?.orgName ?? '';
-    final facility = profile?.facilityName ?? '';
+    // final facility = profile?.facilityName ?? '';
 
-    if (org.isNotEmpty && facility.isNotEmpty) {
-      return '$org \n$facility';
-    } else if (org.isNotEmpty) {
-      return org;
-    } else if (facility.isNotEmpty) {
-      return facility;
-    }
-    return '...';
+    /*if (org.isNotEmpty && facility.isNotEmpty) {
+      return '$org\n$facility';
+    }*/
+
+    return org.isNotEmpty ? org:'' /*: facility*/;
   }
 
   String _formatMobile(String? mobile) {

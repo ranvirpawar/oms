@@ -11,10 +11,10 @@ import 'package:flutter/services.dart';
 class BagContextBanner extends StatelessWidget {
   final HasBagContext bagContext;
 
-  /// Whether this instance lives on the sample-collection page. Only there
-  /// can the phlebo act on the bag state (reopen / start new bag) — every
-  /// other page that reuses this card (e.g. an order/detail summary) is
-  /// read-only and should show the exact same information with no CTAs.
+  /// Whether this instance lives on the order confirmation page.
+  /// When true, displays full bag status details, capacity/progress, tube requirements,
+  /// and actions (reopen / start new bag).
+  /// When false (e.g. sample collection page), displays only the compact "Collecting into `bagcode`" card.
   final bool isOrderConfirmationPage;
 
   const BagContextBanner({
@@ -35,27 +35,32 @@ class BagContextBanner extends StatelessWidget {
       // flag is stale/non-reactive right after a reopen or a new-bag scan),
       // fall back to the "no open bag" state instead of rendering
       // "Collecting into Bag #0" with no way to fix it.
-      final looksOpen = bagContext.hasOpenBag &&
+      final looksOpen =
+          bagContext.hasOpenBag &&
           (bagContext.activeBagId > 0 || bagContext.activeBagcode.isNotEmpty);
 
       return _PremiumCard(
+        padding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: isOrderConfirmationPage ? 16 : 12,
+        ),
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),
           switchInCurve: Curves.easeOutCubic,
           switchOutCurve: Curves.easeInCubic,
           child: looksOpen
               ? _OpenBagContent(
-            key: const ValueKey('open'),
-            controller: bagContext,
-            bag: bag,
-            showActions: isOrderConfirmationPage,
-          )
+                  key: const ValueKey('open'),
+                  controller: bagContext,
+                  bag: bag,
+                  showActions: isOrderConfirmationPage,
+                )
               : _NoOpenBagContent(
-            key: const ValueKey('closed'),
-            controller: bagContext,
-            bag: bag,
-            showActions: isOrderConfirmationPage,
-          ),
+                  key: const ValueKey('closed'),
+                  controller: bagContext,
+                  bag: bag,
+                  showActions: isOrderConfirmationPage,
+                ),
         ),
       );
     });
@@ -67,13 +72,17 @@ class BagContextBanner extends StatelessWidget {
 /// one consistent surface.
 class _PremiumCard extends StatelessWidget {
   final Widget child;
-  const _PremiumCard({required this.child});
+  final EdgeInsetsGeometry padding;
+  const _PremiumCard({
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: padding,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -95,7 +104,8 @@ class _PremiumCard extends StatelessWidget {
 
 class _NoOpenBagContent extends StatelessWidget {
   final HasBagContext controller;
-  final dynamic bag; // BagController (typed dynamic to avoid an import cycle here)
+  final dynamic
+  bag; // BagController (typed dynamic to avoid an import cycle here)
   final bool showActions;
 
   const _NoOpenBagContent({
@@ -107,17 +117,22 @@ class _NoOpenBagContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final closedSessions = (bag.allSessions as List).where((s) => !s.isOpen).toList();
+    final closedSessions = (bag.allSessions as List)
+        .where((s) => !s.isOpen)
+        .toList();
 
     final String message;
     if (closedSessions.isEmpty) {
-      message = 'You need to open a bag before you can collect samples for '
+      message =
+          'You need to open a bag before you can collect samples for '
           'this order.';
     } else if (closedSessions.length == 1) {
-      message = 'Bag ${closedSessions.first.bagcode} is closed. Reopen it to '
+      message =
+          'Bag ${closedSessions.first.bagcode} is closed. Reopen it to '
           'keep collecting into it, or start a new one.';
     } else {
-      message = 'Your bag is closed. Reopen one of your bags to keep '
+      message =
+          'Your bag is closed. Reopen one of your bags to keep '
           'collecting, or start a new one.';
     }
 
@@ -169,38 +184,23 @@ class _NoOpenBagContent extends StatelessWidget {
           ],
         ),
         if (showActions) ...[
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Row(
             children: [
               if (closedSessions.isNotEmpty) ...[
-                Expanded(
-                  child: _ActionButton(
-                    label: closedSessions.length == 1 ? 'Reopen bag' : 'Reopen',
-                    filled: true,
-                    onTap: () {
-                      if (closedSessions.length == 1) {
-                        confirmOpenBag(context, closedSessions.first);
-                      } else {
-                        showBagPicker(context, controller);
-                      }
-                    },
-                  ),
+                _TextAction(
+                  label: 'Reopen bag',
+                  onTap: () => showBagPicker(context, controller),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _ActionButton(
-                    label: 'New bag',
-                    filled: false,
-                    onTap: () => Get.to(() => const ScanBagPage()),
-                  ),
+                const SizedBox(width: 20),
+                _TextAction(
+                  label: 'New bag',
+                  onTap: () => Get.to(() => const ScanBagPage()),
                 ),
               ] else
-                Expanded(
-                  child: _ActionButton(
-                    label: 'Open new bag',
-                    filled: true,
-                    onTap: () => Get.to(() => const ScanBagPage()),
-                  ),
+                _TextAction(
+                  label: 'Open new bag',
+                  onTap: () => Get.to(() => const ScanBagPage()),
                 ),
             ],
           ),
@@ -226,11 +226,54 @@ class _OpenBagContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ratio = controller.bagFillRatio.clamp(0.0, 1.0);
-    final color = ratio >= 0.9
-        ? AppColors.redText
-        : (ratio >= 0.6 ? AppColors.amberText : AppColors.greenText);
+    final isFull = controller.isBagFull;
+    final color = isFull
+        ? AppColors.error
+        : (ratio >= 0.9
+              ? AppColors.amberText
+              : (ratio >= 0.6 ? AppColors.amberText : AppColors.greenText));
     final pct = (ratio * 100).round().clamp(0, 100);
     final insufficient = controller.bagCapacityInsufficient;
+    // clamp to 0 — never show negative vacancy in UI
+    final vacantDisplay = controller.bagVacant.clamp(0, 9999);
+    final requiredTubes = controller.requiredTubeCount;
+
+    if (!showActions) {
+      return Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              gradient:/* isFull
+                  ? const LinearGradient(
+                      colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                    )
+                  :*/ AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              isFull ? Icons.inventory_2_outlined : Icons.inventory_2_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Collecting into ${controller.activeBagcode.isEmpty ? 'Bag #${controller.activeBagId}' : controller.activeBagcode}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -242,10 +285,18 @@ class _OpenBagContent extends StatelessWidget {
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
+                gradient: /*isFull
+                    ? const LinearGradient(
+                        colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                      )
+                    : */AppColors.primaryGradient,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.inventory_2_rounded, color: Colors.white, size: 18),
+              child: Icon(
+                isFull ? Icons.inventory_2_outlined : Icons.inventory_2_rounded,
+                color: Colors.white,
+                size: 18,
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -253,7 +304,7 @@ class _OpenBagContent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Collecting into ${controller.activeBagcode.isEmpty ? 'Bag #${controller.activeBagId}' : controller.activeBagcode}',
+                    'Collecting into Bag ${controller.activeBagcode}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -265,16 +316,29 @@ class _OpenBagContent extends StatelessWidget {
                   const SizedBox(height: 1),
                   Text(
                     controller.bagCapacity > 0
-                        ? '${controller.bagUsed} of ${controller.bagCapacity} slots used'
+                        ? isFull
+                              ? 'Bag is full (${controller.bagUsed}/${controller.bagCapacity})'
+                              : '${controller.bagUsed} of ${controller.bagCapacity} slots used · $vacantDisplay left'
                         : 'Open session',
-                    style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: color),
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
                   ),
                 ],
               ),
             ),
             if (controller.bagCapacity > 0) ...[
               const SizedBox(width: 8),
-              Text('$pct%', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: color)),
+              Text(
+                '$pct%',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
+              ),
             ],
           ],
         ),
@@ -295,63 +359,153 @@ class _OpenBagContent extends StatelessWidget {
             ),
           ),
         ],
-        if (insufficient) ...[
-          const SizedBox(height: 14),
-          const Divider(height: 1, color: Color(0xFFECECEF)),
+
+        // ── Tube count pill ─────────────────────────────────────────────
+        if (requiredTubes > 0) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: (insufficient || isFull)
+                      ? const Color(0xFFFEF3C7)
+                      : const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.science_outlined,
+                      size: 12,
+                      color: (insufficient || isFull)
+                          ? AppColors.amberText
+                          : AppColors.blueText,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Order requires $requiredTubes tube${requiredTubes == 1 ? '' : 's'}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: (insufficient || isFull)
+                            ? AppColors.amberText
+                            : AppColors.blueText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+
+        // ── Bag full banner ─────────────────────────────────────────────
+        if (isFull && showActions) ...[
           const SizedBox(height: 12),
+          const Divider(height: 1, color: Color(0xFFECECEF)),
+          const SizedBox(height: 10),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.info_outline, size: 17, color: AppColors.amberText),
+              const Icon(
+                Icons.block_rounded,
+                size: 16,
+                color: AppColors.error,
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'This bag is full. Reopen another bag or start a new one.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w600,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Builder(
+            builder: (context) {
+              final closedSessions = (bag.allSessions as List)
+                  .where((s) => !s.isOpen)
+                  .toList();
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (closedSessions.isNotEmpty) ...[
+                    _TextAction(
+                      label: 'Reopen bag',
+                      onTap: () => showBagPicker(context, controller),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
+                  _TextAction(
+                    label: 'New bag',
+                    onTap: () => Get.to(() => const ScanBagPage()),
+                  ),
+                ],
+              );
+            },
+          ),
+        ]
+        // ── Insufficient capacity (not yet full) ────────────────────────
+        else if (insufficient) ...[
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: Color(0xFFECECEF)),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.info_outline,
+                size: 16,
+                color: AppColors.amberText,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'This order has ${controller.requiredSampleCount} samples, but only '
-                      '${controller.bagVacant} slot${controller.bagVacant == 1 ? '' : 's'} left in '
-                      'this bag. Start a new bag to keep the whole order together.',
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+                  'This order needs $requiredTubes tube${requiredTubes == 1 ? '' : 's'} but only '
+                  '$vacantDisplay slot${vacantDisplay == 1 ? '' : 's'} remain. '
+                  'Start a new bag to keep the order together.',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
                 ),
               ),
             ],
           ),
           if (showActions) ...[
-            const SizedBox(height: 10),
-            Builder(builder: (context) {
-              final closedSessions =
-              (bag.allSessions as List).where((s) => !s.isOpen).toList();
-              if (closedSessions.isEmpty) {
-                return _ActionButton(
-                  label: 'Start new bag',
-                  filled: false,
-                  onTap: () => Get.to(() => const ScanBagPage()),
-                );
-              }
-              return Row(
-                children: [
-                  Expanded(
-                    child: _ActionButton(
-                      label: closedSessions.length == 1 ? 'Reopen bag' : 'Reopen',
-                      filled: false,
-                      onTap: () {
-                        if (closedSessions.length == 1) {
-                          confirmOpenBag(context, closedSessions.first);
-                        } else {
-                          showBagPicker(context, controller);
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _ActionButton(
+            const SizedBox(height: 8),
+            Builder(
+              builder: (context) {
+                final closedSessions = (bag.allSessions as List)
+                    .where((s) => !s.isOpen)
+                    .toList();
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (closedSessions.isNotEmpty) ...[
+                      _TextAction(
+                        label: 'Reopen bag',
+                        onTap: () => showBagPicker(context, controller),
+                      ),
+                      const SizedBox(width: 16),
+                    ],
+                    _TextAction(
                       label: 'New bag',
-                      filled: false,
                       onTap: () => Get.to(() => const ScanBagPage()),
                     ),
-                  ),
-                ],
-              );
-            }),
+                  ],
+                );
+              },
+            ),
           ],
         ],
       ],
@@ -359,61 +513,34 @@ class _OpenBagContent extends StatelessWidget {
   }
 }
 
-/// --- Shared pressable CTA ------------------------------------------------
-///
-/// Real tap target (min 44pt tall) with a physical press response instead of
-/// a bare TextButton, so it can never render as an invisible/zero-size tap
-/// area.
-class _ActionButton extends StatefulWidget {
+/// Lightweight text-only action link — replaces the old elevated/outlined
+/// _ActionButton to keep the card compact and avoid heavy visual weight.
+class _TextAction extends StatelessWidget {
   final String label;
-  final bool filled;
   final VoidCallback onTap;
 
-  const _ActionButton({required this.label, required this.filled, required this.onTap});
-
-  @override
-  State<_ActionButton> createState() => _ActionButtonState();
-}
-
-class _ActionButtonState extends State<_ActionButton> {
-  bool _pressed = false;
+  const _TextAction({required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapCancel: () => setState(() => _pressed = false),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
+      onTap: () {
         HapticFeedback.lightImpact();
-        widget.onTap();
+        onTap();
       },
-      child: AnimatedScale(
-        scale: _pressed ? 0.97 : 1.0,
-        duration: const Duration(milliseconds: 100),
-        curve: Curves.easeOut,
-        child: Container(
-          height: 44,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: widget.filled ? AppColors.primary800 : Colors.transparent,
-            border: widget.filled ? null : Border.all(color: AppColors.primary800.withOpacity(0.35)),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            widget.label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: widget.filled ? Colors.white : AppColors.primary800,
-            ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w700,
+            color: AppColors.primary800,
+            decoration: TextDecoration.underline,
+            decorationColor: AppColors.primary800,
           ),
         ),
       ),
     );
   }
 }
-
-
-
-

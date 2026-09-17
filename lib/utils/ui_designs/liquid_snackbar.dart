@@ -116,8 +116,8 @@ class LiquidSnack {
     String? title,
     SnackVariant variant = SnackVariant.neutral,
     SnackPosition position = SnackPosition.bottom,
-    // Project rule: snackbars must never stay on screen longer than 2s.
-    Duration duration = const Duration(seconds: 2),
+    // Project rule: snackbars default duration 4s.
+    Duration duration = const Duration(seconds: 4),
     String? actionLabel,
     VoidCallback? onAction,
     VoidCallback? onDismiss,
@@ -182,7 +182,7 @@ class LiquidSnack {
   static Future<void> quick(
       String message, {
         SnackPosition position = SnackPosition.bottom,
-        Duration duration = const Duration(seconds: 2),
+        Duration duration = const Duration(seconds: 4),
       }) =>
       show(
         message: message,
@@ -192,39 +192,66 @@ class LiquidSnack {
         isQuick: true,
       );
 
-  static Future<void> success(String message, {String? title}) => show(
-    message: message,
-    title: title,
-    variant: SnackVariant.success,
-  );
+  static Future<void> success(
+    String message, {
+    String? title,
+    SnackPosition? position,
+    Duration? duration,
+  }) =>
+      show(
+        message: message,
+        title: title,
+        variant: SnackVariant.success,
+        position: position ?? SnackPosition.bottom,
+        duration: duration ?? const Duration(seconds: 4),
+      );
 
-  static Future<void> error(String message, {String? title, SnackPosition? position}) => show(
-    message: message,
-    title: title,
-    variant: SnackVariant.error,
-    position: position?? SnackPosition.bottom,
-    duration: const Duration(seconds: 2),
-  );
+  static Future<void> error(
+    String message, {
+    String? title,
+    SnackPosition? position,
+    Duration? duration,
+  }) =>
+      show(
+        message: message,
+        title: title,
+        variant: SnackVariant.error,
+        position: position ?? SnackPosition.bottom,
+        duration: duration ?? const Duration(seconds: 4),
+      );
 
-  static Future<void> warning(String message,  {String? title,Duration? duration }) => show(
-    message: message,
-    title: title,
-    variant: SnackVariant.warning,
-    duration: duration??const Duration(seconds: 2),
-  );
+  static Future<void> warning(
+    String message, {
+    String? title,
+    Duration? duration,
+  }) =>
+      show(
+        message: message,
+        title: title,
+        variant: SnackVariant.warning,
+        duration: duration ?? const Duration(seconds: 4),
+      );
 
-  static Future<void> info(String message, {String? title}) => show(
-    message: message,
-    title: title,
-    variant: SnackVariant.info,
-  );
+  static Future<void> info(
+    String message, {
+    String? title,
+    SnackPosition? position,
+    Duration? duration,
+  }) =>
+      show(
+        message: message,
+        title: title,
+        variant: SnackVariant.info,
+        position: position ?? SnackPosition.bottom,
+        duration: duration ?? const Duration(seconds: 4),
+      );
 
   static Future<void> withAction({
     required String message,
     required String actionLabel,
     required VoidCallback onAction,
     SnackVariant variant = SnackVariant.neutral,
-    Duration duration = const Duration(seconds: 2),
+    Duration duration = const Duration(seconds: 4),
   }) =>
       show(
         message: message,

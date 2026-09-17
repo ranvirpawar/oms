@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lifenity_connect/utils/animations/animated_tap_scale.dart';
 import 'package:lifenity_connect/utils/helper_functions/helper_methods.dart';
 
 // Unified dashboard tile card.
@@ -18,8 +17,6 @@ import 'package:lifenity_connect/utils/helper_functions/helper_methods.dart';
 // old file has been replaced with an inline press-scale animation so this
 // widget is self-contained.
 
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 /// Which visual treatment this tile should render. Always pass this
 /// explicitly — it is the single source of truth for layout selection.

@@ -17,7 +17,6 @@ import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/wi
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/order_instruction_card.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/order_summary_card.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/widgets/route_tracking_map.dart';
-import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
 import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -43,18 +42,27 @@ class OrderConfirmationScreen extends GetView<OrderConfirmationController> {
                   TapMenuItem(
                     icon: Icons.event_repeat_outlined,
                     label: 'Reschedule Sample Collection',
-                    onTap: () => RescheduleSheet.show(
-                      context,
-                      patient: controller.assignedPatient,
-                      onFetchSlots: (date) => controller.fetchAvailableSlots(date),
-                      onFetchReasons: () => controller.fetchRescheduleReasons(),
-                      onConfirm: (date, slot, reasonId) => controller.reschedule(
-                        controller.assignedPatient,
-                        newDate: date,
-                        slot: slot,
-                        rescheduleReasonId: reasonId,
+                      onTap: () => RescheduleSheet.show(
+                        context,
+                        patient: controller.assignedPatient,
+                        onFetchSlots: (date) => controller.fetchAvailableSlots(date),
+                        onFetchReasons: () => controller.fetchRescheduleReasons(),
+                        onConfirm: (date, slot, reasonId) => controller.reschedule(
+                          controller.assignedPatient,
+                          newDate: date,
+                          slot: slot,
+                          rescheduleReasonId: reasonId,
+                        ),
+                        onSendOtp: (mobileNo, orderId) => controller.sendRescheduleOtp(
+                          mobileNo: mobileNo,
+                          sampleCollectionOrderId: orderId,
+                        ),
+                        onVerifyOtp: (mobileNo, otp, orderId) => controller.verifyRescheduleOtp(
+                          mobileNo: mobileNo,
+                          otp: otp,
+                          sampleCollectionOrderId: orderId,
+                        ),
                       ),
-                    ),
                   ),
                 ],
               );
@@ -108,6 +116,7 @@ class OrderConfirmationScreen extends GetView<OrderConfirmationController> {
                   }.toList(),
                   initiallyExpanded: false,
                 ),
+                const SizedBox(height: 20),
 
               ],
             ),
@@ -115,11 +124,9 @@ class OrderConfirmationScreen extends GetView<OrderConfirmationController> {
               left: 0,
               right: 0,
               bottom: 0,
-              child: Obx(
-                    () => _ConfirmBar(
+              child: _ConfirmBar(
                   controller: controller,
-                  enabled: controller.hasOpenBag,
-                ),
+
               ),
             ),
           ],
@@ -131,55 +138,103 @@ class OrderConfirmationScreen extends GetView<OrderConfirmationController> {
 
 class _ConfirmBar extends StatelessWidget {
   final OrderConfirmationController controller;
-  final bool enabled;
 
-  const _ConfirmBar({required this.controller, required this.enabled});
+  const _ConfirmBar({required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SizedBox(
-        width: double.infinity,
-        height: 50,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.secondary700,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(26),
+    return Obx(() {
+      final isFull = controller.isBagFull;
+      final insufficient = controller.bagCapacityInsufficient;
+      // Blocked when: no open bag, bag is full, or bag won't fit this order's tubes
+      final blocked = !controller.hasOpenBag || isFull || insufficient;
+
+      String? blockReason;
+      if (!controller.hasOpenBag) {
+        blockReason = 'Open a bag first to proceed';
+      } else if (isFull) {
+        blockReason = 'Current bag is full — reopen or start a new bag';
+      } else if (insufficient) {
+        blockReason =
+            'Not enough space in bag for ${controller.requiredTubeCount} tube${controller.requiredTubeCount == 1 ? '' : 's'}';
+      }
+
+      return Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        decoration: BoxDecoration(
+          color: AppColors.bgCard,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, -4),
             ),
-            elevation: 0,
-          ),
-          onPressed: () {
-            if (enabled) {
-              controller.confirmAndCollect();
-            } else {
-              LiquidSnack.error(
-                'You need to open a bag first for sample collection',
-              );
-            }
-          },
-          child: const Text(
-            'Confirm Test Details',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
+          ],
         ),
-      ),
-    );
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (blockReason != null) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      isFull
+                          ? Icons.block_rounded
+                          : (!controller.hasOpenBag
+                              ? Icons.inventory_2_outlined
+                              : Icons.warning_amber_rounded),
+                      size: 14,
+                      color: AppColors.textMuted,
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        blockReason,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: blocked
+                      ? AppColors.secondary700.withOpacity(0.4)
+                      : AppColors.secondary700,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(26),
+                  ),
+                  elevation: 0,
+                ),
+                onPressed: blocked
+                    ? null
+                    : () => controller.confirmAndCollect(),
+                child: Text(
+                  'Confirm Test Details',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: blocked ? Colors.white60 : Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
   }
 }
 

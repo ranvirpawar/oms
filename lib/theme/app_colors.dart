@@ -241,7 +241,7 @@ class AppColors {
   static const Color amberBorder = Color(0xFFFBBF24);
 
   static const Color redLight    = Color(0xFFFEE2E2);
-  static const Color redText     = Color(0xFFDC2626);
+  static const Color redText     = Color(0xFFFF3B30);
   static const Color redBorder   = Color(0xFFFCA5A5);
 
   static const Color blue        = primary500;   // standalone blue, migrated from AppColorsOld

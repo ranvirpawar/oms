@@ -438,7 +438,7 @@ class SampleCollectionPayload {
     'SessionID': sessionId,
     'TubeCount' : tubeCount,
     'Notes': notes,
-    'CollectedAt': collectedAt.toUtc().toIso8601String(),
+    'CollectedAt': collectedAt.toIso8601String(),
 
     'SampleCollectionDetails':
     sampleCollectionDetails.map((e) => e.toJson()).toList(),

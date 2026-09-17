@@ -491,7 +491,7 @@ class _PatientCardState extends State<PatientCard> {
             _buildLisSyncCallout(),
             const SizedBox(height: 8),
             QueueActionButton(
-              label: 'Sync to LIS',
+              label: 'Sync to LIMS',
               color: AppColors.secondary700,
               gradient: AppColors.secondaryGradient,
               style: QueueActionStyle.gradient,
@@ -517,7 +517,7 @@ class _PatientCardState extends State<PatientCard> {
                     ? LiquidSnack.error(
                         'You are not allowed to reject this order',
                       )
-                    : widget.onReject,
+                    : widget.onReject?.call(),
               ),
             ),
             const SizedBox(width: 8),
@@ -700,7 +700,7 @@ class _PatientCardState extends State<PatientCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'LIS sync pending',
+                  'LIMS sync pending',
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w700,
@@ -710,7 +710,7 @@ class _PatientCardState extends State<PatientCard> {
                 SizedBox(height: 2),
                 Text(
                   'Sample data was saved, but sharing with the lab failed. '
-                  'Tap Sync to LIS to retry.',
+                  'Tap Sync to LIMS to retry.',
                   style: TextStyle(
                     fontSize: 11,
                     height: 1.3,

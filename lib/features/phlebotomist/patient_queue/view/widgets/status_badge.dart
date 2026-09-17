@@ -296,7 +296,7 @@ class StatusBadge extends StatelessWidget {
       case PatientStatus.receivedAtLis:
       // OrderStatusID 13 / RAL
         return const _StatusStyle(
-          'Received At LIS',
+          'Received At LIMS',
           AppColors.tealText,
           AppColors.tealLight,
           Icons.inbox_outlined,

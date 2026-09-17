@@ -12,7 +12,6 @@ import '../../../theme/app_colors.dart';
 
 import 'package:flutter/services.dart';
 
-import '../../../utils/widgets/metrics_data.dart';
 import '../../../utils/widgets/metrics_strip.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -26,13 +25,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     with SingleTickerProviderStateMixin {
   final DashboardController controller = Get.put(DashboardController());
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final LayerLink _pillLink = LayerLink();
 
   late final AnimationController _pulseController;
   late final Animation<double> _pulse;
-
-  OverlayEntry? _dropdownEntry;
-  bool _pillExpanded = false;
 
   static const _bg = Color(0xFFF6F7FB);
   static const _ink = Color(0xFF161A2B);
@@ -53,59 +48,8 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   void dispose() {
-    _dropdownEntry?.remove();
-    _dropdownEntry = null;
-
     _pulseController.dispose();
-
     super.dispose();
-  }
-
-  // ── Dropdown plumbing ──────────────────────────────────────────────────
-  void _togglePillDropdown() {
-    if (_pillExpanded) {
-      _removeDropdown();
-    } else {
-      _showDropdown();
-    }
-  }
-
-  void _showDropdown() {
-    final overlay = Overlay.of(context);
-    _dropdownEntry = OverlayEntry(
-      builder: (_) => Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: _removeDropdown,
-            ),
-          ),
-          CompositedTransformFollower(
-            link: _pillLink,
-            showWhenUnlinked: false,
-            offset: const Offset(0, 58),
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: _buildPillDropdown(),
-            ),
-          ),
-        ],
-      ),
-    );
-    overlay.insert(_dropdownEntry!);
-    setState(() => _pillExpanded = true);
-  }
-
-  void _removeDropdown() {
-    _dropdownEntry?.remove();
-    _dropdownEntry = null;
-
-    if (mounted) {
-      setState(() {
-        _pillExpanded = false;
-      });
-    }
   }
 
   // ── Identity helpers ────────────────────────────────────────────────────
@@ -176,41 +120,23 @@ class _DashboardScreenState extends State<DashboardScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Obx(() {
-                        final items = <MetricData>[
-                          MetricData(
-                            value: controller.assignedPatientsCount.value.toString().padLeft(2, '0'),
-                            label: 'Assigned\nPatients',
-                            icon: Icons.people_alt_rounded,
-                            dot: const Color(0xFF3B82F6),
-                          ),
-                          MetricData(
-                            value: controller.testCollectedCount.value.toString().padLeft(2, '0'),
-                            label: 'Clinic\nCollections',
-                            icon: Icons.science_rounded,
-                            dot: const Color(0xFF22C55E),
-                          ),
-                          MetricData(
-                            value: controller.handoverCount.value.toString().padLeft(2, '0'),
-                            label: 'Home\nCollections',
-                            icon: Icons.swap_horiz_rounded,
-                            dot: const Color(0xFF8B5CF6),
-                          ),
-                          MetricData(
-                            value: controller.pendingHandoverCount.value.toString().padLeft(2, '0'),
-                            label: 'Served\nRequests',
-                            icon: Icons.hourglass_bottom_rounded,
-                            dot: const Color(0xFFF59E0B),
-                          ),
-                        ];
+                        final items = controller.getRoleBasedMetrics();
+                        if (items.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
 
-                        return MetricsStrip(
-                          items: items,
-                          cellAlignment: CrossAxisAlignment.start,
-                          animationBuilder: (child) => _FadeSlideIn(index: 0, child: child),
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            MetricsStrip(
+                              items: items,
+                              cellAlignment: items.length > 3 ?CrossAxisAlignment.start: CrossAxisAlignment.center,
+                              animationBuilder: (child) => _FadeSlideIn(index: 0, child: child),
+                            ),
+                            const SizedBox(height: 26),
+                          ],
                         );
                       }),
-                      // Obx(() => _buildStatsCard()),
-                      const SizedBox(height: 26),
                       _sectionLabel(cs, 'Quick Actions'),
                       const SizedBox(height: 14),
                       Obx(() {
@@ -301,212 +227,104 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-// ── Availability pill (existing behaviour, fixed position) ────────────
+  // ── Availability pill ──────────────────────────────────────────────────
   Widget _buildAvailabilityPill() {
-    return CompositedTransformTarget(
-      link: _pillLink,
-      child: _PressableScale(
-        onTap: _togglePillDropdown,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Obx(() {
-            final available = controller.isAvailable.value;
-            return Row(
-              children: [
-                AnimatedBuilder(
-                  animation: _pulse,
-                  builder: (_, child) {
-                    final scale = available ? 1.0 + (_pulse.value * 0.4) : 1.0;
-                    return Transform.scale(scale: scale, child: child);
-                  },
-                  child: Container(
-                    width: 9,
-                    height: 9,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: available
-                          ? const Color(0xFF22C55E) // Green for Punch In
-                          : Colors.orange, // Orange for Punch Out
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
-                  child: Text(
-                    available ? 'Punch In' : 'Punch Out',
-                    key: ValueKey(available),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: _ink,
-                    ),
-                  ),
-                ),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 12),
-                  width: 1,
-                  height: 16,
-                  color: Colors.black.withOpacity(0.1),
-                ),
-                const Icon(
-                  Icons.location_on_rounded,
-                  color: Color(0xFF3B82F6),
-                  size: 18,
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    controller.currentLocation.value,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black.withOpacity(0.65),
-                    ),
-                  ),
-                ),
-                AnimatedRotation(
-                  turns: _pillExpanded ? 0.5 : 0,
-                  duration: const Duration(milliseconds: 220),
-                  child: Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    size: 20,
-                    color: Colors.black.withOpacity(0.4),
-                  ),
-                ),
-              ],
-            );
-          }),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPillDropdown() {
-    // Wrapped the entire dropdown in a Material widget to provide default
-    // text styling and remove the yellow fallback lines in the Overlay.
-    return Material(
-      type: MaterialType.transparency,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 210, maxWidth: 260),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.12),
-                blurRadius: 22,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Obx(
-                    () => _DropdownAction(
-                  icon: controller.isAvailable.value
-                      ? Icons.pause_circle_outline_rounded
-                      : Icons.play_circle_outline_rounded,
-                  label: controller.isAvailable.value
-                      ? 'Punch Out'
-                      : 'Punch In',
-                  onTap: () {
-                    controller.toggleAvailability();
-                    _removeDropdown();
-                  },
-                ),
-              ),
-              Divider(height: 1, color: Colors.black.withOpacity(0.06)),
-              _DropdownAction(
-                icon: Icons.my_location_rounded,
-                label: 'Refresh location',
-                onTap: () {
-                  controller.refreshLocation();
-                  _removeDropdown();
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-  // ── Compact elevated metrics card ──────────────────────────────────────
-  Widget _buildStatsCard() {
-    final items = <MetricData>[
-      MetricData(
-        value: controller.assignedPatientsCount.value.toString().padLeft(
-          2,
-          '0',
-        ),
-        label: 'Assigned\nPatients',
-        icon: Icons.people_alt_rounded,
-        dot: const Color(0xFF3B82F6),
-      ),
-      MetricData(
-        value: controller.testCollectedCount.value.toString().padLeft(2, '0'),
-        label: 'Clinic Collections',
-        icon: Icons.science_rounded,
-        dot: const Color(0xFF22C55E),
-      ),
-      MetricData(
-        value: controller.handoverCount.value.toString().padLeft(2, '0'),
-        label: 'Home Requests',
-        icon: Icons.swap_horiz_rounded,
-        dot: const Color(0xFF8B5CF6),
-      ),
-      MetricData(
-        value: controller.pendingHandoverCount.value.toString().padLeft(2, '0'),
-        label: 'Pending\nHandover',
-        icon: Icons.hourglass_bottom_rounded,
-        dot: const Color(0xFFF59E0B),
-      ),
-    ];
-
-    return _FadeSlideIn(
-      index: 0,
+    return _PressableScale(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        controller.toggleAvailability();
+      },
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(30),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
-        child: Row(
-          children: List.generate(items.length * 2 - 1, (i) {
-            if (i.isOdd) {
-              return Container(
-                width: 1,
-                height: 40,
-                color: Colors.black.withOpacity(0.07),
-              );
-            }
-            return Expanded(child: MetricCell(data: items[i ~/ 2]));
-          }),
-        ),
+        child: Obx(() {
+          final available = controller.isAvailable.value;
+          return Row(
+            children: [
+              AnimatedBuilder(
+                animation: _pulse,
+                builder: (_, child) {
+                  final scale = available ? 1.0 + (_pulse.value * 0.4) : 1.0;
+                  return Transform.scale(scale: scale, child: child);
+                },
+                child: Container(
+                  width: 9,
+                  height: 9,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: available
+                        ? const Color(0xFF22C55E) // Green for Punch In
+                        : Colors.orange, // Orange for Punch Out
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                child: Text(
+                  available ? 'Punch In' : 'Punch Out',
+                  key: ValueKey(available),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: _ink,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: available
+                      ? const Color(0xFFFEF2F2)
+                      : const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: available
+                        ? const Color(0xFFFECACA)
+                        : const Color(0xFFBBF7D0),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      available ? Icons.logout_rounded : Icons.login_rounded,
+                      size: 13,
+                      color: available
+                          ? const Color(0xFFDC2626)
+                          : const Color(0xFF16A34A),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      available ? 'Punch Out' : 'Punch In',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: available
+                            ? const Color(0xFFDC2626)
+                            : const Color(0xFF16A34A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        }),
       ),
     );
   }
@@ -635,44 +453,6 @@ class _ShimmerGrid extends StatelessWidget {
 }
 
 // ── Small reusable pieces ────────────────────────────────────────────────
-
-
-class _DropdownAction extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _DropdownAction({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _PressableScale(
-      onTap: onTap,
-      scaleDown: 0.98,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: Colors.black.withOpacity(0.65)),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF161A2B),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 /// Generic press-scale wrapper — every tappable surface in this screen
 /// reacts physically rather than relying on a bare ripple.

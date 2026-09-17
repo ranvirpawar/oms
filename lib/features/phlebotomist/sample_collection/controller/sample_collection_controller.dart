@@ -99,15 +99,15 @@ class SampleCollectionController extends GetxController with HasBagContext {
   bool get allSamplesResolved =>
       sampleEntries.isNotEmpty && sampleEntries.every((e) => e.isResolved);
 
-  /// Number of sample types this order requires — compared against the
-  /// active bag's remaining capacity to warn if it won't all fit.
+  /// Tube count for the active order — each sampleRequirement = 1 tube.
   @override
-  int get requiredSampleCount {
+  int get requiredTubeCount {
     return orderDetails.value?.totalSampleTypes ?? 0;
   }
 
+  @override
   bool get bagCapacityInsufficient =>
-      hasOpenBag && bagCapacity > 0 && bagVacant < requiredSampleCount;
+      hasOpenBag && bagCapacity > 0 && bagVacant < requiredTubeCount;
 
   @override
   void onInit() {
@@ -481,7 +481,7 @@ class SampleCollectionController extends GetxController with HasBagContext {
     try {
       final payload = _buildPayload();
       kPrint('Save Payload: ${payload.toJson().toString()}');
-      return null;
+
 
       await _service.submitSampleCollection(payload);
       // Refresh the shared bag state silently so capacity reflects this
@@ -608,6 +608,30 @@ class SampleCollectionController extends GetxController with HasBagContext {
     return _patientQueueService.fetchAvailableSlots(
       userId: empId.value,
       appointmentDate: date,
+    );
+  }
+
+  Future<bool> sendRescheduleOtp({
+    required String mobileNo,
+    required int sampleCollectionOrderId,
+  }) {
+    return _patientQueueService.sendRescheduleOtp(
+      mobileNo: mobileNo,
+      createdBy: _userId,
+      sampleCollectionOrderId: sampleCollectionOrderId,
+    );
+  }
+
+  Future<bool> verifyRescheduleOtp({
+    required String mobileNo,
+    required String otp,
+    required int sampleCollectionOrderId,
+  }) {
+    return _patientQueueService.verifyRescheduleOtp(
+      mobileNo: mobileNo,
+      otp: otp,
+      sampleCollectionOrderId: sampleCollectionOrderId,
+      verifyBy: _userId,
     );
   }
 

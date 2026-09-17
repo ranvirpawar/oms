@@ -426,13 +426,7 @@ class _NoOpenBagCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      if (closedSessions.length == 1) {
-                        confirmOpenBag(context, closedSessions.first);
-                      } else {
-                        showBagPicker(context, controller);
-                      }
-                    },
+                    onPressed: () => showBagPicker(context, controller),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary700,
                       foregroundColor: Colors.white,

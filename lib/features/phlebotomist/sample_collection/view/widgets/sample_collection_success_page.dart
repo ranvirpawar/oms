@@ -27,9 +27,9 @@ class SampleCollectionSuccessPage extends StatelessWidget {
         context: context,
         builder: (ctx) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('LIS sync pending'),
+          title: const Text('LIMS sync pending'),
           content: const Text(
-            'This order hasn\'t synced to LIS yet. You can finish now and '
+            'This order hasn\'t synced to LIMS yet. You can finish now and '
                 'sync it later, or stay and try again.',
           ),
           actions: [
@@ -65,60 +65,81 @@ class SampleCollectionSuccessPage extends StatelessWidget {
         backgroundColor: const Color(0xFFF6F8FB),
         body: SafeArea(
           child: Column(
+
             children: [
+
               Expanded(
-                child: SingleChildScrollView(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 24),
-                      const _AnimatedCheckCircle(size: 128),
-                      const SizedBox(height: 28),
-                      _FadeSlideIn(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 32,
+                      ),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight - 64,
+                        ),
                         child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              'Sample Collection Complete',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineSmall
-                                  ?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF111827),
+                            const SizedBox(height: 24),
+
+                            const _AnimatedCheckCircle(size: 128),
+
+                            const SizedBox(height: 28),
+
+                            _FadeSlideIn(
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'Sample Collection Complete',
+                                    textAlign: TextAlign.center,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineSmall
+                                        ?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF111827),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE5E7EB),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      'Order #${result.orderId}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF374151),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 10),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE5E7EB),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                'Order #${result.orderId}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF374151),
+
+                            const SizedBox(height: 28),
+
+                            if (result.needsDishaSync)
+                              _FadeSlideIn(
+                                delay: const Duration(milliseconds: 150),
+                                child: _DishaSyncCard(
+                                  controller: controller,
+                                  result: result,
                                 ),
                               ),
-                            ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 28),
-                      if (result.needsDishaSync)
-                        _FadeSlideIn(
-                          delay: const Duration(milliseconds: 150),
-                          child: _DishaSyncCard(
-                            controller: controller,
-                            result: result,
-                          ),
-                        ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
               _DoneButtonBar(onPressed: () => _onDonePressed(context)),
@@ -289,8 +310,8 @@ class _DishaSyncCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     resolved
-                        ? 'Synced to Disha'
-                        : 'Order saved — Disha sync pending',
+                        ? 'Synced to LIMS'
+                        : 'Order saved — LIMS sync pending',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: resolved
@@ -305,9 +326,9 @@ class _DishaSyncCard extends StatelessWidget {
             Text(
               resolved
                   ? (message.isEmpty
-                  ? 'This order is now synced to Disha.'
+                  ? 'This order is now synced to LIMS.'
                   : message)
-                  : 'The sample data was saved, but the push to Disha failed. '
+                  : 'The sample data was saved, but the push to LIMS failed. '
                   'You can retry now or later from the queue.',
               style: TextStyle(
                 fontSize: 13,
@@ -328,7 +349,7 @@ class _DishaSyncCard extends StatelessWidget {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                       : const Icon(Icons.cloud_sync_rounded, size: 18),
-                  label: Text(isLoading ? 'Syncing…' : 'Sync to Disha'),
+                  label: Text(isLoading ? 'Syncing…' : 'Sync to LIMS'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF92400E),
                     side: const BorderSide(color: Color(0xFFF59E0B)),

@@ -240,7 +240,7 @@ class _BagDetailsCard extends StatelessWidget {
                 ],
               ),
 
-              // ── View Details button ──────────────────────────────────────
+             /* // ── View Details button ──────────────────────────────────────
               const SizedBox(height: 10),
               Obx(() {
                 final hasFacilities =
@@ -293,7 +293,7 @@ class _BagDetailsCard extends StatelessWidget {
                     ),
                   ),
                 );
-              }),
+              }),*/
             ],
           ),
         ),

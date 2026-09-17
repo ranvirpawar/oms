@@ -442,6 +442,8 @@ class _Body extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Divider(height: 20),
+            /// fasting tag
+            
 
             if (sampleGroups.isNotEmpty) ...[
               Row(
@@ -469,6 +471,7 @@ class _Body extends StatelessWidget {
               const SizedBox(height: 10),
               ...sampleGroups.map((g) => _SampleGroupTable(group: g)),
             ],
+
           ],
         ),
       ),

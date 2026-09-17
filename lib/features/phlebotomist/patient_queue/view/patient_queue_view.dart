@@ -203,6 +203,17 @@ class PatientQueueView extends GetView<PatientQueueController> {
                                 slot: slot,
                                 rescheduleReasonId: reasonId,
                               ),
+                          onSendOtp: (mobileNo, orderId) =>
+                              controller.sendRescheduleOtp(
+                                mobileNo: mobileNo,
+                                sampleCollectionOrderId: orderId,
+                              ),
+                          onVerifyOtp: (mobileNo, otp, orderId) =>
+                              controller.verifyRescheduleOtp(
+                                mobileNo: mobileNo,
+                                otp: otp,
+                                sampleCollectionOrderId: orderId,
+                              ),
                         ),
                         onPrimaryAction: () => _handlePrimaryAction(patient),
                         onStartRoute: () => controller.startRoute(patient),

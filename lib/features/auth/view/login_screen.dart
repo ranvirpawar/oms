@@ -186,7 +186,7 @@ class _CredentialsStep extends StatelessWidget {
                       keyboardType: TextInputType.text,
                       cursorColor: Colors.white,
                       maxLength: 10,
-                      inputFormatters: InputFormatters.digits,
+                      // inputFormatters: InputFormatters.digits,
 
                       // autofillHints: const [AutofillHints.username],
                       // textInputAction: TextInputAction.next,

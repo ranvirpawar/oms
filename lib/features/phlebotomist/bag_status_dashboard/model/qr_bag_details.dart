@@ -16,6 +16,8 @@ class QRBagDetails {
     qrCode: json['QRCode'] ?? '',
     capacity: json['Capacity'] ?? 0,
     patientCount: json['PatientCOunt'] ?? 0,
-    spaceVacant: json['SpaceVacant'] ?? 0,
+    spaceVacant: (json['SpaceVacant'] ?? 0) < 0
+        ? 0
+        : json['SpaceVacant'] ?? 0,
   );
 }

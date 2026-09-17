@@ -244,7 +244,7 @@ class SampleCollectionService {
         throw SampleCollectionException(
           respBody['message'] as String? ??
               dishaMessage ??
-              'Sample collection saved, but the LIS sync failed.',
+              'Sample collection saved, but the LIMS sync failed.',
           isLisSyncFailure: true,
         );
       }
