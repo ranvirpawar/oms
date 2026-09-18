@@ -576,7 +576,7 @@ class PatientQueueController extends GetxController {
     try {
       await _sampleCollectionService.resubmitToDisha(orderId: patient.orderId,userId: empId.value);
       LiquidSnack.success(
-        'Order ${patient.orderId} was pushed to Disha successfully.',
+        'Order ${patient.orderId} was pushed to LIMS successfully.',
         title: 'Synced to LIMS',
       );
       await fetchPatients(); // refresh from server

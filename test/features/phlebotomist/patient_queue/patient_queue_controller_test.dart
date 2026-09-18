@@ -53,7 +53,7 @@ class _RecordingSampleCollectionService extends SampleCollectionService {
   @override
   Future<bool> resubmitToDisha({required String orderId,required String userId }) async {
     if (shouldFail) {
-      throw SampleCollectionException('Disha is not reachable.');
+      throw SampleCollectionException('LIMS is not reachable.');
     }
     resubmittedOrderIds.add(orderId);
     return true;
@@ -214,7 +214,7 @@ void main() {
   });
 
   testWidgets(
-      'syncToLis resubmits the order to Disha with the right order id '
+      'syncToLis resubmits the order to LIMS with the right order id '
       'then refreshes the queue', (tester) async {
     await tester.pumpWidget(const GetMaterialApp(home: SizedBox()));
 

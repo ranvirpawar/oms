@@ -324,12 +324,12 @@ class SampleCollectionService {
       final status = (body['status'] as String?)?.trim().toLowerCase();
       if (status == 'fail insert disha') {
         throw SampleCollectionException(
-          body['message'] as String? ?? 'Disha sync is still pending.',
+          body['message'] as String? ?? 'LIMS sync is still pending.',
         );
       }
       if (status != 'success') {
         throw SampleCollectionException(
-          body['message'] as String? ?? 'Disha sync is still pending.',
+          body['message'] as String? ?? 'LIMS sync is still pending.',
         );
       }
       return true;
@@ -338,7 +338,7 @@ class SampleCollectionService {
     } catch (e) {
       kPrint(e.toString());
       throw SampleCollectionException(
-        'Unable to reach Disha right now. Please try again shortly.',
+        'Unable to reach LIMS right now. Please try again shortly.',
         isNetworkError: true,
       );
     }

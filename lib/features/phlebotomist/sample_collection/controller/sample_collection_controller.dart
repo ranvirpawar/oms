@@ -539,7 +539,7 @@ class SampleCollectionController extends GetxController with HasBagContext {
     try {
       await _service.resubmitToDisha(orderId: orderId, userId: empId.value);
       dishaSyncResolved.value = true;
-      dishaRetryMessage.value = 'Synced to Disha successfully.';
+      dishaRetryMessage.value = 'Synced to LIMS successfully.';
     } on SampleCollectionException catch (e) {
       dishaRetryMessage.value = e.message;
     } catch (e) {
