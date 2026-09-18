@@ -138,6 +138,9 @@ class PatientQueueView extends GetView<PatientQueueController> {
               filters: controller.statusFilters,
               activeStatus: controller.activeStatusFilter.value,
               onFilterSelected: controller.setStatusFilter,
+              isEmergencyActive: controller.isEmergencyOnly.value,
+              emergencyCount: controller.emergencyCount,
+              onEmergencyToggle: controller.toggleEmergencyFilter,
             ),
           ),
           Expanded(

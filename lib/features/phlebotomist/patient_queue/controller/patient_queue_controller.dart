@@ -230,12 +230,27 @@ class PatientQueueController extends GetxController {
 
   bool get isSearching => searchQuery.value.isNotEmpty;
 
-  /// True when any *clearable* filter is active (search, status, or a
+  final RxBool isEmergencyOnly = false.obs;
+
+  int get emergencyCount => _contextPatients
+      .where(
+        (p) =>
+            p.priority == PriorityLevel.high ||
+            p.priority == PriorityLevel.urgent,
+      )
+      .length;
+
+  void toggleEmergencyFilter() {
+    isEmergencyOnly.value = !isEmergencyOnly.value;
+  }
+
+  /// True when any *clearable* filter is active (search, status, emergency, or a
   /// non-default date horizon). The visit-type tab is a context switch,
   /// not a filter, so it's intentionally excluded here.
   bool get hasActiveFilters =>
       isSearching ||
           activeStatusFilter.value != null ||
+          isEmergencyOnly.value ||
           activeDateFilter.value != QueueDateFilter.today;
 
   /// user loading
@@ -383,6 +398,7 @@ class PatientQueueController extends GetxController {
   void clearAllFilters() {
     clearSearch();
     setStatusFilter(null);
+    isEmergencyOnly.value = false;
     setDateFilter(QueueDateFilter.today);
   }
 
@@ -780,6 +796,14 @@ class PatientQueueController extends GetxController {
   List<AssignedPatient> get filteredPatients {
     Iterable<AssignedPatient> result = _contextPatients;
 
+    if (isEmergencyOnly.value) {
+      result = result.where(
+        (p) =>
+            p.priority == PriorityLevel.high ||
+            p.priority == PriorityLevel.urgent,
+      );
+    }
+
     final statusFilter = activeStatusFilter.value;
     if (statusFilter != null) {
       result = result.where((p) => p.status == statusFilter);
@@ -790,8 +814,8 @@ class PatientQueueController extends GetxController {
       // Search covers name, address, and test only (order id / other
       // fields intentionally excluded).
       result = result.where(
-            (p) =>
-        p.name.toLowerCase().contains(query) ||
+        (p) =>
+            p.name.toLowerCase().contains(query) ||
             (p.address?.toLowerCase().contains(query) ?? false) ||
             p.tests.any((t) => t.toLowerCase().contains(query)),
       );
@@ -799,8 +823,21 @@ class PatientQueueController extends GetxController {
 
     final list = result.toList()
       ..sort((a, b) {
+        // Absolute Priority: High/Urgent priority orders float to the top
+        final aIsEmergency =
+            a.priority == PriorityLevel.high ||
+            a.priority == PriorityLevel.urgent;
+        final bIsEmergency =
+            b.priority == PriorityLevel.high ||
+            b.priority == PriorityLevel.urgent;
+
+        if (aIsEmergency && !bIsEmergency) return -1;
+        if (!aIsEmergency && bIsEmergency) return 1;
+
         // Primary: lifecycle-stage rank (action-taken cards first).
-        final rankCompare = _statusRank(a.status).compareTo(_statusRank(b.status));
+        final rankCompare = _statusRank(
+          a.status,
+        ).compareTo(_statusRank(b.status));
         if (rankCompare != 0) return rankCompare;
 
         // Tiebreaker within the same status: priority level.

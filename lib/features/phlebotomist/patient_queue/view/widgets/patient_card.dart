@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -8,21 +9,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../model/patient_queue_model.dart';
 import 'action_pop_up.dart';
+import 'emergency_badge.dart';
 import 'priority_indicator.dart';
-import 'queue_action_button.dart';
-import 'queue_info_chip.dart';
-import 'status_badge.dart';
-import 'visit_type_badge.dart';
-
-import 'dart:io';
-
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-import '../../../../../theme/app_colors.dart';
-import '../../model/patient_queue_model.dart';
 import 'queue_action_button.dart';
 import 'queue_info_chip.dart';
 import 'status_badge.dart';
@@ -74,6 +62,10 @@ class _PatientCardState extends State<PatientCard> {
 
   bool get _isTerminal => widget.patient.status.isTerminal;
 
+  bool get _isEmergency =>
+      widget.patient.priority == PriorityLevel.high ||
+      widget.patient.priority == PriorityLevel.urgent;
+
   @override
   Widget build(BuildContext context) {
     return Opacity(
@@ -123,18 +115,15 @@ class _PatientCardState extends State<PatientCard> {
   // -- Header: visit type ribbon (edge-to-edge) + status badge ------------
   Widget _buildHeader() {
     return Container(
-      decoration: const BoxDecoration(color: AppColors.bgCardAlt),
+      decoration: const BoxDecoration(color: AppColors.bgCardAlt), // no emergency tint
       child: IntrinsicHeight(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            VisitTypeBadge(
-              visitType: widget.patient.visitType,
-              cornerRadius: 16,
-            ),
+            VisitTypeBadge(visitType: widget.patient.visitType, cornerRadius: 16),
             Padding(
-              padding: const EdgeInsets.only(right: 10, top: 5, bottom: 5),
+              padding: const EdgeInsets.only(right: 10, top: 4, bottom: 4),
               child: StatusBadge(status: widget.patient.status, compact: true),
             ),
           ],
@@ -182,10 +171,16 @@ class _PatientCardState extends State<PatientCard> {
             ],
           ),
         ),
-        if (widget.patient.phone?.isNotEmpty == true) ...[
-          const SizedBox(width: 8),
-          _buildCallButton(widget.patient.phone!),
-        ],
+        Column(
+          children: [if (_isEmergency)
+            PriorityCornerBadge(priority: widget.patient.priority),
+            if (widget.patient.phone?.isNotEmpty == true) ...[
+              const SizedBox(height: 8),
+              _buildCallButton(widget.patient.phone!),
+            ],
+          ],
+        )
+
       ],
     );
   }
