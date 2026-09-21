@@ -3,10 +3,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lifenity_connect/constants/app_assets.dart';
+import 'package:lifenity_connect/features/lab_technician/accept_handover_bag/view/widgets/scanner_bottomsheet.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../utils/widgets/custom_appbar.dart';
-import '../../../phlebotomist/accept_bag/view/widget/scanner_bottomsheet.dart';
 import '../controller/handover_bag_controller.dart';
 class HandoverBagView extends StatelessWidget {
   const HandoverBagView({super.key});

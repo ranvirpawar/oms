@@ -7,7 +7,6 @@ import 'package:lifenity_connect/features/cms_eho/view/consumption_dashboard.dar
 import 'package:lifenity_connect/features/dashboard/view/dashboard_screen.dart';
 import 'package:lifenity_connect/features/lab_technician/passkey/view/passkey_view.dart';
 import 'package:lifenity_connect/features/lab_technician/sample_accept/view/sample_accept_view.dart';
-import 'package:lifenity_connect/features/phlebotomist/accept_bag/view/accept_bag_view.dart';
 import 'package:lifenity_connect/features/phlebotomist/bag_status/view/bag_status_page.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/patient_queue_view.dart';
 import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/view/bag_registration_dashboard.dart';
@@ -172,13 +171,7 @@ class RouteManager {
     );
   }
 
-  static void navigateToAcceptBag() {
-    Get.to(
-      () => AcceptBagView(),
-      transition: Transition.rightToLeft,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
+
 
   static void navigateToBagStatus() {
     Get.to(

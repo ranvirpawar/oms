@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lifenity_connect/features/lab_technician/accept_handover_bag/view/widgets/action_button.dart';
 import 'package:lifenity_connect/features/lab_technician/accept_handover_bag/view/widgets/manual_input.dart';
+import 'package:lifenity_connect/features/lab_technician/accept_handover_bag/view/widgets/scanner_bottomsheet.dart';
 import 'package:lifenity_connect/features/lab_technician/accept_handover_bag/view/widgets/scanner_widget.dart';
 import 'package:lifenity_connect/features/lab_technician/accept_handover_bag/view/widgets/section_header.dart';
 import 'package:lifenity_connect/features/lab_technician/accept_handover_bag/view/widgets/session_container.dart';
@@ -14,7 +15,6 @@ import '../../../../constants/app_strings.dart';
 
 import '../../../../theme/app_colors.dart';
 import '../../../../utils/widgets/custom_appbar.dart';
-import '../../../phlebotomist/accept_bag/view/widget/scanner_bottomsheet.dart';
 import '../controller/accept_bag_in_lab_controller.dart';
 import '../model/bag_details_extended_model.dart';
 import '../model/bag_model_new.dart';

@@ -7,7 +7,7 @@ import 'package:lifenity_connect/constants/app_assets.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../utils/widgets/custom_appbar.dart';
-import '../../../phlebotomist/accept_bag/view/widget/scanner_bottomsheet.dart';
+import '../../../lab_technician/accept_handover_bag/view/widgets/scanner_bottomsheet.dart';
 import '../controller/collect_bag_from_phlebo_controller.dart';
 import '../model/qr_bag_detail.dart';
 
