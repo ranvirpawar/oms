@@ -3,21 +3,16 @@ import 'package:get/get.dart';
 import 'package:lifenity_connect/features/auth/model/login_response_model.dart';
 import 'package:lifenity_connect/features/auth/view/login_screen.dart';
 import 'package:lifenity_connect/features/auth/view/my_profile.dart';
-import 'package:lifenity_connect/features/cms_eho/view/consumption_dashboard.dart';
 import 'package:lifenity_connect/features/dashboard/view/dashboard_screen.dart';
 import 'package:lifenity_connect/features/phlebotomist/bag_status/view/bag_status_page.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/patient_queue_view.dart';
 import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/view/bag_registration_dashboard.dart';
-import 'package:lifenity_connect/features/phlebotomist/patient_registration/view/registered_patient_list.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/order_confirmation_screen.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_recollection/view/sample_recollection_list_view.dart';
 import 'package:lifenity_connect/features/runner_boy/collect_empty_bag/view/collect_destination_bag.dart';
 import 'package:lifenity_connect/features/runner_boy/collect_from_phlebotomist/view/collect_bag_from_phlebo.dart';
 import 'package:lifenity_connect/features/runner_boy/collected_sample_bags/view/collected_bags_view.dart';
-import 'package:lifenity_connect/features/team_lead/sample_remark/view/sample_remark_view.dart';
-import 'package:lifenity_connect/features/cms_eho/view/performance_dashboard.dart';
-import 'package:lifenity_connect/features/cms_eho/view/summary_dashboard.dart';
-import 'package:lifenity_connect/features/team_lead/zero_sample_calendar/view/zero_calendar_view.dart';
+
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/binding/sample_collection_binding.dart';
 
 import '../features/auth/binding/profile_binding.dart';
@@ -27,12 +22,9 @@ import '../features/lab_technician/accept_handover_bag/view/accept_bag_in_lab_vi
 import '../features/lab_technician/accept_handover_bag/view/handover_bag_view.dart';
 import '../features/phlebotomist/patient_queue/controller/patient_queue_controller.dart';
 import '../features/phlebotomist/patient_queue/model/patient_queue_model.dart';
-import '../features/phlebotomist/patient_registration/view/patient_detail_page.dart';
-import '../features/phlebotomist/patient_registration/view/patient_registration_view.dart';
 import '../features/phlebotomist/sample_collection/controller/order_confirmation_controller.dart';
 import '../features/phlebotomist/sample_collection/controller/sample_collection_controller.dart';
 import '../features/phlebotomist/sample_recollection/controller/sample_recollection_controller.dart';
-import '../features/cms_eho/view/test_analysis_page.dart';
 import '../features/team_lead/sample_live_tracking/view/live_tracking_view.dart';
 import '../features/auth/binding/login_binding.dart';
 import '../features/phlebotomist/patient_queue/binding/patient_queue_binding.dart';
@@ -57,14 +49,7 @@ class RouteManager {
 
   static void redirectToSignUp() {}
 
-  static void navigateToPatientRegistration(String bagId) {
-    Get.to(
-      () => PatientRegistrationPage(),
-      arguments: {'bagId': bagId},
-      transition: Transition.rightToLeft,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
+
 
   static void navigateToBagStatusDashboard({isBack = false}) {
     if (isBack) {
@@ -84,17 +69,6 @@ class RouteManager {
 
 
 
-  static void navigateToPatientDetailPage(patient, controller) {
-    Get.to(
-      () => PatientDetailPage(patient: patient, controller: controller),
-      transition: Transition.cupertino,
-    );
-  }
-
-
-
-
-
   static void navigateToSampleRecollection([bool isRefresh = false]) {
     if (isRefresh) {
       if (Get.isRegistered<SampleRecollectionController>()) {
@@ -104,26 +78,6 @@ class RouteManager {
 
     Get.to(
       () => SampleRecollectionView(isRefresh: isRefresh),
-      transition: Transition.rightToLeft,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
-
-
-
-  static void navigateToPatientRegistrationList({
-    required dynamic facilityData,
-    required DateTime fromDate,
-    DateTime? toDate,
-  }) {
-    Get.to(
-      () => const PatientRegistrationList(),
-      arguments: {
-        'facilityId': facilityData.facilityId,
-        'facilityName': facilityData.facilityName,
-        'fromDate': fromDate,
-        'toDate': toDate ?? fromDate,
-      },
       transition: Transition.rightToLeft,
       duration: const Duration(milliseconds: 200),
     );
@@ -141,59 +95,6 @@ class RouteManager {
 
   /*------------------ Team Lead --------------------- */
 
-  static void navigateToSampleRemark() {
-    Get.to(
-      () => SampleRemarkView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
-
-  static void navigateToZeroSampleCalendar() {
-    Get.to(
-      () => ZeroSampleCalendarView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
-
-
-
-  static void navigateTOTLDashboard() {
-    Get.to(
-      () => SummaryDashboard(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
-
-  static void navigateToTestAnalysisDashboard() {
-    Get.to(
-      () => TestAnalysisDashboard(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
-
-  static void navigateToPerformanceDashboard() {
-    Get.to(
-      () => PerformanceDashboard(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
-
-  // route to consumption dashboard
-  static void navigateToConsumptionDashboard() {
-    Get.to(
-      () => const ConsumptionDashboard(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
-
-
-
   static void navigateToSampleLiveTracking() {
     Get.to(
       () => const LiveTrackingView(),
@@ -201,8 +102,6 @@ class RouteManager {
       duration: const Duration(milliseconds: 200),
     );
   }
-
-
 
   /// runner boy
   ///  Collect Empty Bag
@@ -214,10 +113,6 @@ class RouteManager {
       duration: const Duration(milliseconds: 200),
     );
   }
-
-
-
-
 
   static void navigateToCollectedBags() {
     Get.to(
@@ -274,7 +169,7 @@ class RouteManager {
       Get.delete<OrderConfirmationController>(force: true);
     }
     Get.to(
-          () => const OrderConfirmationScreen(),
+      () => const OrderConfirmationScreen(),
       binding: OrderConfirmationBinding(patient),
       transition: Transition.circularReveal,
       duration: const Duration(milliseconds: 200),

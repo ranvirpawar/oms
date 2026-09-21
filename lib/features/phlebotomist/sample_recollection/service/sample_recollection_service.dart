@@ -7,6 +7,7 @@ import 'dart:convert';
 
 
 import '../../../../utils/helper_functions/helper_methods.dart';
+import '../model/facility_list_model.dart';
 import '../model/rejection_reason_model.dart';
 import 'package:get/get.dart';
 class SampleRecollectionService {
@@ -53,7 +54,23 @@ class SampleRecollectionService {
       throw Exception('Error fetching recollection data: $e');
     }
   }
-
+  Future<List<FacilityModel>> getFacilityList(String userId) async {
+    try {
+      final response = await apiClient.post(
+        AppUrls.getFacilityList,
+        data: {'UserID': userId},
+      );
+      final data = response.body;
+      if (data['status'] == 'Success') {
+        final List<dynamic> outputList = data['output'];
+        return outputList.map((json) => FacilityModel.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load facilities: ${data['message']}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
   Future<List<RejectedTests>> getRejectedTestDetails({
     required String visitCode,
   }) async {

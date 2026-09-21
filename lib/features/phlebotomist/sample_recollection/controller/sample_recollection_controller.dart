@@ -5,8 +5,7 @@ import 'package:lifenity_connect/features/phlebotomist/sample_recollection/servi
 
 import '../../../../services/auth_manager.dart';
 import '../../../../services/snackbar_service.dart';
-import '../../patient_registration/models/facility_list_model.dart';
-import '../../patient_registration/service/patient_registration_service.dart';
+import '../model/facility_list_model.dart';
 import '../model/test_recollection_model.dart';
 class SampleRecollectionController extends GetxController {
   var isLoading = false.obs;
@@ -47,7 +46,7 @@ class SampleRecollectionController extends GetxController {
 
   // Services
   final SampleRecollectionService _service = Get.put(SampleRecollectionService());
-  final PatientRegistrationService _registrationService = Get.put(PatientRegistrationService());
+  // final PatientRegistrationService _registrationService = Get.put(PatientRegistrationService());
   final AuthManager authManager = Get.find<AuthManager>();
 
   @override
@@ -93,8 +92,8 @@ class SampleRecollectionController extends GetxController {
       initialLoading.value = true;
       final userId = empId.value;
 
-      final facilities = await _registrationService.getFacilityList(userId);
-      facilityNames.assignAll(facilities);
+      final facilities = await _service.getFacilityList(userId);
+      facilityNames.assignAll(facilities as Iterable<FacilityModel>);
       if (facilityNames.isNotEmpty) {
         selectedFacilityName.value = facilityNames.first;
       }

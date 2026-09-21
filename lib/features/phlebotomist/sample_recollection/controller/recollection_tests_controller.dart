@@ -9,7 +9,6 @@ import '../../../../network/app_urls.dart';
 import '../../../../services/snackbar_service.dart';
 import '../../../../services/user_service.dart';
 import '../../../../theme/app_colors.dart';
-import '../../patient_registration/service/patient_registration_service.dart';
 import '../model/rejected_tests_model.dart';
 import '../service/sample_recollection_service.dart';
 
@@ -42,7 +41,7 @@ class RecollectTestsController extends GetxController {
   final userService = Get.put(UserService());
 
   // patient registration service
-  final patientRegistrationService = Get.put(PatientRegistrationService());
+  // final patientRegistrationService = Get.put(PatientRegistrationService());
 
   @override
   void onInit() {
@@ -427,27 +426,5 @@ class RecollectTestsController extends GetxController {
     return !(hasSugarTests && hasNonSugarTests);
   }
 
-  Future<bool> checkDuplicateBarcode(String barcode) async {
-    try {
-      final url = AppUrls.checkBarcode;
-      final queryParams = {'ORDERNO': barcode};
-      final response = await patientRegistrationService.apiClient.post(
-        url,
-        data: queryParams,
-      );
-      final data = response.data;
-      // final data = response['data']; old
-      if (data['status'] == 'Success' && data['output'] == 0) {
-        return true; // Barcode does not exist, valid
-      } else {
-        /*SnackBarService.to.showMessage(message: "Barcode Already Exists!");*/
-        return false;
-      }
-    } catch (e) {
-      // SnackBarService.to.showMessage(
-      //   message: 'Something went wrong please try later',
-      // );
-      return false;
-    }
-  }
+
 }

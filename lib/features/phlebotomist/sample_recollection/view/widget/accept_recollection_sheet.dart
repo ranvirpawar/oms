@@ -119,10 +119,10 @@ class _AcceptRecollectionBottomSheetState
 
   Future<void> _checkBarcodeAPI(String barcode) async {
     try {
-      final isValid = await widget.controller.checkDuplicateBarcode(barcode);
+     /// todo with new api
       if (mounted) {
         isBarcodeChecking.value = false;
-        if (isValid) {
+        if (false) {
           barcodeApiValid.value = true;
           barcodeError.value = '';
           isBarcodeValid.value = true;
