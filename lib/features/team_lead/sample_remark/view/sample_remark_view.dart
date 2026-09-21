@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:lifenity_connect/features/team_lead/sample_remark/controller/sample_remark_controller.dart';
-import 'package:lifenity_connect/features/team_lead/visit_details/view/widgets/custom_dropdown.dart';
+import 'package:lifenity_connect/utils/widgets/custom_dropdown.dart';
 import 'package:lifenity_connect/utils/animated_shimmer/sample_remark_shimmer.dart';
 import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';
 

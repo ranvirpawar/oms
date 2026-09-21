@@ -43,22 +43,32 @@ class Connector {
 
   factory Connector.fromJson(Map<String, dynamic> json) {
     return Connector(
-      userId: json['userid'] ?? 0,
-      facilityCode: json['facilitycode'] ?? 0,
-      facilityName: json['Facilityname'] ?? '',
-      ward: json['Ward'] ?? '',
-      userName: json['Username'] ?? '',
-      fType: json['FType'] ?? '',
+      userId: _asInt(json['USERID'] ?? json['userid']),
+      facilityCode: _asInt(json['FacilityCode'] ?? json['facilitycode']),
+      facilityName:
+      (json['FacilityName'] ?? json['Facilityname'] ?? '').toString(),
+      // Not present in the current API response — defaults to empty.
+      ward: (json['Ward'] ?? json['ward'] ?? '').toString(),
+      userName: (json['UserName'] ?? json['Username'] ?? '')
+          .toString()
+          .trim(),
+      fType: (json['FType'] ?? json['ftype'] ?? '').toString(),
     );
+  }
+
+  static int _asInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    return int.tryParse(value.toString()) ?? 0;
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'userid': userId,
-      'facilitycode': facilityCode,
-      'Facilityname': facilityName,
+      'USERID': userId,
+      'FacilityCode': facilityCode,
+      'FacilityName': facilityName,
       'Ward': ward,
-      'Username': userName,
+      'UserName': userName,
       'FType': fType,
     };
   }

@@ -7,8 +7,8 @@ import '../../../../network/api_client.dart';
 import '../../../../network/app_error.dart';
 import '../../../../network/app_urls.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
-import '../../handover_to_connector/model/connector_model.dart';
 import '../model/collected_bag_model.dart';
+import '../model/connector_model.dart';
 import '../model/handover_submit_response.dart';
 
 

@@ -46,3 +46,4 @@ app.*.map.json
 # Cline AI rules (local only)
 /clinerules
 .clinerules
+/.agents

@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_registration/view/widget/dpdp_consent_card.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_registration/view/widget/navigation_buttons_widget.dart';
-import 'package:lifenity_connect/features/team_lead/visit_details/view/widgets/custom_dropdown.dart';
+import 'package:lifenity_connect/utils/widgets/custom_dropdown.dart';
 import 'package:lifenity_connect/theme/app_colors.dart';
 import 'package:lifenity_connect/utils/helper_functions/input_formatter.dart';
 import 'package:lifenity_connect/utils/widgets/custom_appbar.dart';

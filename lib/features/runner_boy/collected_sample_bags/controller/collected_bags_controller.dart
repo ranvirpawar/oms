@@ -6,8 +6,8 @@ import '../../../../network/app_error.dart';
 import '../../../../services/user_service.dart';
 import '../../../../utils/ui_designs/liquid_snackbar.dart';
 import '../../../auth/model/login_response_model.dart';
-import '../../handover_to_connector/model/connector_model.dart';
 import '../model/collected_bag_model.dart';
+import '../model/connector_model.dart';
 import '../service/collected_bags_service.dart';
 
 

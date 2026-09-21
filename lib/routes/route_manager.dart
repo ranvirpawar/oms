@@ -13,14 +13,10 @@ import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/or
 import 'package:lifenity_connect/features/phlebotomist/sample_recollection/view/sample_recollection_list_view.dart';
 import 'package:lifenity_connect/features/runner_boy/collect_empty_bag/view/collect_destination_bag.dart';
 import 'package:lifenity_connect/features/runner_boy/collect_from_phlebotomist/view/collect_bag_from_phlebo.dart';
-import 'package:lifenity_connect/features/team_lead/invoice_tracking/view/invoice_tracking_view.dart';
 import 'package:lifenity_connect/features/runner_boy/collected_sample_bags/view/collected_bags_view.dart';
-import 'package:lifenity_connect/features/runner_boy/handover_to_connector/view/handover_to_connector_view.dart';
-import 'package:lifenity_connect/features/runner_boy/handover_to_phlebo/view/handover_phlebotomist_view.dart';
 import 'package:lifenity_connect/features/team_lead/sample_remark/view/sample_remark_view.dart';
 import 'package:lifenity_connect/features/cms_eho/view/performance_dashboard.dart';
 import 'package:lifenity_connect/features/cms_eho/view/summary_dashboard.dart';
-import 'package:lifenity_connect/features/team_lead/visit_details/view/visit_details_screen.dart';
 import 'package:lifenity_connect/features/team_lead/zero_sample_calendar/view/zero_calendar_view.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/binding/sample_collection_binding.dart';
 
@@ -37,7 +33,6 @@ import '../features/phlebotomist/sample_collection/controller/order_confirmation
 import '../features/phlebotomist/sample_collection/controller/sample_collection_controller.dart';
 import '../features/phlebotomist/sample_recollection/controller/sample_recollection_controller.dart';
 import '../features/cms_eho/view/test_analysis_page.dart';
-import '../features/team_lead/barcode_merging/view/merge_barcode_view.dart';
 import '../features/team_lead/sample_live_tracking/view/live_tracking_view.dart';
 import '../features/auth/binding/login_binding.dart';
 import '../features/phlebotomist/patient_queue/binding/patient_queue_binding.dart';
@@ -162,13 +157,7 @@ class RouteManager {
     );
   }
 
-  static void navigateToVisitDetails() {
-    Get.to(
-      () => const ProviderScope(child: VisitDetailsScreen()),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
+
 
   static void navigateTOTLDashboard() {
     Get.to(
@@ -203,13 +192,7 @@ class RouteManager {
     );
   }
 
-  static void navigateToInvoiceTracking() {
-    Get.to(
-      () => InvoiceTrackingView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
+
 
   static void navigateToSampleLiveTracking() {
     Get.to(
@@ -219,13 +202,7 @@ class RouteManager {
     );
   }
 
-  static void navigateToMergeBarcode() {
-    Get.to(
-      () => MergeBarcodeView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
+
 
   /// runner boy
   ///  Collect Empty Bag
@@ -238,29 +215,9 @@ class RouteManager {
     );
   }
 
-  static void navigateToHandoverPhlebotomist() {
-    Get.to(
-      () => HandoverPhlebotomistView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
 
-  static void navigateToHandoverConnector() {
-    Get.to(
-      () => const HandoverConnectorView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
 
-  static void navigateToHandoverT0RunnerBoy() {
-    Get.to(
-      () => const HandoverConnectorView(isHandOverToRunnerBoy: true),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
+
 
   static void navigateToCollectedBags() {
     Get.to(
