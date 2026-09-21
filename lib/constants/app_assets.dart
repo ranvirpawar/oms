@@ -2,7 +2,6 @@ class AppAssets {
   AppAssets._();
 
   static const String lifenityLogo = 'assets/images/lifenity-logo.png';
-  static const String splashBg = 'assets/images/splash_bg.png';
 
   // icons
   static const String userIcon = 'assets/icons/user-square-rounded.svg';
@@ -23,7 +22,6 @@ class AppAssets {
   static const String clockIcon = 'assets/icons/clock.svg';
   static const String calendarClockIcon = 'assets/icons/calendar-clock.svg';
   static const String singleUserIcon = 'assets/icons/user.png';
-  static const String doubleUserIcon = 'assets/icons/peoples_icon.png';
   static const String headsetIcon = 'assets/icons/headset.svg';
   static const String infoIcon = 'assets/icons/info_square.svg';
   static const String messagesIcon = 'assets/icons/messages.svg';
@@ -63,37 +61,7 @@ class AppAssets {
 
   /// dashboard icons'
   static const String deliveryBoyIcon = 'assets/images/delivery-boy.png';
-  static const String registrationIcon = 'assets/images/registration.png';
-  static const String healthReport = 'assets/images/health-report.png';
-  static const String patientReport = 'assets/images/patient-report.png';
-  static const String sampleRecollection = 'assets/images/blood-test.png';
-  static const String campIcon = 'assets/images/tent.png';
-  static const String userAttendance = 'assets/images/user-attendance.png';
-  static const String medicalPackage = 'assets/images/blood-bag.png';
-  static const String visitIcon = 'assets/images/building.png';
-  static const String calendarLogIcon = 'assets/images/calendar-log.png';
-  static const String dashboardIcon = 'assets/images/dashboard.png';
-  static const String remarkIcon = 'assets/images/remark.png';
-  static const String backPackIcon = 'assets/images/backpack.png';
-  static const String bagHandOverConnector = 'assets/images/bag-handover-connector.png';
-  static const String bagHandOverToPhlebo = 'assets/images/bag-hand-over-to-phlebo.png';
-  static const String bagFilledWithSamples = 'assets/images/bag-filled.png';
-  static const String bagsCollected = 'assets/images/bags-collected.png';
-  static const String bagAcceptedInLab = 'assets/images/bag-accept-in-lab.png';
-  static const String invoiceIcon = 'assets/images/invoice.png';
   static const String liveTrackingIcon = 'assets/images/live-tracking.png';
-  static const String acceptBagPhlebotomist = 'assets/images/accept-bag-phlebo.png';
-  static const String bagStatus = 'assets/images/bag-status.png';
-  static const String bagInventory = 'assets/images/bag-inventory.png';
-  static const String summaryDashboard = 'assets/images/summary-dashboard.png';
-  static const String testDashboard = 'assets/images/test-dashboard.png';
-  static const String kpiDashboard = 'assets/images/kpi.png';
-  static const String consumptionDashboard = 'assets/images/consumption-dashboard.png';
-  static const String performanceDashboard = 'assets/images/performance.png';
-  static const String hospitalFacilityIcon = 'assets/icons/hospital-facility.png';
-  static const String mergeBarcode = 'assets/images/scan.png';
-  static const String sampleCollection = 'assets/images/sample-collection.png';
-  static const String sampleRecollectionIcon = 'assets/images/sample-recollection.png';
 
   /// Dashboard cards
 

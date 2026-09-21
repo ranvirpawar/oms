@@ -19,7 +19,6 @@ import '../features/auth/binding/profile_binding.dart';
 import '../features/auth/model/profile_model.dart';
 import '../features/dashboard/dashboard_controller/dashboard_controller.dart';
 import '../features/lab_technician/accept_handover_bag/view/accept_bag_in_lab_view.dart';
-import '../features/lab_technician/accept_handover_bag/view/handover_bag_view.dart';
 import '../features/phlebotomist/patient_queue/controller/patient_queue_controller.dart';
 import '../features/phlebotomist/patient_queue/model/patient_queue_model.dart';
 import '../features/phlebotomist/sample_collection/controller/order_confirmation_controller.dart';
@@ -139,13 +138,7 @@ class RouteManager {
     );
   }
 
-  static void navigateToHandOverBagToInventory() {
-    Get.to(
-      () => const HandoverBagView(),
-      transition: Transition.circularReveal,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
+
 
   /// [isCollectionTrue] opens the queue in "collection mode" (the bag
   /// registration dashboard's Collect action): only orders whose patients

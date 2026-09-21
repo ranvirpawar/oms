@@ -68,7 +68,7 @@ flutter_launcher_icons:
     beta:
       android: true
       ios: true
-      image_path: "assets/images/lifenity-beta.png"
+      image_path: "assets/images/lifenity-logo.png"
 
 flutter:
   uses-material-design: true
