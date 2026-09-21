@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/controller/patient_queue_controller.dart';
 
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/model/patient_queue_model.dart';
-import 'package:lifenity_connect/features/phlebotomist/sample_pickup/service/sample_pickup_service.dart';
 
 import '../../../../../theme/app_colors.dart';
 import '../../../../../utils/ui_designs/liquid_snackbar.dart' hide SnackPosition;

@@ -32,12 +32,10 @@ import '../features/auth/model/profile_model.dart';
 import '../features/dashboard/dashboard_controller/dashboard_controller.dart';
 import '../features/lab_technician/accept_handover_bag/view/accept_bag_in_lab_view.dart';
 import '../features/lab_technician/accept_handover_bag/view/handover_bag_view.dart';
-import '../features/phlebotomist/facility_count_dashboard/view/facility_count_dashboard.dart';
 import '../features/phlebotomist/patient_queue/controller/patient_queue_controller.dart';
 import '../features/phlebotomist/patient_queue/model/patient_queue_model.dart';
 import '../features/phlebotomist/patient_registration/view/patient_detail_page.dart';
 import '../features/phlebotomist/patient_registration/view/patient_registration_view.dart';
-import '../features/phlebotomist/patient_report/view/patient_report_view.dart';
 import '../features/phlebotomist/sample_collection/controller/order_confirmation_controller.dart';
 import '../features/phlebotomist/sample_collection/controller/sample_collection_controller.dart';
 import '../features/phlebotomist/sample_recollection/controller/sample_recollection_controller.dart';
@@ -92,13 +90,7 @@ class RouteManager {
     }
   }
 
-  static void navigateToPatientRegistrationDashboard({isQuick = false}) {
-    Get.to(
-      () => FacilityRegistrationPage(),
-      transition: Transition.rightToLeft,
-      duration: Duration(milliseconds: isQuick ? 0 : 200),
-    );
-  }
+
 
   static void navigateToPatientDetailPage(patient, controller) {
     Get.to(
@@ -123,13 +115,6 @@ class RouteManager {
     );
   }
 
-  static void navigateToPatientReport() {
-    Get.to(
-      () => PatientReportView(),
-      transition: Transition.rightToLeft,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
 
   static void navigateToSampleRecollection([bool isRefresh = false]) {
     if (isRefresh) {
