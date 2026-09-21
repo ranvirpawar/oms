@@ -370,7 +370,7 @@ class RouteManager {
 
   static void navigateToProfilePage(ProfileData? user) {
     Get.to(
-      () => ProfileScreen(),
+      () => const ProfileScreen(),
       binding: ProfileBinding(),
       arguments: {'loggedInUser': user},
       transition: Transition.circularReveal,

@@ -87,7 +87,7 @@ class CustomDrawer extends StatelessWidget {
                   // Profile Avatar
                   GestureDetector(
                     onTap: () {
-                      // RouteManager.navigateToProfilePage(controller.userProfile.value);
+                      RouteManager.navigateToProfilePage(controller.userProfile.value);
                     },
                     child: Stack(
                       children: [

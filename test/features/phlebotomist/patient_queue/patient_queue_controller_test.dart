@@ -21,6 +21,8 @@ class _ThrowingService extends PatientQueueService {
   @override
   Future<List<AssignedPatient>> fetchAssignedPatients({
     required String userId,
+    required String fromDate,
+    required String toDate,
   }) async {
     throw error;
   }
@@ -36,6 +38,8 @@ class _FakePatientQueueService extends PatientQueueService {
   @override
   Future<List<AssignedPatient>> fetchAssignedPatients({
     required String userId,
+    required String fromDate,
+    required String toDate,
   }) async {
     return patients;
   }

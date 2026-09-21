@@ -108,7 +108,7 @@ void main() {
         'output': null,
       });
 
-      final result = await service.fetchAssignedPatients(userId: '17');
+      final result = await service.fetchAssignedPatients(userId: '17', fromDate: '2026-09-01', toDate: '2026-09-0');
 
       expect(result, isEmpty);
     });
@@ -120,7 +120,7 @@ void main() {
         'output': _sampleOutput(),
       });
 
-      final result = await service.fetchAssignedPatients(userId: '17');
+      final result = await service.fetchAssignedPatients(userId: '17', fromDate: '2026-09-01', toDate: '2026-09-0');
 
       expect(result, hasLength(1));
       expect(result.first.orderId, 'TEST-ORD-20260901-005');
@@ -161,7 +161,7 @@ void main() {
         ],
       });
 
-      final result = await service.fetchAssignedPatients(userId: '17');
+      final result = await service.fetchAssignedPatients(userId: '17', fromDate: '2026-09-01', toDate: '2026-09-0');
 
       expect(result, hasLength(2));
       expect(result.map((p) => p.orderId), ['TEST-ORD-1', 'TEST-ORD-2']);
@@ -179,7 +179,7 @@ void main() {
         },
       });
 
-      final result = await service.fetchAssignedPatients(userId: '17');
+      final result = await service.fetchAssignedPatients(userId: '17', fromDate: '2026-09-01', toDate: '2026-09-0');
 
       expect(result, hasLength(1));
       final patient = result.first;
@@ -202,7 +202,7 @@ void main() {
       });
 
       expect(
-        () => service.fetchAssignedPatients(userId: '17'),
+        () => service.fetchAssignedPatients(userId: '17', fromDate: '2026-09-01', toDate: '2026-09-0'),
         throwsA(isA<PatientQueueException>()),
       );
     });
