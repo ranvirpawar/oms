@@ -1,4 +1,4 @@
-enum Environment { beta, live }
+enum Environment { beta, live, dev }
 
 class AppUrls {
   // Toggle environment here
@@ -8,25 +8,24 @@ class AppUrls {
     _env = env;
   }
 
-  // sample collection controller (do not change this condition )
-  static bool get addBagId => _env == Environment.beta;
-
-  // ASMX Base URLs
-  static const String _betaAsmxBase =
+  // Base URLs
+  static const String _betaBase =
       'https://betaomsmobapi.lifenityhealth.com/api/Legacy';
-  static const String _liveAsmxBase =
-      'https://connect.lifenityhealth.com/Webservices/HBTC_Webservices.asmx';
+
+  static const String _devBase =
+      'https://devpcaremobapi.lifenityhealth.com/api/Legacy';
+  static const String _liveBase = 'yet-to-deploy';
 
   // ASMX Base URLs updated search
-  static const String _betaAsmxSearchBase =
+  static const String _betaSearchBase =
       'https://betaomsmobapi.lifenityhealth.com/api/Legacy';
-  static const String _liveAsmxSearchBase =
+  static const String _liveSearchBase =
       'https://connect.lifenityhealth.com/Webservices/HBTCPateintSearch.asmx';
 
   // ASHX Base URLs
-  static const String _betaAshxBase =
+  static const String _betaHandlerBase =
       'https://betaomsmobapi.lifenityhealth.com/api/';
-  static const String _liveAshxBase =
+  static const String _liveHandlerBase =
       'https://connect.lifenityhealth.com/Webservices/Handler/';
 
   static String get reportBaseUrl => _env == Environment.beta
@@ -34,263 +33,261 @@ class AppUrls {
       : 'https://rptconnect.lifenityhealth.com/API/patient_record_grid.php';
 
   // Base URL getters
-  static String get _asmxBase =>
-      _env == Environment.beta ? _betaAsmxBase : _liveAsmxBase;
+  static String get _baseUrl =>
+      _env == Environment.beta ? _betaBase : _liveBase;
 
-  static String get _ashxBase =>
-      _env == Environment.beta ? _betaAshxBase : _liveAshxBase;
+  static String get _handlerBaseUrl =>
+      _env == Environment.beta ? _betaHandlerBase : _liveHandlerBase;
 
-  static String get _asmxSearchBase =>
-      _env == Environment.beta ? _betaAsmxSearchBase : _liveAsmxSearchBase;
+  static String get _searchBaseUrl =>
+      _env == Environment.beta ? _betaSearchBase : _liveSearchBase;
 
   // -------------------------
   // API Endpoints (.asmx)
   // -------------------------
-  static String get getFacilityList => '$_asmxBase/getFacilityList';
+  static String get getFacilityList => '$_baseUrl/getFacilityList';
 
-  static String get login => '$_asmxBase/Login';
+  static String get login => '$_baseUrl/Login';
 
-  static String get verifyLoginOtp => '$_asmxBase/VerifyLoginOtp';
+  static String get verifyLoginOtp => '$_baseUrl/VerifyLoginOtp';
 
-  static String get logout => '$_asmxBase/LogINLogoutUser';
+  static String get logout => '$_baseUrl/LogINLogoutUser';
 
-  static String get checkApplicationUpdate => '$_asmxBase/APKDownloader';
+  static String get checkApplicationUpdate => '$_baseUrl/APKDownloader';
 
-  static String forgotPassword = '$_asmxBase/ForgotPassword';
+  static String forgotPassword = '$_baseUrl/ForgotPassword';
 
-  static String resetPassword = '$_asmxBase/ResetPassword';
+  static String resetPassword = '$_baseUrl/ResetPassword';
 
-  static String changePassword = '$_asmxBase/ChangePassword';
+  static String changePassword = '$_baseUrl/ChangePassword';
 
   static String get getTotalMsgAndNotificationCount =>
-      '$_asmxBase/GetTotalMSGAndNotificationCountByuseridAndDesignationId';
+      '$_baseUrl/GetTotalMSGAndNotificationCountByuseridAndDesignationId';
 
-  static String get getCenterList => '$_asmxBase/getCenterList';
+  static String get getCenterList => '$_baseUrl/getCenterList';
 
-  static String get getIdentityProof => '$_asmxBase/GetIdentityProof';
+  static String get getIdentityProof => '$_baseUrl/GetIdentityProof';
 
-  static String get getMaritalStatus => '$_asmxBase/GetMARITALSTATUS';
+  static String get getMaritalStatus => '$_baseUrl/GetMARITALSTATUS';
 
-  static String get getDistrictList => '$_asmxBase/getDistrictListAPI';
+  static String get getDistrictList => '$_baseUrl/getDistrictListAPI';
 
-  static String get getCityList => '$_asmxBase/getCityList';
+  static String get getCityList => '$_baseUrl/getCityList';
 
-  static String get getStateList => '$_asmxBase/getStateList';
+  static String get getStateList => '$_baseUrl/getStateList';
 
-  static String get checkOpdNumberExists => '$_asmxBase/CheckDuplicateOPDIDNO';
+  static String get checkOpdNumberExists => '$_baseUrl/CheckDuplicateOPDIDNO';
 
-  static String get getDoctorReferenceList => '$_asmxBase/GetRefDoctorName';
+  static String get getDoctorReferenceList => '$_baseUrl/GetRefDoctorName';
 
   static String get searchExistingPatient =>
-      '$_asmxBase/PatientSearchForMobileApp';
+      '$_baseUrl/PatientSearchForMobileApp';
 
   static String get getTestNames =>
-      '$_asmxBase/GetTestSeriviceWiseFacilityList_Subcataegory';
+      '$_baseUrl/GetTestSeriviceWiseFacilityList_Subcataegory';
 
-  static String get sendOTP => '$_asmxBase/SendandVerifyOTP';
+  static String get sendOTP => '$_baseUrl/SendandVerifyOTP';
 
-  static String get validateMobile => '$_asmxBase/IsMobNoExcist';
+  static String get validateMobile => '$_baseUrl/IsMobNoExcist';
 
   // Then update these two endpoints:
   static String get saveForm =>
-      '$_asmxSearchBase/LabDataInsert_UpdatedForABHANewAndCastMaritalAddedHISLISForCDAC';
+      '$_searchBaseUrl/LabDataInsert_UpdatedForABHANewAndCastMaritalAddedHISLISForCDAC';
 
   static String get savePatientDetails =>
-      '$_asmxSearchBase/Insert_PatientBasicInfo_ForCitizenApp';
+      '$_searchBaseUrl/Insert_PatientBasicInfo_ForCitizenApp';
 
   /*  static String get orderInputUrl =>
-      '$_asmxBase/InsertPatientwiseServiceTubecountNewForPatOtpVerify';*/
+      '$_baseUrl/InsertPatientwiseServiceTubecountNewForPatOtpVerify';*/
 
   /*  static String get orderInputUrl =>
-      '$_asmxBase/InsertPatientwiseServiceTubecountNewForPatOtpVerify';*/
+      '$_baseUrl/InsertPatientwiseServiceTubecountNewForPatOtpVerify';*/
 
   static String get orderInputUrl =>
-      '$_asmxBase/InsertPatientwiseServiceTubecountNewForPatOtpVerifyFlutter';
+      '$_baseUrl/InsertPatientwiseServiceTubecountNewForPatOtpVerifyFlutter';
 
   /*  static String get orderInputUrl =>
-      '$_asmxBase/InsertPatientwiseServiceTubecountNewForPatOtpVerifyFlutter';*/
+      '$_baseUrl/InsertPatientwiseServiceTubecountNewForPatOtpVerifyFlutter';*/
 
   static String get getFacilityData =>
-      '$_asmxBase/GetFacilitywisePatientRegistrationCount';
+      '$_baseUrl/GetFacilitywisePatientRegistrationCount';
 
-  static String get checkBarcode => '$_asmxBase/CheckDuplicateBarcode';
+  static String get checkBarcode => '$_baseUrl/CheckDuplicateBarcode';
 
-  static String get insertDoctor => '$_asmxBase/InsertRefDocter';
+  static String get insertDoctor => '$_baseUrl/InsertRefDocter';
 
   static String get testAnalysisUrl =>
-      '$_asmxBase/GetTestAnalysisReportDashoardDetails_SubCat';
+      '$_baseUrl/GetTestAnalysisReportDashoardDetails_SubCat';
   static final String pendingPatientUrl =
-      '$_asmxBase/PendingPatientDashboard_New';
+      '$_baseUrl/PendingPatientDashboard_New';
 
-  static String testTypeUrl = '$_asmxBase/HRMSDashBorad_Labwise';
+  static String testTypeUrl = '$_baseUrl/HRMSDashBorad_Labwise';
 
-  static String get getRunnerBoyWork => '$_asmxBase/GetRunnerBoyDailyWork_New';
+  static String get getRunnerBoyWork => '$_baseUrl/GetRunnerBoyDailyWork_New';
 
-  static String get getProfileData => '$_asmxBase/GetUserDetailsDecriypt';
+  static String get getProfileData => '$_baseUrl/GetUserDetailsDecriypt';
 
   static String get getRegisteredPatientList =>
-      '$_asmxBase/GetPhleboRegisteredPatientList';
+      '$_baseUrl/GetPhleboRegisteredPatientList';
 
-  static String get updatePatientDetails =>
-      '$_asmxBase/UpdatePatientOPDReceipt';
+  static String get updatePatientDetails => '$_baseUrl/UpdatePatientOPDReceipt';
 
   static String get getFacilityListUserWise =>
-      '$_asmxBase/GEtFacilityOnLabcode_UserWise';
+      '$_baseUrl/GEtFacilityOnLabcode_UserWise';
 
   static String get getFacilityWiseDataForPickup =>
-      '$_asmxBase/GEtFacilityOnLabcode_UserWise';
+      '$_baseUrl/GEtFacilityOnLabcode_UserWise';
 
   static String get insRunnerBoyDailyWorkVisitedFacility =>
-      '$_asmxBase/InsertRunnerBoyDailyWorkVisitedFacility_TubecountJSON';
+      '$_baseUrl/InsertRunnerBoyDailyWorkVisitedFacility_TubecountJSON';
 
   static String get insertSampleSubmittedAcceptedStatus =>
-      '$_asmxBase/InsertSampleSubmittedAcceptedStatus';
+      '$_baseUrl/InsertSampleSubmittedAcceptedStatus';
 
   static String get getResourceVisitData =>
-      '$_asmxBase/GetRunnerboyListWithMappedFacilityCount';
+      '$_baseUrl/GetRunnerboyListWithMappedFacilityCount';
 
-  static String get getSampleTemperature => '$_asmxBase/GetSampleTemperature';
+  static String get getSampleTemperature => '$_baseUrl/GetSampleTemperature';
 
-  static String get getPassKey => '$_asmxBase/getPasskey';
+  static String get getPassKey => '$_baseUrl/getPasskey';
 
   static String get sampleRecollectionList =>
-      '$_asmxBase/GetPateintDetailsforSampleRecollection';
+      '$_baseUrl/GetPateintDetailsforSampleRecollection';
 
   static String get sampleRecollectionListUpdated =>
-      '$_asmxBase/GetRecollectioDashboard';
+      '$_baseUrl/GetRecollectioDashboard';
 
   static String get rejectedTestDetails =>
-      '$_asmxBase/GetPateintDetailswithServicenameforSampleRecollection';
+      '$_baseUrl/GetPateintDetailswithServicenameforSampleRecollection';
 
   static String get rejectionRemark =>
-      '$_asmxBase/GetRemarkforSampleRecollectionDeny';
+      '$_baseUrl/GetRemarkforSampleRecollectionDeny';
 
   static String get insertRecollectionUpdate =>
-      '$_asmxBase/InsMobileEntryofSampleReCollectionNew';
+      '$_baseUrl/InsMobileEntryofSampleReCollectionNew';
 
-  static String get sampleRemarkList => '$_asmxBase/GetRemarks';
+  static String get sampleRemarkList => '$_baseUrl/GetRemarks';
 
-  static String get getCountsForDc => '$_asmxBase/GetCountsForDC';
+  static String get getCountsForDc => '$_baseUrl/GetCountsForDC';
 
-  static String get insertSampleRemark => '$_asmxBase/INSERTPatientCountSample';
+  static String get insertSampleRemark => '$_baseUrl/INSERTPatientCountSample';
 
   static String get zeroSampleCalendar =>
-      '$_asmxBase/ZeroSampleCountCalender_New';
+      '$_baseUrl/ZeroSampleCountCalender_New';
 
-  static String get facilitySurvey => '$_asmxBase/GetFacilitySurvey';
+  static String get facilitySurvey => '$_baseUrl/GetFacilitySurvey';
 
-  static String get insertFacilityVisit => '$_asmxBase/InsertFacilitySurvey';
+  static String get insertFacilityVisit => '$_baseUrl/InsertFacilitySurvey';
 
-  static String get summaryUrl => '$_asmxBase/SUMMARYCOUNT_TodayYesterday_New';
+  static String get summaryUrl => '$_baseUrl/SUMMARYCOUNT_TodayYesterday_New';
 
   static String get summaryCountUrl =>
-      '$_asmxBase/GetSummaryCountDetails_New_Updated';
+      '$_baseUrl/GetSummaryCountDetails_New_Updated';
 
-  static String get getFacilityCenterNames =>
-      '$_asmxBase/GetCenterFacilityName';
+  static String get getFacilityCenterNames => '$_baseUrl/GetCenterFacilityName';
 
-  static String get getFacilityCenterTypes => '$_asmxBase/GetCenterName';
+  static String get getFacilityCenterTypes => '$_baseUrl/GetCenterName';
 
-  static String get getFacilityTypes => '$_asmxBase/GetFacilityTypes_Invoice';
+  static String get getFacilityTypes => '$_baseUrl/GetFacilityTypes_Invoice';
 
   static String get fetchFacilityNamesByWardFType =>
-      '$_asmxBase/GetFacilityloadonWardFtype';
+      '$_baseUrl/GetFacilityloadonWardFtype';
 
-  static String get sendReportToWhatsApp => '$_asmxBase/SendReportWithPdf';
+  static String get sendReportToWhatsApp => '$_baseUrl/SendReportWithPdf';
 
   static String get SendConsentMessage_Consent =>
-      '$_asmxBase/SendConsentMessage_Consent';
+      '$_baseUrl/SendConsentMessage_Consent';
 
-  static String get consentStatus => '$_asmxBase/Getwhatappconsentsattus';
+  static String get consentStatus => '$_baseUrl/Getwhatappconsentsattus';
 
   static String get getPatientTestListWithStatus =>
-      '$_asmxBase/GetPatientTestList_withSTatus';
+      '$_baseUrl/GetPatientTestList_withSTatus';
 
   static String get getHMISPatientTests =>
-      '$_asmxBase/GetTestandTreatmentid_HMIS';
+      '$_baseUrl/GetTestandTreatmentid_HMIS';
 
-  static String get consumptionDashboard => '$_asmxBase/GetConsuptionDashboard';
+  static String get consumptionDashboard => '$_baseUrl/GetConsuptionDashboard';
 
-  static String get projectFinancialYear => '$_asmxBase/GetProjectFinacialYear';
+  static String get projectFinancialYear => '$_baseUrl/GetProjectFinacialYear';
 
   /* ------------------ DPDP consent  --------------------*/
 
   static String get sendRegistrationOtpWithDpdpConsent =>
-      '$_asmxBase/SendRegistrationOTPWithDPDPConsent';
+      '$_baseUrl/SendRegistrationOTPWithDPDPConsent';
 
   static String get getBeneficiaryConsentDetails =>
-      '$_asmxBase/GetBeneficiaryConsentDetails';
+      '$_baseUrl/GetBeneficiaryConsentDetails';
 
   /* ------------------ Qr Code Flow Runner-Boy  --------------------*/
   /*------------------ collect empty bag  --------------------*/
-  static String get getSampleBagId => '$_asmxBase/GetSampleBagID';
+  static String get getSampleBagId => '$_baseUrl/GetSampleBagID';
 
   static String get insertInitiateBagTransaction =>
-      '$_asmxBase/InsertInnitiateBagTransaction';
+      '$_baseUrl/InsertInnitiateBagTransaction';
 
   static String get insertBagTransactionStatus =>
-      '$_asmxBase/InsertBagTransactionStatus';
+      '$_baseUrl/InsertBagTransactionStatus';
 
   /*---------------- Hand over to phlebotomist --------------------*/
   static String get getPhlebotomistList =>
-      '$_asmxBase/GetPhleboDesgWiseUserlist';
+      '$_baseUrl/GetPhleboDesgWiseUserlist';
 
   static String get getScanQRForAndTransactionID =>
-      '$_asmxBase/GetScanQRForAndTransactionID';
+      '$_baseUrl/GetScanQRForAndTransactionID';
 
   /*------------------- Hand over to Connector----------------------*/
 
   static String get updateBagTransactionStatus =>
-      '$_asmxBase/UpdateInnitiateBagTransaction';
+      '$_baseUrl/UpdateInnitiateBagTransaction';
 
   /*------------------- Collected Bags for Submission ----------------------*/
 
   static String get collectedBagsForLabSubmission =>
-      '$_asmxBase/GetClosedSampleBagList_forLabSubmission';
+      '$_baseUrl/GetClosedSampleBagList_forLabSubmission';
 
   /*-------------------- Phlebotomist Accept Bags ----------------------*/
 
   static String get assignedBagsForPhlebotomist =>
-      '$_asmxBase/GetGetPhleboAssignBagList';
+      '$_baseUrl/GetGetPhleboAssignBagList';
 
-  static String get getBagStatusTracking => '$_asmxBase/GetBagStatusNew';
+  static String get getBagStatusTracking => '$_baseUrl/GetBagStatusNew';
 
-  /*static String get getBagStatusTracking => '$_asmxBase/GetBagStatus';*/
+  /*static String get getBagStatusTracking => '$_baseUrl/GetBagStatus';*/
 
-  static String get getScanbagInfo => '$_asmxBase/GetScanbagInfo';
+  static String get getScanbagInfo => '$_baseUrl/GetScanbagInfo';
 
   static String get getTubeTranferToOtherLab =>
-      '$_asmxBase/GetTubeTranferToOtherLab';
+      '$_baseUrl/GetTubeTranferToOtherLab';
 
   /*----------------- Invoice Tracking ------------------------------*/
-  static String get getYearDropDown => '$_asmxBase/GetYear';
+  static String get getYearDropDown => '$_baseUrl/GetYear';
 
-  static String get getBillingMonth => '$_asmxBase/GeBillingMonth';
+  static String get getBillingMonth => '$_baseUrl/GeBillingMonth';
 
   static String get facilityWiseInvoiceStatus =>
-      '$_asmxBase/GetFacilityWiseInvoiceStatus';
+      '$_baseUrl/GetFacilityWiseInvoiceStatus';
 
-  static String get getInvoiceStages => '$_asmxBase/GetinvoiceStages';
+  static String get getInvoiceStages => '$_baseUrl/GetinvoiceStages';
 
   /*----------------- Sample Live Tracking ------------------------------*/
   static String get getSampleLiveTrackingRb =>
-      '$_asmxBase/GetSamplebagTrackingReport_inAppRBConnector';
+      '$_baseUrl/GetSamplebagTrackingReport_inAppRBConnector';
 
   static String get getBagDetailsRbTrackingDashboard =>
-      '$_asmxBase/GetBagDetails_Rb_trackingDahsboard';
+      '$_baseUrl/GetBagDetails_Rb_trackingDahsboard';
 
   /*----------------- Eho facility wise summary ------------------------------*/
 
   static String get facilityTypeSummary =>
-      '$_asmxBase/GetEHOAndCES_FacilityCOunt';
+      '$_baseUrl/GetEHOAndCES_FacilityCOunt';
 
   /*------------------ Patient registration Bag qr code flow */
 
   static String get getBagStatusUsingUserId =>
-      '$_asmxBase/GetBagStatus_UseingUserid';
+      '$_baseUrl/GetBagStatus_UseingUserid';
 
   static String get getBagCountStatus =>
-      '$_asmxBase/GetGetSampleBagPatientCount';
+      '$_baseUrl/GetGetSampleBagPatientCount';
 
   /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
   /*   REVAMP QR CODE FLOW 19 th feb onwards 🫡🫡🫡🫡                             */
@@ -299,114 +296,115 @@ class AppUrls {
   /// phlebotomist login
 
   static String get getUserwiseQRBagSession =>
-      '$_asmxBase/GetUserwiseQRBagSession';
+      '$_baseUrl/GetUserwiseQRBagSession';
 
-  static String get getQRBagDetails => '$_asmxBase/Proc_GetQRBagDetails';
+  static String get getQRBagDetails => '$_baseUrl/Proc_GetQRBagDetails';
 
   static String get insertStartQRCodeBagEvent =>
-      '$_asmxBase/InsertStartQRCodeBegEvent';
+      '$_baseUrl/InsertStartQRCodeBegEvent';
 
   static String get insertQRBagSessionEvent =>
-      '$_asmxBase/InsertQRBagSession_Event';
+      '$_baseUrl/InsertQRBagSession_Event';
 
   static String get getActiveQRBagSessions =>
-      '$_asmxBase/GetActiveQRBagSessions';
+      '$_baseUrl/GetActiveQRBagSessions';
 
   static String get getRegistrationDetailsQRBag =>
-      '$_asmxBase/GetRegistrationDetails_QRBag';
+      '$_baseUrl/GetRegistrationDetails_QRBag';
 
   static String get getPatientDetailsForMergingTest =>
-      '$_asmxBase/GetPatientDetailsFor_MergingTest';
+      '$_baseUrl/GetPatientDetailsFor_MergingTest';
 
   static String get mergeSugarBarcode =>
-      '$_asmxBase/InsertMergeSugarTest_Barcode';
+      '$_baseUrl/InsertMergeSugarTest_Barcode';
 
   /// collect bag from phlebotomist (RB login)
 
-  static String get getQRBagCount => '$_asmxBase/GETQRBagCount';
+  static String get getQRBagCount => '$_baseUrl/GETQRBagCount';
 
-  static String get getBagStatus => '$_asmxBase/GetBagStatus';
+  static String get getBagStatus => '$_baseUrl/GetBagStatus';
 
-  static String get transferBag => '$_asmxBase/InsertTransferSample_to_QRBag';
+  static String get transferBag => '$_baseUrl/InsertTransferSample_to_QRBag';
 
-  static String getCollectedQRBagDetails =
-      '$_asmxBase/GetCollectedQRBagDetails';
+  static String getCollectedQRBagDetails = '$_baseUrl/GetCollectedQRBagDetails';
   static String submitQRBagToLabOrHandover =
-      '$_asmxBase/SubmitQRBagToLabOrHandover';
+      '$_baseUrl/SubmitQRBagToLabOrHandover';
 
   //----------------------- Lab technician qr code -----------------------//
 
-  static String get getScanQRBag => '$_asmxBase/GETScanQRBag';
+  static String get getScanQRBag => '$_baseUrl/GETScanQRBag';
 
   // Step 2 — Fetch detailed bag info for lab team
   static String getBagDetailsForLabTeam =
-      '$_asmxBase/Proc_GetQRBagDetails_ForLabTeam';
+      '$_baseUrl/Proc_GetQRBagDetails_ForLabTeam';
 
   // -------------------------
   // Sample Collection
   // -------------------------
-  static String getOrdersList = '$_asmxBase/orders/details';
-  static String updateOrder = '$_asmxBase/UpdateSampleOrderStatus';
+  static String getOrdersList = '$_baseUrl/orders/details';
+  static String updateOrder = '$_baseUrl/UpdateSampleOrderStatus';
 
   static String getComplicationsList =
-      '$_asmxBase/GetSampleCollectionComplicationDetails';
+      '$_baseUrl/GetSampleCollectionComplicationDetails';
 
   static String getIncompleteReasons =
-      '$_asmxBase/GetSampleCollectionIncompleteReasonDetails';
- static String getRejectedReason =
-      '$_asmxBase/GetAssignRejectedReason';
+      '$_baseUrl/GetSampleCollectionIncompleteReasonDetails';
+  static String getRejectedReason = '$_baseUrl/GetAssignRejectedReason';
 
   static String getSampleRequirements =
-      '$_asmxBase/orders/{orderId}/sample-requirements';
+      '$_baseUrl/orders/{orderId}/sample-requirements';
 
   static String submitSampleCollection =
-      '$_asmxBase/orders/{orderId}/collect_InsertSampleCollectionOrder_API';
+      '$_baseUrl/orders/{orderId}/collect_InsertSampleCollectionOrder_API';
 
-  static String sendOTPToPatient = '$_asmxBase/send-otp';
+  static String sendOTPToPatient = '$_baseUrl/send-otp';
 
-  static String verifyPatientOTP = '$_asmxBase/verify-otp';
+  static String verifyPatientOTP = '$_baseUrl/verify-otp';
 
   static String get locationTracking =>
-      '$_asmxBase/UserSampleOrderLocationTracking';
+      '$_baseUrl/UserSampleOrderLocationTracking';
 
-  static String  get dishaSampleCollectionSync =>
-      '$_asmxBase/orders/Recolled_DishaSampleCollection_API/{orderId}';
+  static String get dishaSampleCollectionSync =>
+      '$_baseUrl/orders/Recolled_DishaSampleCollection_API/{orderId}';
 
-  static String get rescheduledSlots => '$_asmxBase/user/available-slots';
+  static String get rescheduledSlots => '$_baseUrl/user/available-slots';
 
   static String get appointmentRescheduled =>
-      '$_asmxBase/InsertSampleCollAppoinmentReschedule';
+      '$_baseUrl/InsertSampleCollAppoinmentReschedule';
 
   static String get appointmentRescheduledReason =>
-      '$_asmxBase/GetRescheduleReasone';
+      '$_baseUrl/GetRescheduleReasone';
 
   static String get sendOtpSampleReschedule =>
-      '$_asmxBase/send-otp-SampleReschedule';
+      '$_baseUrl/send-otp-SampleReschedule';
 
   static String get verifyOtpSampleReschedule =>
-      '$_asmxBase/verify-otp-SampleReschedule';
+      '$_baseUrl/verify-otp-SampleReschedule';
 
-  static String get checkBarcodeAvailability => '$_asmxBase/barcode/availability';
-  static String get collectionChecklist => '$_asmxBase/collection-checklist';
-  static String get insertCollectionCheckList => '$_asmxBase/orders/{order-id}/collection-checklist';
+  static String get checkBarcodeAvailability =>
+      '$_baseUrl/barcode/availability';
 
+  static String get collectionChecklist => '$_baseUrl/collection-checklist';
+
+  static String get insertCollectionCheckList =>
+      '$_baseUrl/orders/{order-id}/collection-checklist';
 
   ///  dashboard
 
-  static String get dashboardCount => '$_asmxBase/phlebo/dashboard-summary';
+  static String get dashboardCount => '$_baseUrl/phlebo/dashboard-summary';
 
   // -------------------------
   // API Endpoints (.ashx)
   // -------------------------
   static String get insRunnerBoyDailyWork =>
-      '${_ashxBase}InsertRunnerBoyDailyWork';
+      '${_handlerBaseUrl}InsertRunnerBoyDailyWork';
 
-  static String get uploadVisitPhoto => '${_ashxBase}Facility_Survey';
+  static String get uploadVisitPhoto => '${_handlerBaseUrl}Facility_Survey';
 
   static String get insertFacilityWiseInvoiceStatus =>
-      '${_ashxBase}InsertFaciltyWiseInvoiceStatus';
+      '${_handlerBaseUrl}InsertFaciltyWiseInvoiceStatus';
 
-  static String get uploadTrfImage => '${_ashxBase}AddTrfPhoto';
+  static String get uploadTrfImage => '${_handlerBaseUrl}AddTrfPhoto';
 
-  static String get addConsentPhoto => '${_ashxBase}AddConsentPhoto';
+  static String get addConsentPhoto => '${_handlerBaseUrl}AddConsentPhoto';
 }

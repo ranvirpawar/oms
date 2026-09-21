@@ -694,7 +694,7 @@ class CollectedOrderDetailSheet extends StatelessWidget {
                                 [
                                   if (reg.age.isNotEmpty) 'Age: ${reg.age}',
                                   if (reg.gender.isNotEmpty) reg.gender,
-                                  'ID: ORD${reg.sampleCollectionOrderID}',
+                                  'ID: ${reg.orderId}',
                                 ].join('  ·  '),
                                 style: const TextStyle(
                                   fontSize: 12.5,

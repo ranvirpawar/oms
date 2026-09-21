@@ -1,6 +1,6 @@
 class AppAssets {
   AppAssets._();
-
+  // should render as per the app flavor
   static const String lifenityLogo = 'assets/images/lifenity-logo.png';
 
   // icons
@@ -58,6 +58,7 @@ class AppAssets {
   static const String eyeView = 'assets/icons/eye_view.svg';
   static const String whatsapp = 'assets/icons/whatsapp.svg';
   static const String share = 'assets/icons/share.svg';
+  static const String arrowBackward = 'assets/icons/arrow-backwards.svg';
 
   /// dashboard icons'
   static const String deliveryBoyIcon = 'assets/images/delivery-boy.png';

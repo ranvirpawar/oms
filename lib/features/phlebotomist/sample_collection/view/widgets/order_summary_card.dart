@@ -209,7 +209,7 @@ class _OrderPatientSummaryCardState extends State<OrderPatientSummaryCard> {
                 duration: const Duration(milliseconds: 100),
                 curve: Curves.easeOut,
                 child: Padding(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
                   child: _Header(
                     name: widget.name,
                     avatarUrl: widget.avatarUrl,
@@ -230,7 +230,7 @@ class _OrderPatientSummaryCardState extends State<OrderPatientSummaryCard> {
               child: !_expanded || !hasBody
                   ? const SizedBox(width: double.infinity)
                   : Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                      padding: const EdgeInsets.fromLTRB(10, 0, 10, 14),
                       child: _Body(
                         fastingRequired: widget.fastingRequired,
                         fastingNote: widget.fastingNote,
@@ -534,8 +534,10 @@ class _InfoStrip extends StatelessWidget {
   }
 }
 
-/// One sample-type section rendered as a compact "table": a muted section
-/// header (sample type + volume) followed by rows of Test name | Tube type.
+/// One sample-type section rendered as a modern grouped table: a tinted
+/// section header (sample type + volume + test count) followed by zebra-
+/// striped rows of Sr. No · Test name | Tube type — no divider lines,
+/// the alternating band tint creates a natural visual cadence.
 class _SampleGroupTable extends StatelessWidget {
   final SummarySampleGroup group;
   final int startIndex;
@@ -547,20 +549,99 @@ class _SampleGroupTable extends StatelessWidget {
     final showSectionHeader =
         group.sampleType != 'Tests' || group.volume.isNotEmpty;
 
-    return Container(
-      // ...unchanged...
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ...section header + column labels unchanged...
-
-          for (var i = 0; i < group.tests.length; i++)
-            _TestRow(
-              srNo: startIndex + i + 1,
-              test: group.tests[i],
-              fallbackSampleType: group.sampleType,
-              isLast: i == group.tests.length - 1,
+          // ── Section header ──────────────────────────────────────────
+          if (showSectionHeader)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+              decoration: BoxDecoration(
+                color: AppColors.primary50.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary100,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(
+                      Icons.science_outlined,
+                      size: 13,
+                      color: AppColors.primary700,
+                    ),
+                  ),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: group.sampleType,
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primary800,
+                            ),
+                          ),
+                          if (group.volume.isNotEmpty) ...[
+                            TextSpan(
+                              text: '  ·  ${group.volume}',
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary700.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary200.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${group.tests.length}',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+
+          // ── Test rows with alternating bands ────────────────────────
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: Column(
+              children: [
+                for (var i = 0; i < group.tests.length; i++)
+                  _TestRow(
+                    srNo: startIndex + i + 1,
+                    test: group.tests[i],
+                    fallbackSampleType: group.sampleType,
+                    isEvenRow: (startIndex + i).isEven,
+                  ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -571,13 +652,13 @@ class _TestRow extends StatelessWidget {
   final int srNo;
   final SummaryTestItem test;
   final String fallbackSampleType;
-  final bool isLast;
+  final bool isEvenRow;
 
   const _TestRow({
     required this.srNo,
     required this.test,
     required this.fallbackSampleType,
-    required this.isLast,
+    required this.isEvenRow,
   });
 
   @override
@@ -587,67 +668,69 @@ class _TestRow extends StatelessWidget {
       sampleType: fallbackSampleType,
     );
 
+    // Subtle zebra stripe — transparent on even rows, a whisper of tint on
+    // odd rows. The tint is cool-neutral so it won't fight any tube badge color.
+    final bandColor = isEvenRow
+        ? Colors.transparent
+        : const Color(0xFFF7F9FC);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-      decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : const Border(
-          bottom: BorderSide(color: AppColors.border, width: 0.75),
-        ),
-      ),
+      color: bandColor,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // ── Sr. number ─────────────────────────────────────────
+          SizedBox(
+            width: 22,
+            child: Text(
+              '$srNo',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textTertiary.withOpacity(0.7),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+
+          // ── Test name + fasting badge ──────────────────────────
           Expanded(
-            flex: 3,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: '$srNo. ',
-                          style: const TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                            height: 1.3,
-                          ),
-                        ),
-                        TextSpan(text: test.name),
-                      ],
-                    ),
+                  child: Text(
+                    test.name,
                     style: const TextStyle(
-                      fontSize: 12.5,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
-                      height: 1.3,
+                      height: 1.35,
                     ),
                   ),
                 ),
                 if (test.fastingRequired) ...[
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 5),
                   Tooltip(
                     message: 'Fasting Required',
                     child: Container(
-                      width: 17,
-                      height: 17,
+                      width: 16,
+                      height: 16,
                       decoration: BoxDecoration(
                         color: AppColors.amberLight,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: AppColors.amberBorder,
-                          width: 1,
+                          color: AppColors.amberBorder.withOpacity(0.6),
+                          width: 0.75,
                         ),
                       ),
                       alignment: Alignment.center,
                       child: const Text(
                         'F',
                         style: TextStyle(
-                          fontSize: 9.5,
+                          fontSize: 9,
                           fontWeight: FontWeight.w800,
                           color: AppColors.amberText,
                           height: 1.0,
@@ -659,14 +742,10 @@ class _TestRow extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 3,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: _TubeTypeBadge(tube: tube),
-            ),
-          ),
+          const SizedBox(width: 6),
+
+          // ── Tube type badge ────────────────────────────────────
+          _TubeTypeBadge(tube: tube),
         ],
       ),
     );
@@ -681,36 +760,43 @@ class _TubeTypeBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: tube.color.withOpacity(0.12),
+        color: tube.color.withOpacity(0.10),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: tube.color.withOpacity(0.15),
+          width: 0.5,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 7,
-            height: 7,
+            width: 6,
+            height: 6,
             decoration: BoxDecoration(
               color: tube.color,
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 1),
               boxShadow: [
-                BoxShadow(color: tube.color.withOpacity(0.4), blurRadius: 3),
+                BoxShadow(
+                  color: tube.color.withOpacity(0.35),
+                  blurRadius: 3,
+                ),
               ],
             ),
           ),
-          const SizedBox(width: 5),
+          const SizedBox(width: 4),
           Flexible(
             child: Text(
               tube.label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 10.5,
+                fontSize: 10,
                 fontWeight: FontWeight.w700,
                 color: tube.color,
+                letterSpacing: -0.1,
               ),
             ),
           ),
