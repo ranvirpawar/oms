@@ -61,8 +61,8 @@ class OrderConfirmationController extends GetxController with HasBagContext {
       assignedPatient.status == PatientStatus.arrived;
 
   bool get needsToStartRoute =>
-      assignedPatient.status == PatientStatus.accepted || assignedPatient.status == PatientStatus.rescheduled;
-
+      assignedPatient.status == PatientStatus.accepted /*|| assignedPatient.status == PatientStatus.rescheduled*/;
+bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.rescheduled;
   // ---- Order details -------------------------------------------------
   final Rxn<OrderConfirmationDetails> orderDetails =
       Rxn<OrderConfirmationDetails>();
@@ -132,6 +132,7 @@ class OrderConfirmationController extends GetxController with HasBagContext {
     await _loadEmpId();
     if (!isOrderAccepted) return;
     if (needsToStartRoute) return;
+    if(needRescheduleOrderAccept) return;
 
     if (assignedPatient.status == PatientStatus.inRoute) {
       showRouteMap.value = true;

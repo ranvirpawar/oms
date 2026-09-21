@@ -338,7 +338,19 @@ class SampleCollectionController extends GetxController with HasBagContext {
       Get.back();
     }
   }
+  void addManualTube(SampleBarcodeEntry entry, {required int tubeTypeId, required String tubeType}) {
+    final added = entry.addManualTube(tubeTypeId: tubeTypeId, tubeType: tubeType);
+    if (!added) {
+      LiquidSnack.warning(
+        'You can add up to ${SampleBarcodeEntry.maxManualTubes} extra tubes per sample.',
+        title: 'Limit reached',
+      );
+    }
+  }
 
+  void removeManualTube(SampleBarcodeEntry entry, String manualTubeId) {
+    entry.removeManualTube(manualTubeId);
+  }
   // ---------------------------------------------------------------------
   // Partial / incomplete collection
   // ---------------------------------------------------------------------
@@ -375,8 +387,12 @@ class SampleCollectionController extends GetxController with HasBagContext {
   // Complications
   // ---------------------------------------------------------------------
 
-  void setComplication(int complicationId, bool value) {
-    complicationSelections[complicationId] = value;
+  void setComplication(int complicationId, bool? value) {
+    if (value == null) {
+      complicationSelections.remove(complicationId);
+    } else {
+      complicationSelections[complicationId] = value;
+    }
   }
 
   // ---------------------------------------------------------------------

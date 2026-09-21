@@ -16,10 +16,20 @@ import 'package:get/get.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../controller/sample_collection_controller.dart';
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+
+import '../../../../../theme/app_colors.dart';
+import '../../controller/sample_collection_controller.dart';
+
 class ComplicationSection extends StatelessWidget {
   final SampleCollectionController controller;
 
-  const ComplicationSection({super.key, required this.controller});
+  const ComplicationSection({
+    super.key,
+    required this.controller,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +60,8 @@ class ComplicationSection extends StatelessWidget {
               },
               child: Row(
                 children: [
-                  _ExpandIndicator(expanded: expanded, hasSelections: selectedCount > 0),
+                  // Only up/down indicator.
+                  _ExpandIndicator(expanded: expanded),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -71,7 +82,9 @@ class ComplicationSection extends StatelessWidget {
                               : '$selectedCount recorded',
                           style: TextStyle(
                             fontSize: 11,
-                            color: selectedCount == 0 ? AppColors.textMuted : AppColors.blue,
+                            color: selectedCount == 0
+                                ? AppColors.textMuted
+                                : AppColors.blue,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -90,9 +103,12 @@ class ComplicationSection extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 12),
                 child: Column(
                   children: [
-                    for (final option in controller.complicationOptions)
+                    for (final option
+                    in controller.complicationOptions)
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 6,
+                        ),
                         child: Row(
                           children: [
                             Expanded(
@@ -121,6 +137,7 @@ class ComplicationSection extends StatelessWidget {
 
   Widget _yesNoToggle(int complicationId) {
     final selected = controller.complicationSelections[complicationId];
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -128,14 +145,24 @@ class ComplicationSection extends StatelessWidget {
           label: 'Yes',
           isActive: selected == true,
           color: AppColors.greenText,
-          onTap: () => controller.setComplication(complicationId, true),
+          onTap: () {
+            controller.setComplication(
+              complicationId,
+              selected == true ? null : true,
+            );
+          },
         ),
         const SizedBox(width: 6),
         _toggleButton(
           label: 'No',
           isActive: selected == false,
           color: AppColors.redText,
-          onTap: () => controller.setComplication(complicationId, false),
+          onTap: () {
+            controller.setComplication(
+              complicationId,
+              selected == false ? null : false,
+            );
+          },
         ),
       ],
     );
@@ -149,15 +176,24 @@ class ComplicationSection extends StatelessWidget {
   }) {
     return GestureDetector(
       onTap: () {
-        HapticFeedback.selectionClick();
+        HapticFeedback.lightImpact();
         onTap();
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 0),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 6,
+        ),
         decoration: BoxDecoration(
-          color: isActive ? color.withOpacity(0.12) : AppColors.grayLight,
+          color: isActive
+              ? color.withOpacity(0.12)
+              : AppColors.grayLight,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isActive ? color : AppColors.border),
+          border: Border.all(
+            color: isActive ? color : AppColors.border,
+          ),
         ),
         child: Text(
           label,
@@ -172,12 +208,14 @@ class ComplicationSection extends StatelessWidget {
   }
 }
 
-/// Modern checkbox-style expand/collapse indicator, replacing the static
-/// medical icon. Fills in when at least one complication has been recorded.
+/// Up/down indicator only.
+/// It does not change based on whether complications are selected.
 class _ExpandIndicator extends StatelessWidget {
   final bool expanded;
-  final bool hasSelections;
-  const _ExpandIndicator({required this.expanded, required this.hasSelections});
+
+  const _ExpandIndicator({
+    required this.expanded,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -187,22 +225,23 @@ class _ExpandIndicator extends StatelessWidget {
       width: 26,
       height: 26,
       decoration: BoxDecoration(
-        color: hasSelections ? AppColors.blue.withOpacity(0.12) : AppColors.grayLight,
+        color: AppColors.grayLight,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: hasSelections ? AppColors.blue : AppColors.border,
+          color: AppColors.border,
           width: 1.4,
         ),
       ),
       alignment: Alignment.center,
       child: AnimatedRotation(
+        // Down when collapsed, up when expanded.
         turns: expanded ? 0.5 : 0,
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
-        child: Icon(
-          hasSelections ? Icons.check_rounded : Icons.expand_more_rounded,
+        child: const Icon(
+          Icons.expand_more_rounded,
           size: 16,
-          color: hasSelections ? AppColors.blue : AppColors.textMuted,
+          color: AppColors.textMuted,
         ),
       ),
     );

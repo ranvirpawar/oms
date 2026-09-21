@@ -8,7 +8,141 @@ import '../controller/sample_collection_controller.dart';
 import 'barcode_validator.dart';
 
 enum BarcodeCheckStatus { idle, checking, available, unavailable, duplicate, formatError, error }
+class SampleBarcodeEntry {
+  final int sampleTypeId;
+  final String sampleType;
+  final String volumeRequiredMl;
+  final List<TestInfo> tests;
 
+  final TextEditingController barcodeController = TextEditingController(
+    text: BarcodeValidator.prefix,
+  );
+
+  final Rx<SampleCollectionStatus> status = SampleCollectionStatus.pending.obs;
+
+  final Rx<BarcodeCheckStatus> barcodeStatus = BarcodeCheckStatus.idle.obs;
+  final RxString barcodeMessage = ''.obs;
+  Timer? _barcodeDebounce;
+
+  void debounceBarcodeCheck(
+      VoidCallback action, {
+        Duration delay = const Duration(milliseconds: 1000),
+      }) {
+    _barcodeDebounce?.cancel();
+    _barcodeDebounce = Timer(delay, action);
+  }
+
+  final RxMap<int, TestIncompleteInfo> testIncompleteMap = <int, TestIncompleteInfo>{}.obs;
+  final RxBool isScanning = false.obs;
+
+  final List<TubeTypeInfo> apiTubeTypes;
+
+  /// Cap on manually-added tubes, per sample.
+  static const int maxManualTubes = 3;
+
+  /// Extra tubes added via the inline "+1" on a tube-type row. Each is
+  /// tagged with the type it was added against but mirrors the sample's
+  /// single [barcodeController] for display, same as any other non-primary
+  /// row — it doesn't carry its own barcode value.
+  final RxList<ManualTubeEntry> manualTubes = <ManualTubeEntry>[].obs;
+
+  SampleBarcodeEntry({
+    required this.sampleTypeId,
+    required this.sampleType,
+    required this.volumeRequiredMl,
+    required this.tests,
+  }) : apiTubeTypes = _dedupeTubeTypes(tests) {
+    barcodeController.selection = const TextSelection.collapsed(
+      offset: BarcodeValidator.prefix.length,
+    );
+  }
+
+  bool get canAddManualTube => manualTubes.length < maxManualTubes;
+
+  /// Rows for the UI: each API tube type, immediately followed by any
+  /// manual tubes added against that specific type — so a manual add
+  /// visually sits right under the row its "+1" was tapped on.
+  List<TubeRowData> get tubeRows {
+    if (apiTubeTypes.isEmpty) {
+      return [
+        TubeRowData(id: 'default', name: 'Tube', isManual: false),
+        ...manualTubes.map(
+              (m) => TubeRowData(id: m.id, name: m.tubeType, isManual: true, tubeTypeId: m.tubeTypeId),
+        ),
+      ];
+    }
+
+    final rows = <TubeRowData>[];
+    for (final tube in apiTubeTypes) {
+      rows.add(
+        TubeRowData(
+          id: 'api-${tube.tubeTypeId}',
+          name: tube.tubeType,
+          isManual: false,
+          tubeTypeId: tube.tubeTypeId,
+        ),
+      );
+      for (final manual in manualTubes.where((m) => m.tubeTypeId == tube.tubeTypeId)) {
+        rows.add(
+          TubeRowData(id: manual.id, name: manual.tubeType, isManual: true, tubeTypeId: manual.tubeTypeId),
+        );
+      }
+    }
+    return rows;
+  }
+
+  /// Adds a manual duplicate of [tubeType]/[tubeTypeId]. Returns false if
+  /// the per-sample cap is already hit.
+  bool addManualTube({required int tubeTypeId, required String tubeType}) {
+    if (!canAddManualTube) return false;
+    manualTubes.add(
+      ManualTubeEntry(
+        id: 'manual-${DateTime.now().microsecondsSinceEpoch}',
+        tubeTypeId: tubeTypeId,
+        tubeType: tubeType,
+      ),
+    );
+    return true;
+  }
+
+  void removeManualTube(String id) {
+    final idx = manualTubes.indexWhere((tube) => tube.id == id);
+    if (idx == -1) return;
+    manualTubes[idx].dispose();
+    manualTubes.removeAt(idx);
+  }
+
+  static List<TubeTypeInfo> _dedupeTubeTypes(List<TestInfo> tests) {
+    final seen = <int>{};
+    final result = <TubeTypeInfo>[];
+    for (final test in tests) {
+      for (final tube in test.tubeTypes) {
+        if (seen.add(tube.tubeTypeId)) result.add(tube);
+      }
+    }
+    return result;
+  }
+
+  int get tubeCount {
+    final count = apiTubeTypes.length + manualTubes.length;
+    return count > 0 ? count : 1;
+  }
+
+  bool get isCollected => status.value == SampleCollectionStatus.collected;
+  bool get isPending => status.value == SampleCollectionStatus.pending;
+  bool get isFullyUnusable => tests.isNotEmpty && testIncompleteMap.length == tests.length;
+  bool get hasPartialIncomplete => testIncompleteMap.isNotEmpty && !isFullyUnusable;
+  bool get isResolved => isCollected || isFullyUnusable;
+
+  void dispose() {
+    _barcodeDebounce?.cancel();
+    barcodeController.dispose();
+    for (final tube in manualTubes) {
+      tube.dispose();
+    }
+  }
+}
+/*
 class SampleBarcodeEntry {
   final int sampleTypeId;
   final String sampleType;
@@ -157,4 +291,4 @@ class SampleBarcodeEntry {
       tube.dispose();
     }
   }
-}
+}*/

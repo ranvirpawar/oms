@@ -30,6 +30,17 @@ class OrderTest {
       fastingRequired: json['FastingRequired'] as String?,
     );
   }
+
+  bool get isFastingRequired {
+    if (fastingRequired == null) return false;
+    final v = fastingRequired!.trim().toLowerCase();
+    if (v.isEmpty || v.contains('not')) return false;
+    return v.contains('required') ||
+        v.contains('fasting') ||
+        v == 'true' ||
+        v == '1' ||
+        v == 'yes';
+  }
 }
 
 /// A single time slot returned by the `user/available-slots` endpoint for

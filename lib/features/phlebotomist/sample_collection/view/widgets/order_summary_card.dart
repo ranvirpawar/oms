@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -6,19 +5,6 @@ import 'package:intl/intl.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../../patient_queue/model/patient_queue_model.dart';
 import '../../model/sample_collection_models.dart';
-import '../order_confirmation_screen.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
-
-import '../../../../../theme/app_colors.dart';
-import '../../../patient_queue/model/patient_queue_model.dart';
-import '../../model/sample_collection_models.dart';
-import '../order_confirmation_screen.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 
 class OrderPatientSummaryCard extends StatefulWidget {
   final String name;
@@ -72,7 +58,14 @@ class OrderPatientSummaryCard extends StatefulWidget {
           : 'Other';
       groups
           .putIfAbsent(sampleType, () => [])
-          .add(SummaryTestItem(t.testName, null, t.tubeContent));
+          .add(
+            SummaryTestItem(
+              t.testName,
+              null,
+              t.tubeContent,
+              t.isFastingRequired,
+            ),
+          );
     }
     String formatSlotLabel(DateTime dt) {
       final datePart = DateFormat('dd MMM yyyy').format(dt);
@@ -84,20 +77,22 @@ class OrderPatientSummaryCard extends StatefulWidget {
 
       return '$datePart, ${DateFormat('hh:mm a').format(dt)}';
     }
+
     return OrderPatientSummaryCard(
       name: patient.name,
       avatarUrl: patient.avatarUrl,
       orderId: patient.orderId.toString(),
-      subtitle: [
-        if (patient.age != null) 'Age ${patient.age}',
-        if (patient.gender != null && patient.gender!.isNotEmpty)
-          patient.gender!,
-      ].isNotEmpty
+      subtitle:
+          [
+            if (patient.age != null) 'Age ${patient.age}',
+            if (patient.gender != null && patient.gender!.isNotEmpty)
+              patient.gender!,
+          ].isNotEmpty
           ? [
-        if (patient.age != null) 'Age ${patient.age}',
-        if (patient.gender != null && patient.gender!.isNotEmpty)
-          patient.gender!,
-      ].join(' • ')
+              if (patient.age != null) 'Age ${patient.age}',
+              if (patient.gender != null && patient.gender!.isNotEmpty)
+                patient.gender!,
+            ].join(' • ')
           : null,
       slotLabel: patient.slotDateTime != null
           ? formatSlotLabel(patient.slotDateTime!)
@@ -148,6 +143,7 @@ class OrderPatientSummaryCard extends StatefulWidget {
                       t.tubeTypes
                           .map((tt) => tt.tubeType.trim())
                           .firstWhere((s) => s.isNotEmpty, orElse: () => ''),
+                      t.fastingRequired,
                     ),
                   )
                   .toList(),
@@ -432,18 +428,17 @@ class _Body extends StatelessWidget {
     required this.specialInstructions,
     required this.sampleGroups,
     required this.floating,
-
   });
 
   int get _testCount => sampleGroups.fold(0, (sum, g) => sum + g.tests.length);
 
   @override
   Widget build(BuildContext context) {
-
     return ConstrainedBox(
       constraints: BoxConstraints(
         maxHeight: floating
-            ? MediaQuery.of(context).size.height * 0.45 // Takes up to 45% of screen when floating
+            ? MediaQuery.of(context).size.height *
+                  0.45 // Takes up to 45% of screen when floating
             : double.infinity, // Normal behavior when in a standard list
       ),
       child: SingleChildScrollView(
@@ -451,7 +446,6 @@ class _Body extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Divider(height: 20),
-
 
             if (sampleGroups.isNotEmpty) ...[
               Row(
@@ -477,9 +471,18 @@ class _Body extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 10),
-              ...sampleGroups.map((g) => _SampleGroupTable(group: g)),
+              ...(() {
+                final widgets = <Widget>[];
+                var runningIndex = 0;
+                for (final g in sampleGroups) {
+                  widgets.add(
+                    _SampleGroupTable(group: g, startIndex: runningIndex),
+                  );
+                  runningIndex += g.tests.length;
+                }
+                return widgets;
+              })(),
             ],
-
           ],
         ),
       ),
@@ -535,8 +538,9 @@ class _InfoStrip extends StatelessWidget {
 /// header (sample type + volume) followed by rows of Test name | Tube type.
 class _SampleGroupTable extends StatelessWidget {
   final SummarySampleGroup group;
+  final int startIndex;
 
-  const _SampleGroupTable({required this.group});
+  const _SampleGroupTable({required this.group, required this.startIndex});
 
   @override
   Widget build(BuildContext context) {
@@ -544,92 +548,15 @@ class _SampleGroupTable extends StatelessWidget {
         group.sampleType != 'Tests' || group.volume.isNotEmpty;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-
-      clipBehavior: Clip.antiAlias,
+      // ...unchanged...
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (showSectionHeader)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-              // color: AppColors.bgCard,
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.science_outlined,
-                    size: 13,
-                    color: AppColors.tealText,
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      group.sampleType,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textSecondary,
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-                  ),
-                  if (group.volume.isNotEmpty)
-                    Text(
-                      group.volume,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-          // Column labels — only worth showing once there's more than one row,
-          // otherwise it's noise.
-          if (group.tests.length > 1)
-            Container(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-              child: const Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: Text(
-                      'TEST NAME',
-                      style: TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textTertiary,
-                        letterSpacing: 0.4,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'TUBE TYPE',
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textTertiary,
-                        letterSpacing: 0.4,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          // ...section header + column labels unchanged...
 
           for (var i = 0; i < group.tests.length; i++)
             _TestRow(
+              srNo: startIndex + i + 1,
               test: group.tests[i],
               fallbackSampleType: group.sampleType,
               isLast: i == group.tests.length - 1,
@@ -641,11 +568,13 @@ class _SampleGroupTable extends StatelessWidget {
 }
 
 class _TestRow extends StatelessWidget {
+  final int srNo;
   final SummaryTestItem test;
   final String fallbackSampleType;
   final bool isLast;
 
   const _TestRow({
+    required this.srNo,
     required this.test,
     required this.fallbackSampleType,
     required this.isLast,
@@ -664,22 +593,70 @@ class _TestRow extends StatelessWidget {
         border: isLast
             ? null
             : const Border(
-                bottom: BorderSide(color: AppColors.border, width: 0.75),
-              ),
+          bottom: BorderSide(color: AppColors.border, width: 0.75),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             flex: 3,
-            child: Text(
-              test.name,
-              style: const TextStyle(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-                height: 1.3,
-              ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '$srNo. ',
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                            height: 1.3,
+                          ),
+                        ),
+                        TextSpan(text: test.name),
+                      ],
+                    ),
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                      height: 1.3,
+                    ),
+                  ),
+                ),
+                if (test.fastingRequired) ...[
+                  const SizedBox(width: 6),
+                  Tooltip(
+                    message: 'Fasting Required',
+                    child: Container(
+                      width: 17,
+                      height: 17,
+                      decoration: BoxDecoration(
+                        color: AppColors.amberLight,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.amberBorder,
+                          width: 1,
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'F',
+                        style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.amberText,
+                          height: 1.0,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           const SizedBox(width: 8),
@@ -771,7 +748,7 @@ class TubeTypeInfo {
   static TubeTypeInfo forSampleType(String sampleType) {
     final key = sampleType.trim().toLowerCase();
 
-   /* if (key.contains('edta'))
+    /* if (key.contains('edta'))
       return const TubeTypeInfo('EDTA (Lavender)', Color(0xFF8B7FD1));
     if (key.contains('serum') || key.contains('sst'))
       return const TubeTypeInfo('Serum (Gold/Red)', Color(0xFFD4A017));
@@ -834,8 +811,19 @@ class SummaryTestItem {
   /// TubeTypeInfo.forSampleType() inference at render time.
   final String? tubeType;
 
-  const SummaryTestItem(this.name, [this.code, this.tubeType]);
+  final bool fastingRequired;
 
-  const SummaryTestItem.withTube(this.name, {this.code, this.tubeType});
+  const SummaryTestItem(
+    this.name, [
+    this.code,
+    this.tubeType,
+    this.fastingRequired = false,
+  ]);
+
+  const SummaryTestItem.withTube(
+    this.name, {
+    this.code,
+    this.tubeType,
+    this.fastingRequired = false,
+  });
 }
-

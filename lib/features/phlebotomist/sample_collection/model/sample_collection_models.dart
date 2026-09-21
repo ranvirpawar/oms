@@ -30,16 +30,36 @@ class TestInfo {
   final String testCode;
   final String testName;
   final List<TubeTypeInfo> tubeTypes;
+  final bool fastingRequired;
 
   TestInfo({
     required this.testId,
     required this.testCode,
     required this.testName,
     required this.tubeTypes,
+    this.fastingRequired = false,
   });
 
   factory TestInfo.fromJson(Map<String, dynamic> json) {
     final tubeTypesList = json['tubeTypes'];
+    final rawFasting = json['fastingRequired'] ??
+        json['FastingRequired'] ??
+        json['isFastingRequired'];
+    bool isFasting = false;
+    if (rawFasting is bool) {
+      isFasting = rawFasting;
+    } else if (rawFasting != null) {
+      final v = rawFasting.toString().trim().toLowerCase();
+      if (!v.contains('not') &&
+          (v.contains('required') ||
+              v.contains('fasting') ||
+              v == 'true' ||
+              v == '1' ||
+              v == 'yes')) {
+        isFasting = true;
+      }
+    }
+
     return TestInfo(
       testId: json['testId'] is int
           ? json['testId'] as int
@@ -48,10 +68,11 @@ class TestInfo {
       testName: json['testName'] as String? ?? '',
       tubeTypes: tubeTypesList is List
           ? tubeTypesList
-          .whereType<Map<String, dynamic>>()
-          .map(TubeTypeInfo.fromJson)
-          .toList()
+              .whereType<Map<String, dynamic>>()
+              .map(TubeTypeInfo.fromJson)
+              .toList()
           : <TubeTypeInfo>[],
+      fastingRequired: isFasting,
     );
   }
 }
@@ -110,27 +131,34 @@ class PatientHeader {
 }
 /// A single tube row shown in the UI — either derived from the API's
 /// per-test tube types, or added manually by the phlebotomist.
+class ManualTubeEntry {
+  final String id;
+  final int tubeTypeId;
+  final String tubeType;
+
+  ManualTubeEntry({
+    required this.id,
+    required this.tubeTypeId,
+    required this.tubeType,
+  });
+
+  // Nothing to dispose anymore — kept as a no-op so SampleBarcodeEntry.dispose()
+  // doesn't need special-casing.
+  void dispose() {}
+}
+
 class TubeRowData {
+  final String id;
+  final String name;
+  final bool isManual;
+  final int? tubeTypeId;
+
   TubeRowData({
     required this.id,
     required this.name,
     required this.isManual,
-    this.nameController,
+    this.tubeTypeId,
   });
-
-  final String id;
-  final String name;
-  final bool isManual;
-
-  /// Only set for manual rows — lets the phlebotomist type the tube name.
-  final TextEditingController? nameController;
-}
-
-class ManualTubeEntry {
-  ManualTubeEntry({required this.id}) : nameController = TextEditingController();
-  final String id;
-  final TextEditingController nameController;
-  void dispose() => nameController.dispose();
 }
 /// A required sample type for the order, now carrying the full list of
 /// tests it feeds — needed so the phlebotomist can flag individual tests

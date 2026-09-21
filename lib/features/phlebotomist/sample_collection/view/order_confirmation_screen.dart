@@ -78,6 +78,9 @@ class OrderConfirmationScreen extends GetView<OrderConfirmationController> {
         if (!controller.isOrderAccepted) {
           return NotAcceptedView(patient: controller.assignedPatient);
         }
+        if (controller.needRescheduleOrderAccept) {
+          return NotAcceptedView(patient: controller.assignedPatient);
+        }
         if (controller.needsToStartRoute) {
           return NeedsRouteStartView(patient: controller.assignedPatient);
         }

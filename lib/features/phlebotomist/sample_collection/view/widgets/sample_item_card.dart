@@ -82,17 +82,7 @@ class SampleItemCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (status != SampleCollectionStatus.incomplete)
-                  TextButton.icon(
-                    onPressed: entry.addManualTube,
-                    icon: const Icon(Icons.add_rounded, size: 14, color: AppColors.accent700),
-                    label: const Text('Tube', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.accent700)),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      minimumSize: const Size(0, 28),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  ),
+
               ],
             ),
             const SizedBox(height: 12),

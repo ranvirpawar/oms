@@ -291,7 +291,7 @@ class _PatientCardState extends State<PatientCard> {
           if (hasTubes) ...[
             const SizedBox(height: 6),
             Tooltip(
-              decoration: BoxDecoration(),
+
               message: "${widget.patient.tubes.map((t) => t.label).join(', ')}",
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

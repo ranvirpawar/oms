@@ -26,18 +26,11 @@ class TubeBarcodeGroup extends StatelessWidget {
 
   const TubeBarcodeGroup({super.key, required this.entry, required this.controller});
 
-  static const _errorStatuses = {
-    BarcodeCheckStatus.unavailable,
-    BarcodeCheckStatus.duplicate,
-    BarcodeCheckStatus.formatError,
-    BarcodeCheckStatus.error,
-  };
-
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       final status = entry.barcodeStatus.value;
-      final hasError = _errorStatuses.contains(status);
+      final hasError = TubeBarcodeGroup._errorStatuses.contains(status);
       final rows = entry.tubeRows.isEmpty
           ? [TubeRowData(id: 'default', name: 'Tube', isManual: false)]
           : entry.tubeRows;
@@ -48,14 +41,14 @@ class TubeBarcodeGroup extends StatelessWidget {
           for (int i = 0; i < rows.length; i++) ...[
             if (i > 0) const SizedBox(height: 6),
             _TubeRow(
+              entry: entry,
               row: rows[i],
               status: status,
-              isPrimary: i == 0, // only the first row is interactive
+              isPrimary: i == 0, // unchanged: only the first row is interactive
               barcodeController: entry.barcodeController,
+              controller: controller,
               onScanTap: () => controller.openBarcodeScanner(entry),
               onChanged: (value) => controller.onBarcodeChanged(entry, value),
-              onRemove: rows[i].isManual ? () => entry.removeManualTube(rows[i].id) : null,
-              onNameChanged: rows[i].isManual ? () => entry.manualTubes.refresh() : null,
             ),
           ],
           AnimatedSize(
@@ -85,9 +78,131 @@ class TubeBarcodeGroup extends StatelessWidget {
       );
     });
   }
+
+  static const _errorStatuses = {
+    BarcodeCheckStatus.unavailable,
+    BarcodeCheckStatus.duplicate,
+    BarcodeCheckStatus.formatError,
+    BarcodeCheckStatus.error,
+  };
 }
 
 class _TubeRow extends StatelessWidget {
+  final SampleBarcodeEntry entry;
+  final TubeRowData row;
+  final BarcodeCheckStatus status;
+  final bool isPrimary;
+  final TextEditingController barcodeController;
+  final SampleCollectionController controller;
+  final VoidCallback onScanTap;
+  final ValueChanged<String> onChanged;
+
+  const _TubeRow({
+    required this.entry,
+    required this.row,
+    required this.status,
+    required this.isPrimary,
+    required this.barcodeController,
+    required this.controller,
+    required this.onScanTap,
+    required this.onChanged,
+  });
+
+  static const _errorStatuses = {
+    BarcodeCheckStatus.unavailable,
+    BarcodeCheckStatus.duplicate,
+    BarcodeCheckStatus.formatError,
+    BarcodeCheckStatus.error,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final hasError = _errorStatuses.contains(status);
+
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      decoration: BoxDecoration(
+        color: AppColors.grayLight,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isPrimary ? (hasError ? AppColors.redText : Colors.transparent) : Colors.transparent,
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        children: [
+          SizedBox(width: 60, child: _TubeTag(name: row.name)),
+          const SizedBox(width: 4),
+          Container(width: 1, height: 18, color: AppColors.border),
+          const SizedBox(width: 6),
+          Expanded(
+            child: isPrimary
+                ? TextField(
+              controller: barcodeController,
+              onChanged: onChanged,
+              onTapOutside: (event) => FocusManager.instance.primaryFocus?.unfocus(),
+              maxLength: 15,
+              keyboardType: TextInputType.number,
+              textCapitalization: TextCapitalization.characters,
+              textAlignVertical: TextAlignVertical.center,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[A-Za-z0-9]')),
+                LengthLimitingTextInputFormatter(BarcodeValidator.maxLength),
+                _JaaPrefixFormatter(),
+              ],
+              style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+              decoration: const InputDecoration(
+                isDense: true,
+                counterText: '',
+                contentPadding: EdgeInsets.symmetric(vertical: 10),
+                border: InputBorder.none,
+                hintText: 'Enter or scan barcode',
+                hintStyle: TextStyle(fontSize: 13, color: AppColors.textMuted, fontWeight: FontWeight.w400),
+              ),
+            )
+                : _ReadOnlyBarcodeValue(controller: barcodeController),
+          ),
+          if (isPrimary) _VerificationSuffix(status: status),
+          if (isPrimary) ...[
+            const SizedBox(width: 2),
+            _ScanButton(onTap: onScanTap),
+          ],
+          // Inline "+1": only on API-provided rows, and only while under cap.
+          if (!row.isManual && entry.canAddManualTube) ...[
+            const SizedBox(width: 2),
+            InkWell(
+              onTap: () => controller.addManualTube(
+                entry,
+                tubeTypeId: row.tubeTypeId ?? 0,
+                tubeType: row.name,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              child: const Padding(
+                padding: EdgeInsets.all(6),
+                child: Icon(Icons.add_circle_outline_rounded, size: 17, color: AppColors.accent700),
+              ),
+            ),
+          ],
+          // Remove: only on manual rows.
+          if (row.isManual) ...[
+            const SizedBox(width: 2),
+            InkWell(
+              onTap: () => controller.removeManualTube(entry, row.id),
+              borderRadius: BorderRadius.circular(20),
+              child: const Padding(
+                padding: EdgeInsets.all(6),
+                child: Icon(Icons.close_rounded, size: 15, color: AppColors.textMuted),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/*class _TubeRow extends StatelessWidget {
   final TubeRowData row;
   final BarcodeCheckStatus status;
   final bool isPrimary;
@@ -196,7 +311,7 @@ class _TubeRow extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
 /// Non-interactive mirror of the shared barcode value for every row after
 /// the first. It listens to [barcodeController] directly instead of being
@@ -419,10 +534,10 @@ class _TubeTag extends StatelessWidget {
       waitDuration: const Duration(milliseconds: 350),
       child: Text(
         name.isEmpty ? 'Tube' : name,
-        maxLines: 1,
+        maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: const TextStyle(
-          fontSize: 10.5,
+          fontSize: 10,
           fontWeight: FontWeight.w700,
           color: AppColors.accent700,
         ),
