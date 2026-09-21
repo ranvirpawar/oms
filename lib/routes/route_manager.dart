@@ -5,14 +5,11 @@ import 'package:lifenity_connect/features/auth/view/login_screen.dart';
 import 'package:lifenity_connect/features/auth/view/my_profile.dart';
 import 'package:lifenity_connect/features/cms_eho/view/consumption_dashboard.dart';
 import 'package:lifenity_connect/features/dashboard/view/dashboard_screen.dart';
-import 'package:lifenity_connect/features/lab_technician/passkey/view/passkey_view.dart';
-import 'package:lifenity_connect/features/lab_technician/sample_accept/view/sample_accept_view.dart';
 import 'package:lifenity_connect/features/phlebotomist/bag_status/view/bag_status_page.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_queue/view/patient_queue_view.dart';
 import 'package:lifenity_connect/features/phlebotomist/bag_status_dashboard/view/bag_registration_dashboard.dart';
 import 'package:lifenity_connect/features/phlebotomist/patient_registration/view/registered_patient_list.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/view/order_confirmation_screen.dart';
-import 'package:lifenity_connect/features/phlebotomist/sample_pickup/view/sample%20pickup_entry.dart';
 import 'package:lifenity_connect/features/phlebotomist/sample_recollection/view/sample_recollection_list_view.dart';
 import 'package:lifenity_connect/features/runner_boy/collect_empty_bag/view/collect_destination_bag.dart';
 import 'package:lifenity_connect/features/runner_boy/collect_from_phlebotomist/view/collect_bag_from_phlebo.dart';
@@ -99,21 +96,8 @@ class RouteManager {
     );
   }
 
-  static void navigateToSampleAccept() {
-    Get.to(
-      () => const SampleAcceptView(),
-      transition: Transition.rightToLeft,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
 
-  static void navigateToSamplePickupDashboard() {
-    Get.to(
-      () => SamplePickupEntryView(),
-      transition: Transition.rightToLeft,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
+
 
 
   static void navigateToSampleRecollection([bool isRefresh = false]) {
@@ -130,13 +114,7 @@ class RouteManager {
     );
   }
 
-  static void navigateToGeneratePassKey(String userId) {
-    Get.to(
-      () => PasskeyScreen(userId: userId),
-      transition: Transition.rightToLeft,
-      duration: const Duration(milliseconds: 200),
-    );
-  }
+
 
   static void navigateToPatientRegistrationList({
     required dynamic facilityData,
