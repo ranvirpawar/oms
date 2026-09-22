@@ -1,17 +1,4 @@
-// order_confirmation_controller.dart
-//
-// Owns everything on the Order Confirmation flow: loading the order,
-// route/GPS tracking on the way to the patient, the bag-open gate, and OTP
-// verification. Created fresh by OrderConfirmationBinding every time a
-// phlebotomist opens a patient from the queue, and torn down (onClose runs,
-// timers/streams cancelled) when that route is popped — so nothing here can
-// leak into the next patient.
-//
-// Deliberately does NOT own sample entries, complications, or incomplete
-// reasons — those belong to SampleCollectionController because they're only
-// ever rendered on that screen. Fetching them here (as the old combined
-// controller did) meant wasted API calls on every order confirmation, even
-// when the phlebotomist never reached the collection step.
+
 
 import 'dart:async';
 
@@ -353,8 +340,8 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
       if (!_otpVerifiedThisSession) return; // backed out without verifying
     }
 
-    // final checklistCompleted = await _goToChecklist();
-    // if (!checklistCompleted) return; // backed out without completing it
+    final checklistCompleted = await _goToChecklist();
+    if (!checklistCompleted) return; // backed out without completing it
 
     await _goToSampleCollection();
   }

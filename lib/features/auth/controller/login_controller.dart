@@ -21,8 +21,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:sms_autofill/sms_autofill.dart';
 
-/// Add to pubspec.yaml:  sms_autofill: ^2.4.0
-/// (see backend_otp_integration.md for the SMS template this depends on)
 
 enum LoginStep { credentials, otp }
 

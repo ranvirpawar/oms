@@ -15,7 +15,7 @@ class CustomTextFormField extends StatelessWidget {
   final List<TextInputFormatter>? inputFormatters;
   final Color? cursorColor;
   final int? maxLength;
-
+  final AutovalidateMode? autovalidateMode;
 
   const CustomTextFormField({
     super.key,
@@ -30,6 +30,7 @@ class CustomTextFormField extends StatelessWidget {
     this.inputFormatters,
     this.cursorColor,
     this.maxLength,
+    this.autovalidateMode,
   });
 
   @override
@@ -53,6 +54,8 @@ class CustomTextFormField extends StatelessWidget {
           keyboardType: keyboardType,
           textAlign: TextAlign.start,
           maxLength: maxLength,
+          autovalidateMode: autovalidateMode,
+
 
           obscureText: isPassword && !isPasswordVisible,
           style: const TextStyle(
@@ -129,6 +132,11 @@ class CustomTextFormField extends StatelessWidget {
                 width: 2,
               ),
             ),
+            errorStyle: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 18,
@@ -140,128 +148,5 @@ class CustomTextFormField extends StatelessWidget {
   }
 }
 
-/*// Updated CustomTextFormField to support modern design
-class CustomTextFormField extends StatelessWidget {
-  final TextEditingController? controller;
-  final String hintText;
-  final String svgAssetPath;
-  final String? Function(String?)? validator;
-  final TextInputType? keyboardType;
-  final bool isPassword;
-  final bool isPasswordVisible;
-  final VoidCallback? onTogglePassword;
-  final List<TextInputFormatter>? inputFormatters;
 
-  const CustomTextFormField({
-    super.key,
-    this.controller,
-    required this.hintText,
-    required this.svgAssetPath,
-    this.validator,
-    this.keyboardType,
-    this.isPassword = false,
-    this.isPasswordVisible = false,
-    this.onTogglePassword,
-    this.inputFormatters
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          hintText,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          validator: validator,
-          inputFormatters: inputFormatters,
-          keyboardType: keyboardType,
-          textAlign: TextAlign.start,
-          obscureText: isPassword && !isPasswordVisible,
-          style: const TextStyle(
-            fontSize: 16,
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
-          ),
-          decoration: InputDecoration(
-            hintText: hintText,
-            hintStyle: TextStyle(
-              color: Colors.grey[500],
-              fontSize: 14,
-            ),
-            prefixIcon: Padding(
-              padding: const EdgeInsets.all(16),
-              child: SvgPicture.asset(
-                svgAssetPath,
-                width: 24,
-                height: 24,
-                color: AppColors.primary,
-              ),
-            ),
-            suffixIcon: isPassword
-                ? IconButton(
-              onPressed: onTogglePassword,
-              icon: Icon(
-                isPasswordVisible
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-                color: AppColors.primary,
-              ),
-            )
-                : null,
-            filled: true,
-            fillColor: Colors.grey[50],
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: Colors.grey[300]!,
-                width: 1,
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: Colors.grey[300]!,
-                width: 1,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: AppColors.primary,
-                width: 2,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.red,
-                width: 1,
-              ),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Colors.red,
-                width: 2,
-              ),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}*/
 

@@ -8,7 +8,7 @@ import 'order_summary_card.dart';
 class NotAcceptedView extends StatelessWidget {
   final AssignedPatient patient;
 
-  const NotAcceptedView({required this.patient});
+  const NotAcceptedView({super.key, required this.patient});
 
   @override
   Widget build(BuildContext context) {

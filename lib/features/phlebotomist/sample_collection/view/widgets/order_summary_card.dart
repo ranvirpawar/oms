@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
+import 'package:lifenity_connect/constants/app_assets.dart';
 
 import '../../../../../theme/app_colors.dart';
 import '../../../patient_queue/model/patient_queue_model.dart';
@@ -560,7 +562,7 @@ class _SampleGroupTable extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
               decoration: BoxDecoration(
-                color: AppColors.primary50.withOpacity(0.7),
+                color: AppColors.tertiary50.withOpacity(0.7),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -568,13 +570,13 @@ class _SampleGroupTable extends StatelessWidget {
                   Container(
                     width: 22,
                     height: 22,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary100,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Icon(
-                      Icons.science_outlined,
-                      size: 13,
+                    // decoration: BoxDecoration(
+                    //   color: AppColors.primary100,
+                    //   borderRadius: BorderRadius.circular(6),
+                    // ),
+                    child:  SvgPicture.asset(
+                      AppAssets.testTube,
+                      height: 13,
                       color: AppColors.primary700,
                     ),
                   ),

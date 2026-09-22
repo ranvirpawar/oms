@@ -1,7 +1,18 @@
+import '../services/app_envirionment_service.dart';
+
 class AppAssets {
   AppAssets._();
+
   // should render as per the app flavor
   static const String lifenityLogo = 'assets/images/lifenity-logo.png';
+  static const String appBetaIcon = 'assets/app-icons/oms-beta.png';
+  static const String appDevIcon = 'assets/app-icons/oms-dev.png';
+
+  static String get appIcon => AppEnvironment.isBeta
+      ? AppAssets.appBetaIcon
+      : AppEnvironment.isDev
+      ? AppAssets.appDevIcon
+      : lifenityLogo;
 
   // icons
   static const String userIcon = 'assets/icons/user-square-rounded.svg';
@@ -66,14 +77,21 @@ class AppAssets {
 
   /// Dashboard cards
 
-  static const String collectSampleIcon = 'assets/dashboard_icons/collect-sample-icon.png';
-  static const String manageOrderIcon = 'assets/dashboard_icons/manage-order-icon.png';
-  static const String bagHistoryIcon = 'assets/dashboard_icons/bag-history-icon.png';
-  static const String sampleRecollectionIconOg = 'assets/dashboard_icons/sample-recollection-icon.png';
-  static const String collectedBagsIcon = 'assets/dashboard_icons/collected-bags.png';
+  static const String collectSampleIcon =
+      'assets/dashboard_icons/collect-sample-icon.png';
+  static const String manageOrderIcon =
+      'assets/dashboard_icons/manage-order-icon.png';
+  static const String bagHistoryIcon =
+      'assets/dashboard_icons/bag-history-icon.png';
+  static const String sampleRecollectionIconOg =
+      'assets/dashboard_icons/sample-recollection-icon.png';
+  static const String collectedBagsIcon =
+      'assets/dashboard_icons/collected-bags.png';
   static const String collectBagIcon = 'assets/dashboard_icons/collect-bag.png';
-  static const String collectDestinationBag = 'assets/dashboard_icons/collect-destination-bag.png';
-  static const String acceptInLabIcon = 'assets/dashboard_icons/accept-in-lab.png';
+  static const String collectDestinationBag =
+      'assets/dashboard_icons/collect-destination-bag.png';
+  static const String acceptInLabIcon =
+      'assets/dashboard_icons/accept-in-lab.png';
 
   /// sample live tracking dashboard
   static const String bagOpenedIcon = 'assets/images/bag-opened-icon.jpg';

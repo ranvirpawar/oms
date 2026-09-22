@@ -29,7 +29,7 @@ class ForgotPasswordView extends StatelessWidget {
               children: [
                 Center(
                   child: Image.asset(
-                    AppAssets.lifenityLogo,
+                    AppAssets.appIcon,
                     fit: BoxFit.contain,
                     width: MediaQuery.of(context).size.width * 0.6,
                   ),

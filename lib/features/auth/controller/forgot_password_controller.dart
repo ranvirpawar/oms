@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 
 import '../service/forgot_password_service.dart';
 import '../../../utils/ui_designs/liquid_snackbar.dart';
@@ -158,9 +158,9 @@ class ForgotPasswordController extends GetxController {
     required bool isError,
   }) {
     if (isError) {
-      LiquidSnack.error(message, title: title);
+      LiquidSnack.error(message, title: title, position: SnackPosition.top);
     } else {
-      LiquidSnack.success(message, title: title);
+      LiquidSnack.success(message, title: title, position: SnackPosition.top);
     }
   }
 }

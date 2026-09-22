@@ -31,7 +31,7 @@ class LoginScreenView extends GetView<LoginController> {
             flex: 2,
             child: Center(
               child: Image.asset(
-                AppAssets.lifenityLogo,
+                AppAssets.appIcon,
                 fit: BoxFit.contain,
                 width: MediaQuery.of(context).size.width * 0.6,
               ),
@@ -186,6 +186,8 @@ class _CredentialsStep extends StatelessWidget {
                       keyboardType: TextInputType.text,
                       cursorColor: Colors.white,
                       maxLength: 10,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+
                       // inputFormatters: InputFormatters.digits,
 
                       // autofillHints: const [AutofillHints.username],
@@ -199,6 +201,7 @@ class _CredentialsStep extends StatelessWidget {
                         hintText: AppStrings.password,
                         svgAssetPath: AppAssets.lockIcons,
                         validator: controller.validatePassword,
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
                         isPassword: true,
                         isPasswordVisible: controller.isPasswordVisible.value,
                         onTogglePassword: controller.togglePasswordVisibility,

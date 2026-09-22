@@ -1,4 +1,4 @@
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 
 import '../../../network/api_client.dart';
 import '../../../network/app_urls.dart';
@@ -22,11 +22,11 @@ class ForgotPasswordService {
       if (data['status'] == 'Success') {
         return true;
       } else {
-        LiquidSnack.error(data['message'] ?? 'Could not send OTP');
+        LiquidSnack.error(data['message'] ?? 'Could not send OTP', position: SnackPosition.top);
         return false;
       }
     } catch (e) {
-      LiquidSnack.error('Something went wrong. Please try later.');
+      LiquidSnack.error('Something went wrong. Please try later.', position: SnackPosition.top);
       rethrow;
     }
   }

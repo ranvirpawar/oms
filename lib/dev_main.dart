@@ -62,7 +62,7 @@ void _wireSessionExpiryHandling(SessionCoordinator coordinator) {
     // Run after the current frame so the navigator's Overlay (used by
     // LiquidSnack) is guaranteed to exist when we insert the toast.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      LiquidSnack.error(
+      LiquidSnack.info(
         'Your session has expired. Please login again.',
         title: 'Session expired',
       );

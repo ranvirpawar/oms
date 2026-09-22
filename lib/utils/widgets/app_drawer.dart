@@ -23,23 +23,55 @@ class CustomDrawer extends StatelessWidget {
       //     titleKey: "Settings",
       //     navigationFunction: _navigateToSettings,
       //     isLogout: false),
-      /* DrawerItem(
-          icon: Icons.lock_outline,
-          titleKey: 'Change Password',
-          navigationFunction: _generatePasscode,
-          isLogout: false),*/
-      DrawerItem(icon: Icons.home, titleKey: 'Home', navigationFunction: () {}, isLogout: false),
-      DrawerItem(icon: Icons.history, titleKey: 'Assigned Tasks', navigationFunction: () {}, isLogout: false),
-      DrawerItem(icon: Icons.note_alt, titleKey: 'Tasks History', navigationFunction: () {}, isLogout: false),
-      DrawerItem(icon: Icons.punch_clock, titleKey: 'End Shift', navigationFunction: () {}, isLogout: false),
-      DrawerItem(icon: Icons.calendar_today, titleKey: 'Daily Reconciliation', navigationFunction: () {}, isLogout: false),
+      DrawerItem(
+        icon: Icons.lock_outline,
+        titleKey: 'Change Password',
+        navigationFunction: _generatePasscode,
+        isLogout: false,
+      ),
+      DrawerItem(
+        icon: Icons.home,
+        titleKey: 'Home',
+        navigationFunction: () {},
+        isLogout: false,
+      ),
+      DrawerItem(
+        icon: Icons.history,
+        titleKey: 'Assigned Tasks',
+        navigationFunction: () {},
+        isLogout: false,
+      ),
+      DrawerItem(
+        icon: Icons.note_alt,
+        titleKey: 'Tasks History',
+        navigationFunction: () {},
+        isLogout: false,
+      ),
+      DrawerItem(
+        icon: Icons.punch_clock,
+        titleKey: 'End Shift',
+        navigationFunction: () {},
+        isLogout: false,
+      ),
+      DrawerItem(
+        icon: Icons.calendar_today,
+        titleKey: 'Daily Reconciliation',
+        navigationFunction: () {},
+        isLogout: false,
+      ),
 
       // DrawerItem(
       //     icon: Icons.help_outline,
       //     titleKey: "Help & Support",
       //     navigationFunction: _openSupport,
       //     isLogout: false),
-      DrawerItem(icon: Icons.logout, titleKey: 'Logout', navigationFunction: () => Get.find<AuthManager>().logoutUser(clearCredentials: true), isLogout: true),
+      DrawerItem(
+        icon: Icons.logout,
+        titleKey: 'Logout',
+        navigationFunction: () =>
+            Get.find<AuthManager>().logoutUser(clearCredentials: true),
+        isLogout: true,
+      ),
     ];
   }
 
@@ -70,7 +102,10 @@ class CustomDrawer extends StatelessWidget {
       width: MediaQuery.of(context).size.width * 0.75,
       backgroundColor: theme.scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(topRight: Radius.circular(24), bottomRight: Radius.circular(24)),
+        borderRadius: BorderRadius.only(
+          topRight: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -80,14 +115,23 @@ class CustomDrawer extends StatelessWidget {
             () => Container(
               padding: const EdgeInsets.fromLTRB(20, 45, 20, 20),
               decoration: BoxDecoration(
-                gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.8)]),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.primary.withOpacity(0.8),
+                  ],
+                ),
               ),
               child: Column(
                 children: [
                   // Profile Avatar
                   GestureDetector(
                     onTap: () {
-                      RouteManager.navigateToProfilePage(controller.userProfile.value);
+                      RouteManager.navigateToProfilePage(
+                        controller.userProfile.value,
+                      );
                     },
                     child: Stack(
                       children: [
@@ -97,38 +141,77 @@ class CustomDrawer extends StatelessWidget {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 2),
-                            gradient: !hasValidImage(controller.userProfile.value?.imagePath)
-                                ? LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Colors.white.withOpacity(0.3), Colors.white.withOpacity(0.1)])
+                            gradient:
+                                !hasValidImage(
+                                  controller.userProfile.value?.imagePath,
+                                )
+                                ? LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Colors.white.withOpacity(0.3),
+                                      Colors.white.withOpacity(0.1),
+                                    ],
+                                  )
                                 : null,
                           ),
                           child: ClipOval(
-                            child: hasValidImage(controller.userProfile.value?.imagePath)
+                            child:
+                                hasValidImage(
+                                  controller.userProfile.value?.imagePath,
+                                )
                                 ? Image.network(
                                     controller.userProfile.value!.imagePath,
                                     fit: BoxFit.cover,
                                     width: 70,
                                     height: 70,
-                                    loadingBuilder: (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return Container(
-                                        width: 50,
-                                        height: 50,
-                                        decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white12),
-                                        child: const Center(
-                                          child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white))),
-                                        ),
-                                      );
-                                    },
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                          if (loadingProgress == null)
+                                            return child;
+                                          return Container(
+                                            width: 50,
+                                            height: 50,
+                                            decoration: const BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Colors.white12,
+                                            ),
+                                            child: const Center(
+                                              child: SizedBox(
+                                                width: 20,
+                                                height: 20,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  valueColor:
+                                                      AlwaysStoppedAnimation<
+                                                        Color
+                                                      >(Colors.white),
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
                                     errorBuilder: (context, error, stackTrace) {
                                       return Container(
                                         width: 70,
                                         height: 70,
-                                        decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white12),
-                                        child: const Icon(Icons.person_outline, size: 35, color: Colors.white),
+                                        decoration: const BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Colors.white12,
+                                        ),
+                                        child: const Icon(
+                                          Icons.person_outline,
+                                          size: 35,
+                                          color: Colors.white,
+                                        ),
                                       );
                                     },
                                   )
-                                : const Icon(Icons.person_outline, size: 35, color: Colors.white),
+                                : const Icon(
+                                    Icons.person_outline,
+                                    size: 35,
+                                    color: Colors.white,
+                                  ),
                           ),
                         ),
                         // Online status indicator
@@ -158,7 +241,11 @@ class CustomDrawer extends StatelessWidget {
                       // Name
                       Text(
                         _getUserName(),
-                        style: theme.textTheme.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 0.3),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.3,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -167,8 +254,12 @@ class CustomDrawer extends StatelessWidget {
 
                       // Designation
                       Text(
-                        controller.userProfile.value?.designation ?? 'Loading...',
-                        style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w500),
+                        controller.userProfile.value?.designation ??
+                            'Loading...',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withOpacity(0.9),
+                          fontWeight: FontWeight.w500,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -176,7 +267,11 @@ class CustomDrawer extends StatelessWidget {
                       const SizedBox(height: 0),
 
                       // Organization and Facility
-                      _buildSmallInfoChip(icon: Icons.info_outline_rounded, label: _getOrgFacilityInfo(), theme: theme),
+                      _buildSmallInfoChip(
+                        icon: Icons.info_outline_rounded,
+                        label: _getOrgFacilityInfo(),
+                        theme: theme,
+                      ),
 
                       // Text(
                       //   _getOrgFacilityInfo(),
@@ -194,15 +289,46 @@ class CustomDrawer extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          if (controller.userProfile.value?.bloodGroup != null && controller.userProfile.value!.bloodGroup.isNotEmpty && controller.userProfile.value!.bloodGroup != 'NA') ...[
-                            _buildSmallInfoChip(icon: Icons.bloodtype_outlined, label: controller.userProfile.value!.bloodGroup, theme: theme),
+                          if (controller.userProfile.value?.bloodGroup !=
+                                  null &&
+                              controller
+                                  .userProfile
+                                  .value!
+                                  .bloodGroup
+                                  .isNotEmpty &&
+                              controller.userProfile.value!.bloodGroup !=
+                                  'NA') ...[
+                            _buildSmallInfoChip(
+                              icon: Icons.bloodtype_outlined,
+                              label: controller.userProfile.value!.bloodGroup,
+                              theme: theme,
+                            ),
                             const SizedBox(width: 6),
                           ],
-                          if (controller.userProfile.value?.perMobile != null && controller.userProfile.value!.perMobile.isNotEmpty) ...[
-                            _buildSmallInfoChip(icon: Icons.phone_outlined, label: _formatMobile(controller.userProfile.value!.perMobile), theme: theme),
+                          if (controller.userProfile.value?.perMobile != null &&
+                              controller
+                                  .userProfile
+                                  .value!
+                                  .perMobile
+                                  .isNotEmpty) ...[
+                            _buildSmallInfoChip(
+                              icon: Icons.phone_outlined,
+                              label: _formatMobile(
+                                controller.userProfile.value!.perMobile,
+                              ),
+                              theme: theme,
+                            ),
                             const SizedBox(width: 6),
                           ],
-                          if (controller.userProfile.value?.empCode != null) ...[_buildSmallInfoChip(icon: Icons.badge_outlined, label: 'EMP: ${controller.userProfile.value!.empCode}', theme: theme)],
+                          if (controller.userProfile.value?.empCode !=
+                              null) ...[
+                            _buildSmallInfoChip(
+                              icon: Icons.badge_outlined,
+                              label:
+                                  'EMP: ${controller.userProfile.value!.empCode}',
+                              theme: theme,
+                            ),
+                          ],
                         ],
                       ),
                     ],
@@ -229,20 +355,40 @@ class CustomDrawer extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: theme.colorScheme.error.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: theme.colorScheme.error.withOpacity(0.3), width: 1),
+                      border: Border.all(
+                        color: theme.colorScheme.error.withOpacity(0.3),
+                        width: 1,
+                      ),
                     ),
                     child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
                       leading: Container(
                         padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: theme.colorScheme.error.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                        child: Icon(item.icon, color: theme.colorScheme.error, size: 24),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.error.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          item.icon,
+                          color: theme.colorScheme.error,
+                          size: 24,
+                        ),
                       ),
                       title: Text(
                         item.titleKey,
-                        style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.error, fontWeight: FontWeight.w600),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: theme.colorScheme.error,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                      trailing: Icon(Icons.chevron_right, color: theme.colorScheme.error.withOpacity(0.6), size: 22),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: theme.colorScheme.error.withOpacity(0.6),
+                        size: 22,
+                      ),
                       onTap: () {
                         Navigator.of(context).pop();
                         item.navigationFunction();
@@ -257,20 +403,43 @@ class CustomDrawer extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: theme.cardColor,
                     borderRadius: BorderRadius.circular(16),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
                     leading: Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: theme.colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                      child: Icon(item.icon, color: theme.colorScheme.primary, size: 24),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        item.icon,
+                        color: theme.colorScheme.primary,
+                        size: 24,
+                      ),
                     ),
                     title: Text(
                       item.titleKey,
-                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500, color: theme.colorScheme.onSurface),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: theme.colorScheme.onSurface,
+                      ),
                     ),
-                    trailing: Icon(Icons.chevron_right, color: theme.colorScheme.onSurface.withOpacity(0.4), size: 22),
+                    trailing: Icon(
+                      Icons.chevron_right,
+                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                      size: 22,
+                    ),
                     onTap: () {
                       Navigator.of(context).pop();
                       item.navigationFunction();
@@ -288,7 +457,11 @@ class CustomDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildSmallInfoChip({required IconData icon, required String label, required ThemeData theme}) {
+  Widget _buildSmallInfoChip({
+    required IconData icon,
+    required String label,
+    required ThemeData theme,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
@@ -304,7 +477,11 @@ class CustomDrawer extends StatelessWidget {
           const SizedBox(width: 3),
           Text(
             label,
-            style: theme.textTheme.bodySmall?.copyWith(color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.w500, fontSize: 10),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.white.withOpacity(0.9),
+              fontWeight: FontWeight.w500,
+              fontSize: 10,
+            ),
           ),
         ],
       ),
@@ -333,7 +510,7 @@ class CustomDrawer extends StatelessWidget {
       return '$org\n$facility';
     }*/
 
-    return org.isNotEmpty ? org:'' /*: facility*/;
+    return org.isNotEmpty ? org : '' /*: facility*/;
   }
 
   String _formatMobile(String? mobile) {
@@ -375,7 +552,13 @@ class DrawerFooterState extends State<DrawerFooter> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.cardColor,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, -2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -385,7 +568,12 @@ class DrawerFooterState extends State<DrawerFooter> {
             const SizedBox(height: 6),
             Text(
               _version,
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.45), fontWeight: FontWeight.w500, fontSize: 11, letterSpacing: 0.4),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.45),
+                fontWeight: FontWeight.w500,
+                fontSize: 11,
+                letterSpacing: 0.4,
+              ),
             ),
           ],
         ],
@@ -401,5 +589,10 @@ class DrawerItem {
   final Function navigationFunction;
   final bool isLogout;
 
-  DrawerItem({required this.icon, required this.titleKey, required this.navigationFunction, this.isLogout = false});
+  DrawerItem({
+    required this.icon,
+    required this.titleKey,
+    required this.navigationFunction,
+    this.isLogout = false,
+  });
 }

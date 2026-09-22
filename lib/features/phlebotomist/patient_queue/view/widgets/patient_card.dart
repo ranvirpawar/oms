@@ -459,6 +459,7 @@ class _PatientCardState extends State<PatientCard> {
                 onPressed: () {
                   final lat = widget.patient.destinationLat;
                   final lng = widget.patient.destinationLng;
+                  if(lat == null || lng == null) LiquidSnack.warning('No destination coordinates available');
                   if (lat != null && lng != null) _launchDirections(lat, lng);
                 },
               ),
