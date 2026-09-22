@@ -10,7 +10,6 @@ import '../../../network/app_urls.dart';
 import '../../../utils/helper_functions/helper_methods.dart';
 import '../model/login_response_model.dart';
 
-
 import '../model/profile_model.dart';
 
 class LoginService {
@@ -19,10 +18,7 @@ class LoginService {
   Future<LoginResponseModel> login(String username, String password) async {
     try {
       final url = AppUrls.login;
-      final params = {
-        'UserEmail': username,
-        'Password': password,
-      };
+      final params = {'UserEmail': username, 'Password': password};
 
       final response = await apiClient.post(url, data: params);
       final data = response.body;
@@ -57,18 +53,11 @@ class LoginService {
     required String otp,
   }) async {
     try {
-      final url = AppUrls.verifyLoginOtp; // TODO: add this to AppUrls
-      final params = {
-        'UserId': userId,
-        'Otp': otp,
-      };
-
-      kPrint('Verifying OTP for userId: $userId');
+      final url = AppUrls.verifyLoginOtp;
+      final params = {'UserId': userId, 'Otp': otp};
 
       final response = await apiClient.post(url, data: params);
       final data = response.body;
-
-      HelperMethods.printLongString(data.toString());
 
       if (data['status'] == 'Success') {
         return LoginResponseModel.fromJson(data);
@@ -91,21 +80,12 @@ class LoginService {
 
   Future<ProfileData?> fetchUserProfile(String userId) async {
     try {
-      kPrint('🥸🥸🥸🥸🥸🥸🥸🥸🥸: $userId');
       final uri = AppUrls.getProfileData;
       kPrint('Request URL: $uri');
 
-      final requestBody = {
-        'USERID': userId
-      };
+      final requestBody = {'USERID': userId};
 
-      final response = await apiClient.post(
-        uri,
-        data: requestBody,
-      );
-
-      // Step 4: DebugAppDebugPrint.log the full body
-      HelperMethods.printLongString(response.body.toString());
+      final response = await apiClient.post(uri, data: requestBody);
 
       final responseData = response.body;
 
@@ -118,8 +98,7 @@ class LoginService {
           return ProfileData.fromJson(output.first);
         }
       } else {
-        kPrint(
-            'No profile data found: ${responseData['message']}');
+        kPrint('No profile data found: ${responseData['message']}');
       }
 
       return null;
@@ -134,10 +113,7 @@ class LoginService {
     try {
       final response = await apiClient.post(
         AppUrls.logout,
-        data: {
-          'USERID': userId,
-          'ActiveStatus': '0',
-        },
+        data: {'USERID': userId, 'ActiveStatus': '0'},
       );
 
       kPrint('Status Code: ${response.statusCode}');
@@ -174,10 +150,7 @@ class LoginService {
 
       final response = await apiClient.post(
         AppUrls.checkApplicationUpdate,
-        data: {
-          'aplicationId': '100',
-          'versionname': versionCode,
-        },
+        data: {'aplicationId': '100', 'versionname': versionCode},
       );
 
       kPrint('Status Code: ${response.statusCode}');
@@ -251,7 +224,8 @@ class LoginService {
       return serverVersion.compareTo(currentVersion) > 0;
     }
   }
-/*Future<bool> checkNewVersion(String versionCode) async {
+
+  /*Future<bool> checkNewVersion(String versionCode) async {
     try {
       if (kDebugMode) {
         kPrint('checking update for version : $versionCode');

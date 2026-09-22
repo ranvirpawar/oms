@@ -1,0 +1,36 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "OMS - Beta",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/beta_main.dart",
+            "args": [
+                "--flavor",
+                "beta"
+            ]
+        },
+        {
+            "name": "OMS - Production",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "args": [
+                "--flavor",
+                "production"
+            ]
+        },
+        {
+            "name": "OMS - Dev",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/dev_main.dart",
+            "args": [
+                "--flavor",
+                "dev"
+            ]
+        },
+    ]
+}

@@ -1,10 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Dev flavor overlay: distinct launcher label + icon so the dev
+         build is instantly recognizable and can be installed side-by-side
+         with beta/production (different applicationId in build.gradle). -->
     <application
-        android:label="OMS Beta"
+        android:label="OMS Dev"
         tools:replace="android:label,android:icon"
-        android:icon="@mipmap/beta"
+        android:icon="@mipmap/dev"
         android:usesCleartextTraffic="true"
         >
 

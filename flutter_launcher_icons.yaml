@@ -8,9 +8,18 @@ flutter_launcher_icons:
     beta:
       android:
         enabled: true
-        image_path: "assets/images/lifenity-logo.png"
+        image_path: "assets/app-icons/oms-dev.png"
       ios:
         enabled: true
-        image_path: "assets/images/lifenity-logo.png"
+        image_path: "assets/app-icons/oms-dev.png"
         icon_name: "AppIcon-beta"
+        remove_alpha_channel_ios: true
+    dev:
+      android:
+        enabled: true
+        image_path: "assets/app-icons/oms-beta.png"
+      ios:
+        enabled: true
+        image_path: "assets/app-icons/oms-beta.png"
+        icon_name: "AppIcon-dev"
         remove_alpha_channel_ios: true

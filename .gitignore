@@ -43,6 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+# Flutter Android embedder Gradle build output
+/android/build/
 # Cline AI rules (local only)
 /clinerules
 .clinerules

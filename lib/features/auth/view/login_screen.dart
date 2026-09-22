@@ -117,7 +117,7 @@ class _CredentialsStep extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Beta dropdown — only on beta builds
-          if (AppEnvironment.isBeta)
+          if (AppEnvironment.isBeta || AppEnvironment.isDev)
             Container(
               margin: const EdgeInsets.only(bottom: 16),
               padding: const EdgeInsets.symmetric(horizontal: 12),

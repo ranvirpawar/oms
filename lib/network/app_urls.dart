@@ -19,28 +19,48 @@ class AppUrls {
   // ASMX Base URLs updated search
   static const String _betaSearchBase =
       'https://betaomsmobapi.lifenityhealth.com/api/Legacy';
+  static const String _devSearchBase =
+      'https://devpcaremobapi.lifenityhealth.com/api/Legacy';
   static const String _liveSearchBase =
       'https://connect.lifenityhealth.com/Webservices/HBTCPateintSearch.asmx';
 
   // ASHX Base URLs
   static const String _betaHandlerBase =
       'https://betaomsmobapi.lifenityhealth.com/api/';
+  static const String _devHandlerBase =
+      'https://devpcaremobapi.lifenityhealth.com/api/';
   static const String _liveHandlerBase =
       'https://connect.lifenityhealth.com/Webservices/Handler/';
 
-  static String get reportBaseUrl => _env == Environment.beta
-      ? 'http://reports.avantecodeworx.co.in/API/patient_record_grid.php'
-      : 'https://rptconnect.lifenityhealth.com/API/patient_record_grid.php';
+  // Reports server — dev reuses the staging reports server (no dedicated
+  // dev reports endpoint exists yet); only live uses the production one.
+  static String get reportBaseUrl => switch (_env) {
+    Environment.beta =>
+      'http://reports.avantecodeworx.co.in/API/patient_record_grid.php',
+    Environment.dev =>
+      'http://reports.avantecodeworx.co.in/API/patient_record_grid.php',
+    Environment.live =>
+      'https://rptconnect.lifenityhealth.com/API/patient_record_grid.php',
+  };
 
   // Base URL getters
-  static String get _baseUrl =>
-      _env == Environment.beta ? _betaBase : _liveBase;
+  static String get _baseUrl => switch (_env) {
+    Environment.beta => _betaBase,
+    Environment.dev => _devBase,
+    Environment.live => _liveBase,
+  };
 
-  static String get _handlerBaseUrl =>
-      _env == Environment.beta ? _betaHandlerBase : _liveHandlerBase;
+  static String get _handlerBaseUrl => switch (_env) {
+    Environment.beta => _betaHandlerBase,
+    Environment.dev => _devHandlerBase,
+    Environment.live => _liveHandlerBase,
+  };
 
-  static String get _searchBaseUrl =>
-      _env == Environment.beta ? _betaSearchBase : _liveSearchBase;
+  static String get _searchBaseUrl => switch (_env) {
+    Environment.beta => _betaSearchBase,
+    Environment.dev => _devSearchBase,
+    Environment.live => _liveSearchBase,
+  };
 
   // -------------------------
   // API Endpoints (.asmx)
