@@ -93,7 +93,7 @@ class PatientQueueController extends GetxController {
   /// from/to window (see [_dateRangeFor]) — the backend filters by date,
   /// the client no longer has (or needs) the full unfiltered patient set.
   final Rx<QueueDateFilter> activeDateFilter = QueueDateFilter.today.obs;
-
+  final Rx<String?> activeClinicFilter = Rx<String?>(null);
   /// The specific day picked from the calendar, when [activeDateFilter] is
   /// [QueueDateFilter.custom]. Normalized to midnight. Null otherwise.
   /// The specific range picked from the calendar, when [activeDateFilter] is
@@ -250,6 +250,7 @@ class PatientQueueController extends GetxController {
   bool get hasActiveFilters =>
       isSearching ||
           activeStatusFilter.value != null ||
+          activeClinicFilter.value != null ||   // added
           isEmergencyOnly.value ||
           activeDateFilter.value != QueueDateFilter.today;
 
@@ -389,7 +390,21 @@ class PatientQueueController extends GetxController {
   void updateSearch(String value) {
     searchQuery.value = value.trim();
   }
+  List<ClinicFilterOption> get clinicFilters {
+    final counts = <String, int>{};
+    for (final p in _contextPatients) {
+      final clinic = p.clinic?.trim();
+      if (clinic == null || clinic.isEmpty) continue;
+      counts[clinic] = (counts[clinic] ?? 0) + 1;
+    }
 
+    final names = counts.keys.toList()..sort();
+    return [
+      for (final name in names) ClinicFilterOption(name: name, count: counts[name]!),
+    ];
+  }
+
+  void setClinicFilter(String? clinic) => activeClinicFilter.value = clinic;
   /// Resets every clearable filter (search, status chip, date horizon)
   /// back to its default — used by the empty state's "Clear filters" action.
   /// Leaves the active visit-type tab untouched since that's context, not
@@ -398,6 +413,7 @@ class PatientQueueController extends GetxController {
   void clearAllFilters() {
     clearSearch();
     setStatusFilter(null);
+    setClinicFilter(null);   // added
     isEmergencyOnly.value = false;
     setDateFilter(QueueDateFilter.today);
   }
@@ -808,7 +824,10 @@ class PatientQueueController extends GetxController {
     if (statusFilter != null) {
       result = result.where((p) => p.status == statusFilter);
     }
-
+    final clinicFilter = activeClinicFilter.value;
+    if (clinicFilter != null) {
+      result = result.where((p) => p.clinic == clinicFilter);
+    }
     final query = searchQuery.value.toLowerCase();
     if (query.isNotEmpty) {
       // Search covers name, address, and test only (order id / other
@@ -922,4 +941,10 @@ class StatusFilterOption {
     required this.label,
     required this.count,
   });
+}
+class ClinicFilterOption {
+  final String name;
+  final int count;
+
+  const ClinicFilterOption({required this.name, required this.count});
 }

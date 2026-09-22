@@ -15,6 +15,9 @@ class StatusFilterBar extends StatelessWidget {
   final bool isEmergencyActive;
   final int emergencyCount;
   final VoidCallback? onEmergencyToggle;
+  final List<ClinicFilterOption> clinics;      // added
+  final String? activeClinic;                  // added
+  final ValueChanged<String?>? onClinicSelected; // added
 
   const StatusFilterBar({
     super.key,
@@ -24,6 +27,9 @@ class StatusFilterBar extends StatelessWidget {
     this.isEmergencyActive = false,
     this.emergencyCount = 0,
     this.onEmergencyToggle,
+    this.clinics = const [],
+    this.activeClinic,
+    this.onClinicSelected,
   });
 
   @override
@@ -52,6 +58,15 @@ class StatusFilterBar extends StatelessWidget {
                 },
               ),
               const SizedBox(width: 8),
+            ],
+            // Clinic dropdown — only shown when there's clinic data to filter by.
+            if (clinics.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              _ClinicDropdownChip(
+                clinics: clinics,
+                activeClinic: activeClinic,
+                onSelected: onClinicSelected ?? (_) {},
+              ),
             ],
 
             if (showEmergencyChip) ...[
@@ -340,6 +355,237 @@ class _CountBadge extends StatelessWidget {
           fontWeight: FontWeight.w700,
           color: isSelected ? Colors.white : AppColors.textTertiary,
           height: 1,
+        ),
+      ),
+    );
+  }
+}
+class _ClinicDropdownChip extends StatelessWidget {
+  final List<ClinicFilterOption> clinics;
+  final String? activeClinic;
+  final ValueChanged<String?> onSelected;
+
+  const _ClinicDropdownChip({
+    required this.clinics,
+    required this.activeClinic,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = activeClinic != null;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          _openClinicPicker(context);
+        },
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 170),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.bgCard,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? AppColors.primary700 : AppColors.border,
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 4,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.local_hospital_outlined,
+                size: 14,
+                color: isSelected ? AppColors.primary700 : AppColors.textSecondary,
+              ),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  activeClinic ?? 'Clinic',
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isSelected ? AppColors.primary700 : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 2),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 16,
+                color: isSelected ? AppColors.primary700 : AppColors.textSecondary,
+              ),
+              if (isSelected) ...[
+                const SizedBox(width: 2),
+                GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    onSelected(null);
+                  },
+                  child: const Icon(Icons.close_rounded, size: 15, color: AppColors.primary700),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openClinicPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => _ClinicPickerSheet(
+        clinics: clinics,
+        activeClinic: activeClinic,
+        onSelected: (clinic) {
+          Navigator.of(sheetContext).pop();
+          onSelected(clinic);
+        },
+      ),
+    );
+  }
+}
+
+class _ClinicPickerSheet extends StatelessWidget {
+  final List<ClinicFilterOption> clinics;
+  final String? activeClinic;
+  final ValueChanged<String?> onSelected;
+
+  const _ClinicPickerSheet({
+    required this.clinics,
+    required this.activeClinic,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final totalCount = clinics.fold<int>(0, (sum, c) => sum + c.count);
+
+    return SafeArea(
+      child: Container(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
+        decoration: const BoxDecoration(
+          color: AppColors.bgCard,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Text(
+                'Filter by clinic',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              ),
+            ),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.only(bottom: 12),
+                children: [
+                  _ClinicOptionTile(
+                    label: 'All Clinics',
+                    count: totalCount,
+                    isSelected: activeClinic == null,
+                    onTap: () => onSelected(null),
+                  ),
+                  for (final clinic in clinics)
+                    _ClinicOptionTile(
+                      label: clinic.name,
+                      count: clinic.count,
+                      isSelected: activeClinic == clinic.name,
+                      onTap: () => onSelected(clinic.name),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ClinicOptionTile extends StatelessWidget {
+  final String label;
+  final int count;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ClinicOptionTile({
+    required this.label,
+    required this.count,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? AppColors.primary700 : AppColors.textPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary700.withOpacity(0.1) : AppColors.grayLight,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? AppColors.primary700 : AppColors.textTertiary,
+                ),
+              ),
+            ),
+            if (isSelected) ...[
+              const SizedBox(width: 8),
+              const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.primary700),
+            ],
+          ],
         ),
       ),
     );
