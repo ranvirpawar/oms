@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:get/get.dart';
+import 'package:lifenity_connect/migration/core/di/app_injector.dart';
 import 'package:lifenity_connect/network/api_client.dart';
 import 'package:lifenity_connect/services/app_envirionment_service.dart';
 import 'package:lifenity_connect/services/auth_manager.dart';
@@ -38,6 +39,7 @@ void main() async {
     dio: Dio(),
     sessionManager: Get.find<SessionCoordinator>(),
   ));
+  configureMigrationDependencies();
   _wireSessionExpiryHandling(sessionCoordinator);
   HttpOverrides.global = MyHttpOverrides();
   runApp(const MyApp());

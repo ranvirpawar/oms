@@ -412,7 +412,7 @@ class AppUrls {
   ///  dashboard
 
   static String get dashboardCount => '$_baseUrl/phlebo/dashboard-summary';
-
+  static String get checkBagAlreadyAssigned =>'$_baseUrl/phlebo/check-bag-already-assigned';
   // -------------------------
   // API Endpoints (.ashx)
   // -------------------------
@@ -427,4 +427,8 @@ class AppUrls {
   static String get uploadTrfImage => '${_handlerBaseUrl}AddTrfPhoto';
 
   static String get addConsentPhoto => '${_handlerBaseUrl}AddConsentPhoto';
+
+
+
+
 }

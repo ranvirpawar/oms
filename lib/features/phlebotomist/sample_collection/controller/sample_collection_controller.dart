@@ -29,7 +29,6 @@ import '../view/widgets/otp_verification_screen.dart';
 import '../view/widgets/sample_collection_success_page.dart';
 import 'bag_context_mixin.dart';
 
-
 class SampleCollectionController extends GetxController with HasBagContext {
   SampleCollectionController({
     required this.orderId,
@@ -44,11 +43,12 @@ class SampleCollectionController extends GetxController with HasBagContext {
   final AuthManager _authManager = AuthManager();
 
   final RxString empId = ''.obs;
+
   int get _userId => int.tryParse(empId.value) ?? 0;
 
   // ---- Order details (fetched fresh for this screen) ---------------------
   final Rxn<OrderConfirmationDetails> orderDetails =
-  Rxn<OrderConfirmationDetails>();
+      Rxn<OrderConfirmationDetails>();
   final RxBool isLoadingOrder = false.obs;
   final RxString orderLoadError = ''.obs;
 
@@ -79,7 +79,7 @@ class SampleCollectionController extends GetxController with HasBagContext {
 
   // ---- Submission result / Disha sync -------------------------------------
   final Rxn<SampleSubmissionResult> submissionResult =
-  Rxn<SampleSubmissionResult>();
+      Rxn<SampleSubmissionResult>();
   final RxBool isRetryingDisha = false.obs;
   final RxString dishaRetryMessage = ''.obs;
   final RxBool dishaSyncResolved = false.obs;
@@ -191,12 +191,12 @@ class SampleCollectionController extends GetxController with HasBagContext {
       requirements
           .map(
             (r) => SampleBarcodeEntry(
-          sampleTypeId: r.sampleTypeId,
-          sampleType: r.sampleType,
-          volumeRequiredMl: r.volumeRequiredMl,
-          tests: r.tests,
-        ),
-      )
+              sampleTypeId: r.sampleTypeId,
+              sampleType: r.sampleType,
+              volumeRequiredMl: r.volumeRequiredMl,
+              tests: r.tests,
+            ),
+          )
           .toList(),
     );
   }
@@ -211,10 +211,10 @@ class SampleCollectionController extends GetxController with HasBagContext {
   }
 
   void onBarcodeChanged(
-      SampleBarcodeEntry entry,
-      String value, {
-        bool immediate = false,
-      }) {
+    SampleBarcodeEntry entry,
+    String value, {
+    bool immediate = false,
+  }) {
     final trimmed = value.trim().toUpperCase();
 
     if (trimmed.isEmpty) {
@@ -252,9 +252,9 @@ class SampleCollectionController extends GetxController with HasBagContext {
   }
 
   Future<void> _checkBarcodeAvailability(
-      SampleBarcodeEntry entry,
-      String value,
-      ) async {
+    SampleBarcodeEntry entry,
+    String value,
+  ) async {
     // Bail if the field moved on while we were debouncing/awaiting.
     if (entry.barcodeController.text.trim() != value) return;
 
@@ -273,7 +273,7 @@ class SampleCollectionController extends GetxController with HasBagContext {
       if (entry.barcodeController.text.trim() != value) return;
       entry.barcodeStatus.value = BarcodeCheckStatus.error;
       entry.barcodeMessage.value =
-      'Could not verify barcode. Check connection.';
+          'Could not verify barcode. Check connection.';
     } finally {
       _recomputeStatus(entry);
     }
@@ -299,8 +299,8 @@ class SampleCollectionController extends GetxController with HasBagContext {
 
   bool _isDuplicateBarcode(SampleBarcodeEntry entry, String value) {
     return sampleEntries.any(
-          (other) =>
-      other.sampleTypeId != entry.sampleTypeId &&
+      (other) =>
+          other.sampleTypeId != entry.sampleTypeId &&
           other.barcodeController.text.trim().isNotEmpty &&
           other.barcodeController.text.trim() == value,
     );
@@ -338,8 +338,16 @@ class SampleCollectionController extends GetxController with HasBagContext {
       Get.back();
     }
   }
-  void addManualTube(SampleBarcodeEntry entry, {required int tubeTypeId, required String tubeType}) {
-    final added = entry.addManualTube(tubeTypeId: tubeTypeId, tubeType: tubeType);
+
+  void addManualTube(
+    SampleBarcodeEntry entry, {
+    required int tubeTypeId,
+    required String tubeType,
+  }) {
+    final added = entry.addManualTube(
+      tubeTypeId: tubeTypeId,
+      tubeType: tubeType,
+    );
     if (!added) {
       LiquidSnack.warning(
         'You can add up to ${SampleBarcodeEntry.maxManualTubes} extra tubes per sample.',
@@ -351,6 +359,7 @@ class SampleCollectionController extends GetxController with HasBagContext {
   void removeManualTube(SampleBarcodeEntry entry, String manualTubeId) {
     entry.removeManualTube(manualTubeId);
   }
+
   // ---------------------------------------------------------------------
   // Partial / incomplete collection
   // ---------------------------------------------------------------------
@@ -368,9 +377,9 @@ class SampleCollectionController extends GetxController with HasBagContext {
   }
 
   void _applyIncompleteSelection(
-      SampleBarcodeEntry entry,
-      Map<int, TestIncompleteInfo> testInfos,
-      ) {
+    SampleBarcodeEntry entry,
+    Map<int, TestIncompleteInfo> testInfos,
+  ) {
     entry.testIncompleteMap
       ..clear()
       ..addAll(testInfos);
@@ -424,12 +433,12 @@ class SampleCollectionController extends GetxController with HasBagContext {
 
   SampleCollectionPayload _buildPayload() {
     final collected = sampleEntries.where(
-          (e) => e.barcodeController.text.trim().isNotEmpty,
+      (e) => e.barcodeController.text.trim().isNotEmpty,
     );
 
     final totalTubeCount = collected.fold<int>(
       0,
-          (sum, e) => sum + e.tubeCount,
+      (sum, e) => sum + e.tubeCount,
     );
 
     final incompleteTests = <IncompleteTestEntry>[];
@@ -464,19 +473,19 @@ class SampleCollectionController extends GetxController with HasBagContext {
       sampleCollectionDetails: collected
           .map(
             (e) => SampleCollectionDetailEntry(
-          sampleTypeId: e.sampleTypeId,
-          barcodeNo: e.barcodeController.text.trim(),
-        ),
-      )
+              sampleTypeId: e.sampleTypeId,
+              barcodeNo: e.barcodeController.text.trim(),
+            ),
+          )
           .toList(),
       sampleCollectionComplications: complicationSelections.entries
           .where((e) => e.value != null)
           .map(
             (e) => SampleCollectionComplicationEntry(
-          complicationId: e.key,
-          status: e.value!,
-        ),
-      )
+              complicationId: e.key,
+              status: e.value!,
+            ),
+          )
           .toList(),
       incompleteTests: incompleteTests,
     );
@@ -497,7 +506,6 @@ class SampleCollectionController extends GetxController with HasBagContext {
     try {
       final payload = _buildPayload();
       kPrint('Save Payload: ${payload.toJson().toString()}');
-
 
       await _service.submitSampleCollection(payload);
       // Refresh the shared bag state silently so capacity reflects this
@@ -540,7 +548,7 @@ class SampleCollectionController extends GetxController with HasBagContext {
     final result = await submitCollection();
     if (result != null) {
       Get.off(
-            () => SampleCollectionSuccessPage(controller: this, result: result),
+        () => SampleCollectionSuccessPage(controller: this, result: result),
       );
     }
   }
@@ -560,7 +568,7 @@ class SampleCollectionController extends GetxController with HasBagContext {
       dishaRetryMessage.value = e.message;
     } catch (e) {
       dishaRetryMessage.value =
-      'Still unable to sync. Please try again shortly.';
+          'Still unable to sync. Please try again shortly.';
     } finally {
       isRetryingDisha.value = false;
     }
@@ -571,9 +579,9 @@ class SampleCollectionController extends GetxController with HasBagContext {
   // ---------------------------------------------------------------------
 
   Future<bool> _runAction(
-      Future<bool> Function() action, {
-        required String successMessage,
-      }) async {
+    Future<bool> Function() action, {
+    required String successMessage,
+  }) async {
     isRescheduling.value = true;
     try {
       final success = await action();
@@ -598,19 +606,21 @@ class SampleCollectionController extends GetxController with HasBagContext {
   }
 
   Future<bool> reschedule(
-      AssignedPatient patient, {
-        required DateTime newDate,
-        required AvailableSlot slot,
-        required int rescheduleReasonId,
-      }) {
+    AssignedPatient patient, {
+    required DateTime newDate,
+    required AvailableSlot slot,
+    required int rescheduleReasonId,
+    String? otherRemark,
+  }) {
     return _runAction(
-          () => _service.reschedule(
+      () => _service.reschedule(
         orderId: patient.orderId,
         userId: _userId,
         createdBy: _userId,
         appointmentDate: newDate,
         slotId: slot.slotId,
         rescheduleReasonId: rescheduleReasonId,
+        otherRemark: otherRemark,
       ),
       successMessage: 'Visit rescheduled',
     );
@@ -650,5 +660,4 @@ class SampleCollectionController extends GetxController with HasBagContext {
       verifyBy: _userId,
     );
   }
-
 }

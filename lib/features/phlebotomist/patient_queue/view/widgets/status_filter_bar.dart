@@ -18,6 +18,8 @@ class StatusFilterBar extends StatelessWidget {
   final List<ClinicFilterOption> clinics;      // added
   final String? activeClinic;                  // added
   final ValueChanged<String?>? onClinicSelected; // added
+  final VisitType activeVisitType;
+
 
   const StatusFilterBar({
     super.key,
@@ -30,12 +32,14 @@ class StatusFilterBar extends StatelessWidget {
     this.clinics = const [],
     this.activeClinic,
     this.onClinicSelected,
+    required this.activeVisitType,
   });
 
   @override
   Widget build(BuildContext context) {
     final showEmergencyChip = emergencyCount > 0 || isEmergencyActive;
-
+    final showClinicChip =
+        clinics.isNotEmpty && activeVisitType == VisitType.clinic;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10.0),
       child: SizedBox(
@@ -60,13 +64,14 @@ class StatusFilterBar extends StatelessWidget {
               const SizedBox(width: 8),
             ],
             // Clinic dropdown — only shown when there's clinic data to filter by.
-            if (clinics.isNotEmpty) ...[
-              const SizedBox(width: 8),
+            if (showClinicChip) ...[
+
               _ClinicDropdownChip(
                 clinics: clinics,
                 activeClinic: activeClinic,
                 onSelected: onClinicSelected ?? (_) {},
               ),
+              const SizedBox(width: 8),
             ],
 
             if (showEmergencyChip) ...[
@@ -360,6 +365,453 @@ class _CountBadge extends StatelessWidget {
     );
   }
 }
+
+
+
+// Tune these to match whatever your date filter menu uses.
+const double _kClinicMenuWidth = double.infinity;
+const double _kClinicMenuGap = 6.0;
+const double _kClinicScreenMargin = 8.0;
+
+/// Chip that opens a clinic picker as an overlay popover anchored to itself
+/// (grows out of the chip, like DateFilterTile) instead of a bottom sheet.
+class _ClinicDropdownChip extends StatefulWidget {
+  final List<ClinicFilterOption> clinics;
+  final String? activeClinic;
+  final ValueChanged<String?> onSelected;
+
+  const _ClinicDropdownChip({
+    required this.clinics,
+    required this.activeClinic,
+    required this.onSelected,
+  });
+
+  @override
+  State<_ClinicDropdownChip> createState() => _ClinicDropdownChipState();
+}
+
+class _ClinicDropdownChipState extends State<_ClinicDropdownChip>
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  OverlayEntry? _entry;
+  late final AnimationController _anim;
+
+  bool get _isOpen => _entry != null;
+
+  // padding (6*2) + "All Clinics" row + one row per clinic (~40 each).
+  // Only decides open-up-vs-down; the layout delegate clamps to real size.
+  double get _estimatedMenuHeight =>
+      12 + (widget.clinics.length + 1) * 40.0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _anim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 260),
+    );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _entry?.remove();
+    _entry = null;
+    _anim.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    if (_isOpen) _removeOverlay(animate: false);
+  }
+
+  void _toggle() {
+    HapticFeedback.lightImpact();
+    _isOpen ? _removeOverlay() : _showOverlay();
+  }
+
+  void _showOverlay() {
+    final overlay = Overlay.of(context);
+    final overlayBox = overlay.context.findRenderObject() as RenderBox?;
+    final tileBox = context.findRenderObject() as RenderBox?;
+    if (overlayBox == null || tileBox == null || !tileBox.attached) return;
+
+    final anchor = tileBox.localToGlobal(Offset.zero, ancestor: overlayBox) &
+    tileBox.size;
+
+    final media = MediaQuery.of(context);
+    final bottomInset =
+    math.max(media.padding.bottom, media.viewInsets.bottom);
+    final spaceBelow = overlayBox.size.height -
+        bottomInset -
+        _kClinicScreenMargin -
+        anchor.bottom;
+    final spaceAbove = anchor.top - media.padding.top - _kClinicScreenMargin;
+    final needed = _estimatedMenuHeight + _kClinicMenuGap;
+    final openUp = spaceBelow < needed && spaceAbove > spaceBelow;
+
+    _entry = OverlayEntry(
+      builder: (_) => _ClinicMenu(
+        anchor: anchor,
+        openUp: openUp,
+        anim: _anim,
+        clinics: widget.clinics,
+        activeClinic: widget.activeClinic,
+        onSelect: (value) {
+          HapticFeedback.selectionClick();
+          widget.onSelected(value);
+          _removeOverlay();
+        },
+        onDismiss: _removeOverlay,
+      ),
+    );
+    overlay.insert(_entry!);
+    _anim.forward(from: 0);
+    setState(() {});
+  }
+
+  void _removeOverlay({bool animate = true}) {
+    if (_entry == null) return;
+    if (!animate) {
+      _entry!.remove();
+      _entry = null;
+      if (mounted) setState(() {});
+      return;
+    }
+    _anim.reverse().then((_) {
+      _entry?.remove();
+      _entry = null;
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = widget.activeClinic != null;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _toggle,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        constraints: const BoxConstraints(maxWidth: 170),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.bgCard,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: (isSelected || _isOpen)
+                ? AppColors.primary700
+                : AppColors.border,
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.local_hospital_outlined,
+              size: 14,
+              color: (isSelected || _isOpen)
+                  ? AppColors.primary700
+                  : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                widget.activeClinic ?? 'Clinic',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: (isSelected || _isOpen)
+                      ? AppColors.primary700
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 2),
+            AnimatedRotation(
+              turns: _isOpen ? 0.5 : 0,
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 16,
+                color: (isSelected || _isOpen)
+                    ? AppColors.primary700
+                    : AppColors.textSecondary,
+              ),
+            ),
+            if (isSelected) ...[
+              const SizedBox(width: 2),
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  widget.onSelected(null);
+                },
+                child: const Icon(Icons.close_rounded,
+                    size: 15, color: AppColors.primary700),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Right-aligns the menu to the chip, below it (or above when [openUp]),
+/// then clamps so it never leaves the safe area — mirrors DateFilterTile's
+/// _MenuLayoutDelegate.
+class _ClinicMenuLayoutDelegate extends SingleChildLayoutDelegate {
+  final Rect anchor;
+  final EdgeInsets safe;
+  final bool openUp;
+
+  const _ClinicMenuLayoutDelegate({
+    required this.anchor,
+    required this.safe,
+    required this.openUp,
+  });
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    return BoxConstraints(
+      maxWidth: math.max(
+        0,
+        constraints.maxWidth - safe.horizontal - _kClinicScreenMargin * 2,
+      ),
+      maxHeight: math.max(
+        0,
+        constraints.maxHeight - safe.vertical - _kClinicScreenMargin * 2,
+      ),
+    );
+  }
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    final minX = safe.left + _kClinicScreenMargin;
+    final maxX = math.max(
+      minX,
+      size.width - safe.right - _kClinicScreenMargin - childSize.width,
+    );
+    final x = (anchor.right - childSize.width).clamp(minX, maxX).toDouble();
+
+    final minY = safe.top + _kClinicScreenMargin;
+    final maxY = math.max(
+      minY,
+      size.height - safe.bottom - _kClinicScreenMargin - childSize.height,
+    );
+    final preferredY = openUp
+        ? anchor.top - _kClinicMenuGap - childSize.height
+        : anchor.bottom + _kClinicMenuGap;
+    final y = preferredY.clamp(minY, maxY).toDouble();
+
+    return Offset(x, y);
+  }
+
+  @override
+  bool shouldRelayout(_ClinicMenuLayoutDelegate old) =>
+      anchor != old.anchor || safe != old.safe || openUp != old.openUp;
+}
+
+class _ClinicMenu extends StatelessWidget {
+  final Rect anchor;
+  final bool openUp;
+  final AnimationController anim;
+  final List<ClinicFilterOption> clinics;
+  final String? activeClinic;
+  final ValueChanged<String?> onSelect;
+  final VoidCallback onDismiss;
+
+  const _ClinicMenu({
+    required this.anchor,
+    required this.openUp,
+    required this.anim,
+    required this.clinics,
+    required this.activeClinic,
+    required this.onSelect,
+    required this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final curved = CurvedAnimation(
+      parent: anim,
+      curve: Curves.easeOutBack,
+      reverseCurve: Curves.easeInCubic,
+    );
+
+    final media = MediaQuery.of(context);
+    final safe = media.padding.copyWith(
+      bottom: math.max(media.padding.bottom, media.viewInsets.bottom),
+    );
+
+    final clampedLeft =
+        anchor.right - _kClinicMenuWidth < safe.left + _kClinicScreenMargin;
+    final scaleOrigin = Alignment(
+      clampedLeft ? -1 : 1,
+      openUp ? 1 : -1,
+    );
+
+    final totalCount = clinics.fold<int>(0, (sum, c) => sum + c.count);
+    // Cap the menu's own height so a long clinic list scrolls inside itself
+    // rather than pushing off-screen; layout delegate clamps further anyway.
+    final maxMenuHeight = media.size.height * 0.5;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onDismiss,
+            child: const ColoredBox(color: Colors.transparent),
+          ),
+        ),
+        CustomSingleChildLayout(
+          delegate: _ClinicMenuLayoutDelegate(
+            anchor: anchor,
+            safe: safe,
+            openUp: openUp,
+          ),
+          child: FadeTransition(
+            opacity: anim,
+            child: ScaleTransition(
+              scale: curved.drive(Tween(begin: 0.9, end: 1.0)),
+              alignment: scaleOrigin,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  width: _kClinicMenuWidth,
+                  constraints: BoxConstraints(maxHeight: maxMenuHeight),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.border, width: 0.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.10),
+                        blurRadius: 24,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(6),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _ClinicMenuItem(
+                          label: 'All Clinics',
+                          count: totalCount,
+                          selected: activeClinic == null,
+                          onTap: () => onSelect(null),
+                        ),
+                        for (final clinic in clinics)
+                          _ClinicMenuItem(
+                            label: clinic.name,
+                            count: clinic.count,
+                            selected: activeClinic == clinic.name,
+                            onTap: () => onSelect(clinic.name),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ClinicMenuItem extends StatelessWidget {
+  final String label;
+  final int count;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ClinicMenuItem({
+    required this.label,
+    required this.count,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 1),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.primary700.withOpacity(0.08)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(9),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected
+                      ? AppColors.primary700
+                      : AppColors.textPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: selected
+                    ? AppColors.primary700.withOpacity(0.12)
+                    : AppColors.grayLight,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '$count',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: selected
+                      ? AppColors.primary700
+                      : AppColors.textTertiary,
+                ),
+              ),
+            ),
+            if (selected) ...[
+              const SizedBox(width: 8),
+              Icon(Icons.check_rounded, size: 16, color: AppColors.primary700),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+/*
 class _ClinicDropdownChip extends StatelessWidget {
   final List<ClinicFilterOption> clinics;
   final String? activeClinic;
@@ -590,4 +1042,4 @@ class _ClinicOptionTile extends StatelessWidget {
       ),
     );
   }
-}
+}*/

@@ -23,7 +23,11 @@ class RescheduleSheet extends StatefulWidget {
 
   /// Persists the reschedule. Returns `true` so the sheet can close on success.
   final Future<bool> Function(
-      DateTime date, AvailableSlot slot, int rescheduleReasonId) onConfirm;
+      DateTime date,
+      AvailableSlot slot,
+      int rescheduleReasonId,
+      String otherRemark,
+      ) onConfirm;
 
   /// Sends an OTP to the patient's mobile for reschedule verification.
   final Future<bool> Function(String mobileNo, int orderId) onSendOtp;
@@ -43,14 +47,26 @@ class RescheduleSheet extends StatefulWidget {
 
   /// Convenience launcher — call this from PatientCard's onReschedule or order actions.
   static Future<void> show(
-    BuildContext context, {
-    required AssignedPatient patient,
-    required Future<List<AvailableSlot>> Function(DateTime) onFetchSlots,
-    required Future<List<RescheduleReason>> Function() onFetchReasons,
-    required Future<bool> Function(DateTime, AvailableSlot, int) onConfirm,
-    required Future<bool> Function(String mobileNo, int orderId) onSendOtp,
-    required Future<bool> Function(String mobileNo, String otp, int orderId) onVerifyOtp,
-  }) {
+      BuildContext context, {
+        required AssignedPatient patient,
+        required Future<List<AvailableSlot>> Function(DateTime) onFetchSlots,
+        required Future<List<RescheduleReason>> Function() onFetchReasons,
+        required Future<bool> Function(
+            DateTime,
+            AvailableSlot,
+            int,
+            String,
+            ) onConfirm,
+        required Future<bool> Function(
+            String mobileNo,
+            int orderId,
+            ) onSendOtp,
+        required Future<bool> Function(
+            String mobileNo,
+            String otp,
+            int orderId,
+            ) onVerifyOtp,
+      }){
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -76,7 +92,10 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
 
   List<AvailableSlot> _slots = const <AvailableSlot>[];
   List<RescheduleReason> _reasons = const <RescheduleReason>[];
+  final TextEditingController _otherRemarkController =
+  TextEditingController();
 
+  String? _otherRemarkError;
   DateTime? _selectedDate;
   AvailableSlot? _selectedSlot;
   RescheduleReason? _selectedReason;
@@ -115,17 +134,21 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
   @override
   void dispose() {
     _resendTimer?.cancel();
+    _otherRemarkController.dispose();
     super.dispose();
   }
-
+  bool get _isOtherReason =>
+      _selectedReason?.reason.trim().toLowerCase() == 'other';
   bool get _canConfirm =>
       _selectedDate != null &&
-      _selectedSlot != null &&
-      _selectedReason != null &&
-      !_loadingSlots &&
-      !_loadingReasons &&
-      !_submitting &&
-      (!_otpRequired || _otpVerified);
+          _selectedSlot != null &&
+          _selectedReason != null &&
+          (!_isOtherReason ||
+              _otherRemarkController.text.trim().isNotEmpty) &&
+          !_loadingSlots &&
+          !_loadingReasons &&
+          !_submitting &&
+          (!_otpRequired || _otpVerified);
 
   void _selectDate(DateTime date) {
     if (_selectedDate != null &&
@@ -187,7 +210,17 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
     setState(() {
       _selectedReason = reason;
       _reasonExpanded = false;
+
+      final isOther =
+          reason.reason.trim().toLowerCase() == 'other';
+
+      if (!isOther) {
+        _otherRemarkController.clear();
+        _otherRemarkError = null;
+      }
+
       final required = reason.isOtpRequired;
+
       if (_otpRequired != required || !_otpVerified) {
         _otpRequired = required;
         _otpSent = false;
@@ -308,17 +341,38 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
   }
 
   Future<void> _handleConfirm() async {
+    if (_selectedReason == null) return;
+
+    final otherRemark = _isOtherReason
+        ? _otherRemarkController.text.trim()
+        : '';
+
+    if (_isOtherReason && otherRemark.isEmpty) {
+      setState(() {
+        _otherRemarkError = 'Please specify the reason.';
+      });
+      return;
+    }
+
     if (!_canConfirm) return;
+
     setState(() => _submitting = true);
+
     try {
       final ok = await widget.onConfirm(
         _selectedDate!,
         _selectedSlot!,
         _selectedReason!.id,
+        otherRemark,
       );
-      if (ok && mounted) Navigator.of(context).pop();
+
+      if (ok && mounted) {
+        Navigator.of(context).pop();
+      }
     } finally {
-      if (mounted) setState(() => _submitting = false);
+      if (mounted) {
+        setState(() => _submitting = false);
+      }
     }
   }
 
@@ -630,7 +684,7 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _slots.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
+        crossAxisCount: 4,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
         childAspectRatio: 2.2,
@@ -646,7 +700,7 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
           },
           borderRadius: BorderRadius.circular(10),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 100),
+            duration: const Duration(milliseconds: 0),
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             decoration: BoxDecoration(
               gradient: isSelected ? AppColors.accentGradient : null,
@@ -670,7 +724,7 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                slot.timeSlot,
+                HelperMethods.formatTime12Hrs(slot.inTime),
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 style: TextStyle(
@@ -686,6 +740,8 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
       },
     );
   }
+
+
 
   Widget _buildReasonSection() {
     return Column(
@@ -861,6 +917,102 @@ class _RescheduleSheetState extends State<RescheduleSheet> {
                     }).toList(),
                   ),
                 )
+              : const SizedBox.shrink(),
+
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          child: _isOtherReason
+              ? Container(
+            margin: const EdgeInsets.only(top: 12),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.bgCardAlt,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: _otherRemarkError != null
+                    ? AppColors.redText
+                    : AppColors.border,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(
+                      Icons.edit_note_rounded,
+                      size: 18,
+                      color: AppColors.primary600,
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      'Specify reason',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                TextField(
+                  controller: _otherRemarkController,
+                  minLines: 1,
+                  maxLines: 4,
+                  maxLength: 250,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: InputDecoration(
+                    hintText:
+                    'Enter the reason for rescheduling...',
+                    hintStyle: const TextStyle(
+                      fontSize: 12.5,
+                      color: AppColors.textTertiary,
+                    ),
+                    errorText: _otherRemarkError,
+                    counterText: '',
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: AppColors.border,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: AppColors.border,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: AppColors.primary600,
+                        width: 1.4,
+                      ),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    if (_otherRemarkError != null &&
+                        value.trim().isNotEmpty) {
+                      _otherRemarkError = null;
+                    }
+
+                    // Rebuild so _canConfirm gets recalculated.
+                    setState(() {});
+                  },
+                ),
+              ],
+            ),
+          )
               : const SizedBox.shrink(),
         ),
       ],

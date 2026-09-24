@@ -68,6 +68,7 @@ class CollectedBagsView extends StatelessWidget {
             if (controller.filteredBagsList.isEmpty) {
               return _buildEmptyState();
             }
+
             return _buildBagsList();
           }),
         ),
@@ -875,14 +876,14 @@ class _BagCardState extends State<_BagCard> {
                             value: isEmpty ? 'Empty Bag' : '${widget.bag.tubeCount} tubes',
                             color: isEmpty ? _TatColors.empty : Colors.teal,
                           ),
-                          /*const SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: _MetaChip(
                               icon: Icons.schedule_rounded,
                               value: 'Collected ${_formatDateTime(widget.bag.collectedAt)}',
                               color: Colors.blueGrey,
                             ),
-                          ),*/
+                          ),
                         ],
                       ),
                     ],

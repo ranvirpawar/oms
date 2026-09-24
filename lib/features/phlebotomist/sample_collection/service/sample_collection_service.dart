@@ -351,6 +351,7 @@ class SampleCollectionService {
     required DateTime appointmentDate,
     required int slotId,
     int? rescheduleReasonId,
+    String? otherRemark
   }) async {
     final body = {
       'OrderID': orderId,
@@ -359,6 +360,7 @@ class SampleCollectionService {
       'SlotID': slotId,
       'RescheduleReasoneID': rescheduleReasonId ?? 0,
       'CreatedBy': createdBy,
+      'OtherRemark': otherRemark ?? ''
     };
 
     try {

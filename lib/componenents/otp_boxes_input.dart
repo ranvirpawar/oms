@@ -1,34 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Self-contained, theme-agnostic OTP box input that can be reused on any
-/// screen irrespective of the surrounding UI style.
-///
-/// Unlike the old login-screen version this widget owns its own
-/// [TextEditingController] and [FocusNode] — they are created in
-/// [State.initState] and disposed in [State.dispose]. No external controller
-/// exists whose lifetime can get torn down out of order, so the
-/// "A TextEditingController used after being disposed" crash can no longer
-/// happen.
-///
-/// ## How it works
-/// A single hidden [TextField] (opacity 0 wrapped in [IgnorePointer]) owns the
-/// focus, keyboard, paste and SMS autofill. The visible boxes are painted on
-/// top and each box handles taps: tapping before/after a digit moves the caret
-/// there, exactly like a normal text field. Pasting or autofill dropping the
-/// whole code in at once is handled in a single shot.
-///
-/// ## Flows that must not auto-detect
-/// Set [enableAutofill] to `false` (default is `true`) — e.g. the patient
-/// sample-collection OTP:
-///
-/// ```dart
-/// OtpBoxesInput(
-///   key: controller.otpInputKey,
-///   enableAutofill: false, // no SMS auto-detect
-///   onChanged: (code) => controller.otpError.value = '',
-/// )
-/// ```
+
 class OtpBoxesInput extends StatefulWidget {
   const OtpBoxesInput({
     super.key,

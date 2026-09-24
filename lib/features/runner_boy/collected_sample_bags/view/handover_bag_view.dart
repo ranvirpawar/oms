@@ -467,7 +467,7 @@ class _HandoverViewBodyState extends State<_HandoverViewBody> {
         ),
         child: Column(
           children: [
-            _row(Icons.location_on_outlined, 'Facility', person.facilityName),
+            _row(Icons.location_on_outlined, 'Clinic', person.facilityName),
            /* const Divider(height: 30),
             _row(Icons.layers_outlined, 'Ward', person.ward),*/
             const Divider(height: 30),

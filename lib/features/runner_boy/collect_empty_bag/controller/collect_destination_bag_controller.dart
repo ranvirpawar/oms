@@ -6,8 +6,10 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../../componenents/success_checked_animation_dialouge.dart';
 import '../../../../routes/route_manager.dart';
 import '../../../../services/user_service.dart';
+import '../../../../utils/helper_functions/helper_methods.dart';
 import '../../../../utils/ui_designs/liquid_snackbar.dart';
 import '../../../auth/model/login_response_model.dart';
+import '../../../phlebotomist/bag_status_dashboard/service/bag_registration_service.dart';
 import '../service/bag_service.dart';
 
 
@@ -19,7 +21,7 @@ import '../service/bag_service.dart';
 class CollectDestinationBagController extends GetxController {
   final UserService userService = Get.find();
   final BagService bagService = BagService();
-
+  final BagRegistrationService bagRegistrationService = BagRegistrationService();
   // ── Scanner ───────────────────────────────────────────────────────────────
   late MobileScannerController scannerController;
   final TextEditingController manualBarcodeController = TextEditingController();
@@ -110,14 +112,33 @@ class CollectDestinationBagController extends GetxController {
     }
 
     final uid = int.tryParse(userId.value);
+
     if (uid == null) {
       LiquidSnack.error('User session invalid, please re-login');
       return;
     }
 
-    isSubmitting.value = true;
+    if (isSubmitting.value) return;
 
     try {
+      isSubmitting.value = true;
+
+      // ─────────────────────────────────────────────────────────────
+      // 1. Check whether this bag is already assigned
+      // ─────────────────────────────────────────────────────────────
+      final alreadyAssigned = await _isBagAlreadyAssigned(
+        scannedBarcode.value,
+      );
+
+      if (alreadyAssigned) {
+        // Do NOT continue to InsertStartQRCodeBagEvent.
+        // Error snackbar is already shown inside _isBagAlreadyAssigned().
+        return;
+      }
+
+      // ─────────────────────────────────────────────────────────────
+      // 2. Bag is available → allow collection
+      // ─────────────────────────────────────────────────────────────
       final response = await bagService.insertStartQRCodeBagEvent(
         bagCode: scannedBarcode.value,
         processId: BagProcessId.emptyBagCollected.processId,
@@ -125,15 +146,22 @@ class CollectDestinationBagController extends GetxController {
         userId: uid,
       );
 
-      // Response: { "status": "Success", "Sessionid": 8, "S_bagid": 10, "message": "..." }
-      final status = response['status']?.toString() ?? '';
+      final status = response['status']?.toString().trim().toLowerCase() ?? '';
       final message = response['message']?.toString() ?? '';
 
-      if (status.toLowerCase() != 'success') {
-        throw Exception(message.isNotEmpty ? message : 'Failed to collect destination bag');
+      if (status != 'success') {
+        throw Exception(
+          message.isNotEmpty
+              ? message
+              : 'Failed to collect destination bag',
+        );
       }
 
-      debugPrint('✅ Collected | Sessionid: ${response['Sessionid']} | S_bagid: ${response['S_bagid']}');
+      debugPrint(
+        '✅ Collected | '
+            'Sessionid: ${response['Sessionid']} | '
+            'S_bagid: ${response['S_bagid']}',
+      );
 
       Get.dialog(
         ModernSuccessDialog(
@@ -148,12 +176,53 @@ class CollectDestinationBagController extends GetxController {
       );
     } catch (e) {
       final msg = e.toString().replaceAll('Exception: ', '');
-      LiquidSnack.error(msg.isEmpty ? 'Collection failed' : msg);
+
+      LiquidSnack.error(
+        msg.isEmpty ? 'Collection failed' : msg,
+      );
     } finally {
       isSubmitting.value = false;
     }
   }
 
+  Future<bool> _isBagAlreadyAssigned(String bagCode) async {
+    final response = await bagRegistrationService.checkBagAlreadyAssigned(
+      bagCode: bagCode,
+    );
+
+    final output = response['output'];
+
+    if (output is List && output.isNotEmpty) {
+      final data = output.first;
+
+      if (data is Map) {
+        final status = data['Status']?.toString().trim().toLowerCase();
+        final message =
+            data['Message']?.toString() ?? 'Unable to use this bag.';
+
+        final retVal = int.tryParse(
+          data['RetVal']?.toString() ?? '',
+        );
+
+        kPrint(
+          '🎒 Bag assignment check | '
+              'Bag: $bagCode | '
+              'Status: $status | '
+              'RetVal: $retVal | '
+              'Message: $message',
+        );
+
+        if (status == 'failed') {
+          LiquidSnack.error(message);
+          return true;
+        }
+
+        return false;
+      }
+    }
+
+    throw Exception('Invalid response from bag assignment check.');
+  }
   // ── Reset ─────────────────────────────────────────────────────────────────
   void resetScanner() {
     scannedBarcode.value = '';

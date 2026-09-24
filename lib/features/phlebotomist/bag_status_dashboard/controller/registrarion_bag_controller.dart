@@ -8,6 +8,7 @@ import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart' hide Sna
 
 import '../../../../../constants/bag_process_ids.dart';
 import '../../../../../services/user_service.dart';
+import '../../../../utils/helper_functions/helper_methods.dart';
 import '../../../auth/model/login_response_model.dart';
 import '../model/qr_bag_details.dart';
 import '../model/qr_bag_session.dart';
@@ -211,10 +212,27 @@ class BagRegistrationController extends GetxController {
   Future<bool> openBag(String scannedBagcode) async {
     try {
       isLoading.value = true;
+      errorMessage.value = '';
 
-      // Auto-close the currently open bag (only one allowed open at a time)
+      final bagCode = scannedBagcode.trim();
+
+      if (bagCode.isEmpty) {
+        LiquidSnack.error('Invalid bag code.');
+        return false;
+      }
+
+      // 1. First validate scanned bag
+      final alreadyAssigned = await _isBagAlreadyAssigned(bagCode);
+
+      if (alreadyAssigned) {
+        // Snackbar is already shown by _isBagAlreadyAssigned()
+        return false;
+      }
+
+      // 2. Only after validation succeeds, close current bag
       if (hasOpenBag) {
         final closed = await _closeBagSilently(activeBag!);
+
         if (!closed) {
           LiquidSnack.error(
             'Could not close the existing open bag. Please try again.',
@@ -223,37 +241,47 @@ class BagRegistrationController extends GetxController {
         }
       }
 
+      // 3. Start session for new bag
       final response = await _service.insertStartQRCodeBagEvent(
-        bagcode: scannedBagcode,
-        processId: int.parse(BagProcessId.bagOpenedByPhlebotomist.processId),
+        bagcode: bagCode,
+        processId: int.parse(
+          BagProcessId.bagOpenedByPhlebotomist.processId,
+        ),
         facilityCode: '0',
         userId: userId.value,
       );
 
       if (response['status'] == 'Success') {
-        final output = (response['output'] as Map<String, dynamic>?) ?? {};
+        final output =
+            (response['output'] as Map<String, dynamic>?) ?? {};
 
         final newSession = QRBagSession(
-          sessionID: output['Sessionid'] ?? 0,
-          bagId: output['S_bagid'] ?? 0,
-          bagcode: scannedBagcode,
+          sessionID:
+          int.tryParse(output['Sessionid']?.toString() ?? '') ?? 0,
+          bagId:
+          int.tryParse(output['S_bagid']?.toString() ?? '') ?? 0,
+          bagcode: bagCode,
           bagCloseStatus: 0,
         );
 
-        // Insert at the top so it appears first in the dashboard list
         allSessions.insert(0, newSession);
+
         await _loadBagDetails(newSession);
 
-        LiquidSnack.success( 'Bag opened successfully!',
-            );
+        LiquidSnack.success('Bag opened successfully!');
+
         return true;
       }
 
-      LiquidSnack.error(response['message'] ?? 'Could not open bag');
+      LiquidSnack.error(
+        response['message']?.toString() ?? 'Could not open bag',
+      );
+
       return false;
     } catch (e) {
       errorMessage.value = e.toString();
       LiquidSnack.error(e.toString());
+
       return false;
     } finally {
       isLoading.value = false;
@@ -381,4 +409,42 @@ class BagRegistrationController extends GetxController {
   }
 
   Future<void> refreshDashboard() async => await checkBagSession();
+  Future<bool> _isBagAlreadyAssigned(String bagCode) async {
+    final response = await _service.checkBagAlreadyAssigned(
+      bagCode: bagCode,
+    );
+
+    final output = response['output'];
+
+    if (output is List && output.isNotEmpty) {
+      final data = output.first;
+
+      if (data is Map) {
+        final status = data['Status']?.toString().trim().toLowerCase();
+        final message =
+            data['Message']?.toString() ?? 'Unable to use this bag.';
+
+        final retVal = int.tryParse(
+          data['RetVal']?.toString() ?? '',
+        );
+
+        kPrint(
+          '🎒 Bag assignment check | '
+              'Bag: $bagCode | '
+              'Status: $status | '
+              'RetVal: $retVal | '
+              'Message: $message',
+        );
+
+        if (status == 'failed') {
+          LiquidSnack.error(message);
+          return true;
+        }
+
+        return false;
+      }
+    }
+
+    throw Exception('Invalid response from bag assignment check.');
+  }
 }

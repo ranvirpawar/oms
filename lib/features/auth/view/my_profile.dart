@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:lifenity_connect/componenents/ktextformfield.dart';
 import '../controller/profile_controller.dart';
 
 class ProfileScreen extends GetView<ProfileController> {
@@ -163,13 +162,9 @@ class ProfileScreen extends GetView<ProfileController> {
   // ------------------------------------------------------------------
 
   Widget _buildTextField(TextEditingController controller, String label, {Widget? suffix}) {
-    return KTextFormField(
+    return TextFormField(
       controller: controller,
-      icon: Icons.person,
-      label: label,
-      hint: 'Enter $label',
-      read_only: true,
-      suffix_icon: suffix,
+      decoration: InputDecoration(labelText: label, border: const OutlineInputBorder(), suffixIcon: suffix),
     );
   }
 

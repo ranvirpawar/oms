@@ -141,9 +141,10 @@ class PatientQueueView extends GetView<PatientQueueController> {
               isEmergencyActive: controller.isEmergencyOnly.value,
               emergencyCount: controller.emergencyCount,
               onEmergencyToggle: controller.toggleEmergencyFilter,
-              clinics: controller.clinicFilters,           // added
-              activeClinic: controller.activeClinicFilter.value, // added
-              onClinicSelected: controller.setClinicFilter, // added
+              clinics: controller.clinicFilters,
+              activeClinic: controller.activeClinicFilter.value,
+              onClinicSelected: controller.setClinicFilter,
+              activeVisitType: controller.activeVisitType.value,
             ),
           ),
           Expanded(
@@ -202,12 +203,13 @@ class PatientQueueView extends GetView<PatientQueueController> {
                               controller.fetchAvailableSlots(date),
                           onFetchReasons: () =>
                               controller.fetchRescheduleReasons(),
-                          onConfirm: (date, slot, reasonId) =>
+                          onConfirm: (date, slot, reasonId, otherRemark) =>
                               controller.rescheduleAssignment(
                                 patient,
                                 newDate: date,
                                 slot: slot,
                                 rescheduleReasonId: reasonId,
+                                otherRemark: otherRemark,
                               ),
                           onSendOtp: (mobileNo, orderId) =>
                               controller.sendRescheduleOtp(

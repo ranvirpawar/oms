@@ -170,6 +170,34 @@ class BagRegistrationService {
       throw Exception('Error: $e');
     }
   }
+  /// Check whether scanned bag is already assigned to a user.
+  Future<Map<String, dynamic>> checkBagAlreadyAssigned({
+    required String bagCode,
+  }) async {
+    try {
+      kPrint('🔍 CheckBagAlreadyAssigned...');
+      kPrint(
+        '➡️ URL: ${AppUrls.checkBagAlreadyAssigned} | '
+            'Body: {Bagcode: $bagCode}',
+      );
+
+      final result = await _apiClient.get(
+        AppUrls.checkBagAlreadyAssigned,
+        queryParameters: {
+          'bagcode': bagCode,
+        },
+      );
+
+      kPrint('📥 Response (${result.statusCode}): ${result.data}');
+
+      return result.data is Map<String, dynamic>
+          ? result.data as Map<String, dynamic>
+          : result.body;
+    } catch (e) {
+      kPrint('❌ Error in checkBagAlreadyAssigned: $e');
+      throw Exception('Error: $e');
+    }
+  }
 }
 /*
 return {

@@ -93,7 +93,7 @@ class LoginController extends GetxController with CodeAutoFill {
     'Phlebotomist-Renuka': {'user': '8888658717', 'pass': '987654'},
     'Phlebotomist-Aarati': {'user': '8822882288', 'pass': '123456'},
     'Runnerboy': {'user': '9604249812', 'pass': '123456'},
-    'Lab Accession': {'user': '7767876692', 'pass': '123456'},
+    'Lab Accession': {'user': '7767876693', 'pass': '123456'},
     'Runnerboy-  Avinash': {'user': '9604249812', 'pass': '123456'},
     'Runnerboy-  Nilesh': {'user': '9665253245', 'pass': '123456'},
     // 'Team Lead': {'user': '9975020260', 'pass': '123456'},

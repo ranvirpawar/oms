@@ -10,8 +10,11 @@ import '../../../../utils/helper_functions/helper_methods.dart';
 // for debugPrint
 
 import 'package:get/get.dart';
+
+import '../../../phlebotomist/bag_status_dashboard/service/bag_registration_service.dart';
 class BagService {
   final APIClient apiClient = Get.find<APIClient>();
+
 
   Future<Map<String, dynamic>> insertStartQRCodeBagEvent({
     required String bagCode,

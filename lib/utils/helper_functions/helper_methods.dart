@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 
 class HelperMethods {
   /// mask mobile number
@@ -46,6 +47,11 @@ class HelperMethods {
     if (kDebugMode) {
       printLongString(text);
     }
+  }
+
+  static String formatTime12Hrs(String time) {
+    final parsedTime = DateFormat('HH:mm:ss').parse(time);
+    return DateFormat('h:mm a').format(parsedTime);
   }
 }
 

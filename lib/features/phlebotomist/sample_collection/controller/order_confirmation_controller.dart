@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart' hide SnackPosition;
+import 'package:intl/intl.dart';
 
 import '../../../../componenents/otp_boxes_input.dart';
 import '../../../../routes/route_manager.dart';
@@ -322,36 +323,94 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
 
   Future<void> confirmAndCollect() async {
     if (!hasOpenBag) {
-      LiquidSnack.error('You need to open a bag first for sample collection');
+      LiquidSnack.error(
+        'You need to open a bag first for sample collection',
+      );
       return;
     }
+
     final details = orderDetails.value;
     if (details == null) return;
-    kPrint('isOTPVerified ${details.isOtpVerified}');
 
-    // NOTE: preserved verbatim from the original controller — when
-    // `isOtpVerified` is explicitly `false`, OTP runs; when it's 'Yes',
-    // it's skipped. Kept as-is because behaviour must not change — worth
-    // confirming with whoever owns this field that the sense isn't inverted.
+    // ---------------------------------------------
+    // OTP
+    // ---------------------------------------------
     if (details.isOtpVerified != 'Yes') {
       _otpVerifiedThisSession = false;
+
       await sendOtp();
-      await Get.to(() => const OtpVerificationScreen());
-      if (!_otpVerifiedThisSession) return; // backed out without verifying
+
+      await Get.to(
+            () => const OtpVerificationScreen(),
+      );
+
+      // User pressed back without verifying OTP
+      if (!_otpVerifiedThisSession) {
+        return;
+      }
     }
 
-    final checklistCompleted = await _goToChecklist();
-    if (!checklistCompleted) return; // backed out without completing it
+    // ---------------------------------------------
+    // Checklist
+    // ---------------------------------------------
+    //
+    // This now checks the GET API first.
+    //
+    // Already answered:
+    //   -> skips checklist
+    //
+    // Not answered:
+    //   -> opens checklist
+    //
+    final canContinue = await _goToChecklist();
 
+    if (!canContinue) {
+      return;
+    }
+
+    // ---------------------------------------------
+    // Collection
+    // ---------------------------------------------
     await _goToSampleCollection();
   }
+  /// Whether the checklist has already been answered previously.
+  ///
+  /// This is based ONLY on values returned from the GET checklist API.
+  /// UI-only state such as fastingAdvisoryAcknowledged should not decide
+  /// whether we need to show the checklist again.
+  bool get hasExistingChecklistAnswers {
+    if (checklistItems.isEmpty) return false;
 
+    return checklistItems.every(
+          (item) => item.value.trim().isNotEmpty,
+    );
+  }
   /// Loads and pushes the collection checklist. Returns true only if the
   /// phlebotomist submitted it successfully.
   Future<bool> _goToChecklist() async {
     _checklistCompletedThisSession = false;
-    await fetchChecklist();
+
+    // Always reload from backend.
+    // This makes the API the source of truth when the user starts/resumes
+    // the collection flow.
+    final loaded = await fetchChecklist();
+
+    if (!loaded) {
+      return false;
+    }
+
+    // ---------------------------------------------------------
+    // IMPORTANT:
+    // If answers already exist in GET API, checklist was already
+    // completed previously. Don't show the checklist again.
+    // ---------------------------------------------------------
+    if (hasExistingChecklistAnswers) {
+      return true;
+    }
+
+    // Some answers are missing -> user needs to complete checklist.
     await Get.to(() => const CollectionChecklistScreen());
+
     return _checklistCompletedThisSession;
   }
 
@@ -474,44 +533,135 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
   final RxBool isLoadingChecklist = false.obs;
   final RxBool isSubmittingChecklist = false.obs;
   final RxString checklistError = ''.obs;
+// ---------------------------------------------------------------------
+// Fasting-linked meal time (shared across all IsFastingReq rows)
+// ---------------------------------------------------------------------
+  static final DateFormat _checklistDtFormat = DateFormat('dd-MM-yyyy HH:mm');
 
-  bool get isChecklistComplete =>
-      checklistItems.isNotEmpty &&
-          checklistItems.every((item) => item.value.isNotEmpty);
+  final RxBool fastingAdvisoryAcknowledged = false.obs;
 
-  /// Mirrors [_otpVerifiedThisSession] — set only for the lifetime of a
-  /// single checklist-screen visit, read right after it's popped.
-  bool _checklistCompletedThisSession = false;
+  List<ChecklistItem> get fastingLinkedItems =>
+      checklistItems.where((i) => i.isFastingReq).toList();
 
-  Future<void> fetchChecklist() async {
-    isLoadingChecklist.value = true;
-    checklistError.value = '';
+  List<ChecklistItem> get regularItems =>
+      checklistItems.where((i) => !i.isFastingReq).toList();
+
+  /// The single shared meal-time answer, or '' if not yet entered.
+  String get mealTimeValue =>
+      fastingLinkedItems.isEmpty ? '' : fastingLinkedItems.first.value;
+
+  /// Per-test conflicts against the shared meal time — empty when every
+  /// linked test's window is satisfied (or meal time not entered yet).
+  List<MealTimeConflict> get mealTimeConflicts {
+    final linked = fastingLinkedItems;
+    if (linked.isEmpty || mealTimeValue.isEmpty) return [];
+
+    DateTime mealTime;
     try {
-      final items = await _service.fetchCollectionChecklist(
-        orderId: orderId,
-        userId: empId.value,
-      );
-      checklistItems.assignAll(items);
-    } on SampleCollectionException catch (e) {
-      checklistError.value = e.message;
-    } catch (e) {
-      kPrint(e.toString());
-      checklistError.value =
-      'Something went wrong while loading the checklist.';
-    } finally {
-      isLoadingChecklist.value = false;
+      mealTime = _checklistDtFormat.parse(mealTimeValue);
+    } catch (_) {
+      return [];
     }
+
+    final hoursSince =
+        DateTime.now().difference(mealTime).inMinutes / 60.0;
+
+    final conflicts = <MealTimeConflict>[];
+    for (final item in linked) {
+      // No window data for this row — nothing to validate against, skip
+      // silently rather than guessing.
+      final min = item.fastingMinTime;
+      final max = item.fastingMaxTime;
+      if (min == null || max == null) continue;
+      if (hoursSince < min || hoursSince > max) {
+        conflicts.add(MealTimeConflict(
+          checklistId: item.checklistId,
+          label: (item.testName?.isNotEmpty ?? false)
+              ? item.testName!
+              : item.checklistName,
+          hoursSinceMeal: hoursSince,
+          minHours: min,
+          maxHours: max,
+        ));
+      }
+    }
+    return conflicts;
+  }
+
+  bool get isChecklistComplete {
+    if (regularItems.any((i) => i.value.isEmpty)) return false;
+    if (fastingLinkedItems.isNotEmpty && mealTimeValue.isEmpty) return false;
+    if (mealTimeConflicts.isNotEmpty && !fastingAdvisoryAcknowledged.value) {
+      return false;
+    }
+    return true;
   }
 
   void setChecklistAnswer(int checklistId, String value) {
     final index =
     checklistItems.indexWhere((i) => i.checklistId == checklistId);
     if (index == -1) return;
+    final target = checklistItems[index];
     checklistItems[index].value = value;
-    // ChecklistItem is a mutable plain object inside an RxList, so mutating
-    // a field in place doesn't trigger a rebuild on its own — nudge it.
+
+    // All fasting-linked rows share one physical meal-time fact — fan the
+    // answer out so the phlebotomist only ever fills it once.
+    if (target.isFastingReq) {
+      for (final i in checklistItems) {
+        if (i.checklistId != checklistId && i.isFastingReq) {
+          i.value = value;
+        }
+      }
+    }
+
+    fastingAdvisoryAcknowledged.value = false;
     checklistItems.refresh();
   }
+
+
+  /// Mirrors [_otpVerifiedThisSession] — set only for the lifetime of a
+  /// single checklist-screen visit, read right after it's popped.
+  bool _checklistCompletedThisSession = false;
+
+  Future<bool> fetchChecklist() async {
+    isLoadingChecklist.value = true;
+    checklistError.value = '';
+
+    try {
+      final items = await _service.fetchCollectionChecklist(
+        orderId: orderId,
+        userId: empId.value,
+      );
+
+      checklistItems.assignAll(items);
+
+      return true;
+    } on SampleCollectionException catch (e) {
+      checklistError.value = e.message;
+
+      LiquidSnack.error(
+        e.message,
+        title: 'Unable to load checklist',
+      );
+
+      return false;
+    } catch (e) {
+      kPrint(e.toString());
+
+      checklistError.value =
+      'Something went wrong while loading the checklist.';
+
+      LiquidSnack.error(
+        checklistError.value,
+        title: 'Unable to load checklist',
+      );
+
+      return false;
+    } finally {
+      isLoadingChecklist.value = false;
+    }
+  }
+
 
   Future<bool> _submitChecklist() async {
     if (!isChecklistComplete) {

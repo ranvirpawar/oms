@@ -392,6 +392,7 @@ class _FpTextField extends StatelessWidget {
       inputFormatters: inputFormatters,
       validator: validator,
       cursorColor: Colors.white,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       style: const TextStyle(
         color: Colors.white,
         fontSize: 15,

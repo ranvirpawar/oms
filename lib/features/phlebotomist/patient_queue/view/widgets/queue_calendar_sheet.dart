@@ -4,13 +4,8 @@ import 'package:intl/intl.dart';
 
 import '../../../../../theme/app_colors.dart';
 
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
-
-import '../../../../../theme/app_colors.dart';
-
 class QueueCalendarSheet extends StatefulWidget {
+  final String confirmLabel;
   final DateTimeRange? initialRange;
   final ValueChanged<DateTimeRange> onSelect;
 
@@ -18,19 +13,22 @@ class QueueCalendarSheet extends StatefulWidget {
     super.key,
     required this.onSelect,
     this.initialRange,
+    this.confirmLabel = 'Show Orders',
   });
 
   static Future<void> show(
-      BuildContext context, {
-        DateTimeRange? initialRange,
-        required ValueChanged<DateTimeRange> onSelect,
-      }) {
+    BuildContext context, {
+    DateTimeRange? initialRange,
+    String confirmLabel = 'Show Orders',
+    required ValueChanged<DateTimeRange> onSelect,
+  }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => QueueCalendarSheet(
         initialRange: initialRange,
+        confirmLabel: confirmLabel,
         onSelect: onSelect,
       ),
     );
@@ -60,11 +58,13 @@ class _QueueCalendarSheetState extends State<QueueCalendarSheet> {
     _viewMonth = DateTime(anchor.year, anchor.month);
   }
 
-  void _prevMonth() =>
-      setState(() => _viewMonth = DateTime(_viewMonth.year, _viewMonth.month - 1));
+  void _prevMonth() => setState(
+    () => _viewMonth = DateTime(_viewMonth.year, _viewMonth.month - 1),
+  );
 
-  void _nextMonth() =>
-      setState(() => _viewMonth = DateTime(_viewMonth.year, _viewMonth.month + 1));
+  void _nextMonth() => setState(
+    () => _viewMonth = DateTime(_viewMonth.year, _viewMonth.month + 1),
+  );
 
   // Tap logic: first tap starts a fresh range (start == end == tapped day).
   // Second tap extends it — before the start, it becomes the new start;
@@ -74,7 +74,8 @@ class _QueueCalendarSheetState extends State<QueueCalendarSheet> {
     setState(() {
       final start = _rangeStart;
       final end = _rangeEnd;
-      final hasCompleteRange = start != null && end != null && !_sameDay(start, end);
+      final hasCompleteRange =
+          start != null && end != null && !_sameDay(start, end);
 
       if (start == null || hasCompleteRange) {
         _rangeStart = day;
@@ -89,14 +90,20 @@ class _QueueCalendarSheetState extends State<QueueCalendarSheet> {
   }
 
   bool get _hasRange =>
-      _rangeStart != null && _rangeEnd != null && !_sameDay(_rangeStart!, _rangeEnd!);
+      _rangeStart != null &&
+      _rangeEnd != null &&
+      !_sameDay(_rangeStart!, _rangeEnd!);
 
   String get _rangeLabel {
     if (_rangeStart == null) return 'Select a start date';
-    if (!_hasRange) return '${DateFormat('MMM d').format(_rangeStart!)} · pick an end date';
-    final sameMonth = _rangeStart!.month == _rangeEnd!.month &&
+    if (!_hasRange)
+      return '${DateFormat('MMM d').format(_rangeStart!)} · pick an end date';
+    final sameMonth =
+        _rangeStart!.month == _rangeEnd!.month &&
         _rangeStart!.year == _rangeEnd!.year;
-    final startLabel = DateFormat(sameMonth ? 'MMM d' : 'MMM d, yyyy').format(_rangeStart!);
+    final startLabel = DateFormat(
+      sameMonth ? 'MMM d' : 'MMM d, yyyy',
+    ).format(_rangeStart!);
     final endLabel = DateFormat('MMM d, yyyy').format(_rangeEnd!);
     return '$startLabel – $endLabel';
   }
@@ -114,7 +121,6 @@ class _QueueCalendarSheetState extends State<QueueCalendarSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-
             _header(theme),
             _calendarNav(theme),
             _weekdayRow(theme),
@@ -146,30 +152,34 @@ class _QueueCalendarSheetState extends State<QueueCalendarSheet> {
     child: Row(
       children: [
         Expanded(
-          child: Text('Select a date range',
-              style: t.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          child: Text(
+            'Select a date range',
+            style: t.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 150),
           child: _rangeStart != null
               ? GestureDetector(
-            key: const ValueKey('clear'),
-            onTap: () {
-              HapticFeedback.lightImpact();
-              setState(() {
-                _rangeStart = null;
-                _rangeEnd = null;
-              });
-            },
-            child: Text(
-              'Clear',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
-              ),
-            ),
-          )
+                  key: const ValueKey('clear'),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    setState(() {
+                      _rangeStart = null;
+                      _rangeEnd = null;
+                    });
+                  },
+                  child: Text(
+                    'Clear',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                )
               : const SizedBox(key: ValueKey('empty')),
         ),
       ],
@@ -217,24 +227,27 @@ class _QueueCalendarSheetState extends State<QueueCalendarSheet> {
     padding: const EdgeInsets.symmetric(horizontal: 14),
     child: Row(
       children: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
-          .map((d) => Expanded(
-        child: Center(
-          child: Text(
-            d,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: t.colorScheme.onSurface.withOpacity(0.35),
+          .map(
+            (d) => Expanded(
+              child: Center(
+                child: Text(
+                  d,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: t.colorScheme.onSurface.withOpacity(0.35),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-      ))
+          )
           .toList(),
     ),
   );
 
   Widget _daysGrid(ThemeData t) {
-    final firstWeekday = DateTime(_viewMonth.year, _viewMonth.month, 1).weekday % 7;
+    final firstWeekday =
+        DateTime(_viewMonth.year, _viewMonth.month, 1).weekday % 7;
     final daysInMonth = DateTime(_viewMonth.year, _viewMonth.month + 1, 0).day;
     final today = _midnight(DateTime.now());
 
@@ -250,11 +263,16 @@ class _QueueCalendarSheetState extends State<QueueCalendarSheet> {
         itemCount: firstWeekday + daysInMonth,
         itemBuilder: (_, i) {
           if (i < firstWeekday) return const SizedBox();
-          final day = DateTime(_viewMonth.year, _viewMonth.month, i - firstWeekday + 1);
+          final day = DateTime(
+            _viewMonth.year,
+            _viewMonth.month,
+            i - firstWeekday + 1,
+          );
 
           final isStart = _rangeStart != null && _sameDay(day, _rangeStart!);
           final isEnd = _rangeEnd != null && _sameDay(day, _rangeEnd!);
-          final inRange = _rangeStart != null &&
+          final inRange =
+              _rangeStart != null &&
               _rangeEnd != null &&
               day.isAfter(_rangeStart!) &&
               day.isBefore(_rangeEnd!);
@@ -308,11 +326,15 @@ class _QueueCalendarSheetState extends State<QueueCalendarSheet> {
                 onPressed: () => Navigator.pop(context),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: AppColors.border, width: 0.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 13),
                 ),
-                child: const Text('Cancel',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -321,23 +343,29 @@ class _QueueCalendarSheetState extends State<QueueCalendarSheet> {
               child: ElevatedButton(
                 onPressed: _rangeStart != null
                     ? () {
-                  HapticFeedback.mediumImpact();
-                  widget.onSelect(DateTimeRange(
-                    start: _rangeStart!,
-                    end: _rangeEnd ?? _rangeStart!,
-                  ));
-                  Navigator.pop(context);
-                }
+                        HapticFeedback.mediumImpact();
+                        widget.onSelect(
+                          DateTimeRange(
+                            start: _rangeStart!,
+                            end: _rangeEnd ?? _rangeStart!,
+                          ),
+                        );
+                        Navigator.pop(context);
+                      }
                     : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 13),
                   elevation: 0,
                 ),
-                child: const Text('Show Orders',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                child: Text(
+                  widget.confirmLabel,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
               ),
             ),
           ],
@@ -384,11 +412,19 @@ class _CalendarDayCell extends StatelessWidget {
                 child: Row(
                   children: [
                     if (!isRowStart && (inRange || isEnd))
-                      Expanded(child: Container(color: AppColors.primary.withOpacity(0.12)))
+                      Expanded(
+                        child: Container(
+                          color: AppColors.primary.withOpacity(0.12),
+                        ),
+                      )
                     else
                       const Expanded(child: SizedBox()),
                     if (!isRowEnd && (inRange || isStart))
-                      Expanded(child: Container(color: AppColors.primary.withOpacity(0.12)))
+                      Expanded(
+                        child: Container(
+                          color: AppColors.primary.withOpacity(0.12),
+                        ),
+                      )
                     else
                       const Expanded(child: SizedBox()),
                   ],
@@ -406,7 +442,10 @@ class _CalendarDayCell extends StatelessWidget {
                     : null,
                 borderRadius: BorderRadius.circular(isEndpoint ? 8 : 8),
                 border: isToday && !isEndpoint
-                    ? Border.all(color: AppColors.primary.withOpacity(0.5), width: 1)
+                    ? Border.all(
+                        color: AppColors.primary.withOpacity(0.5),
+                        width: 1,
+                      )
                     : null,
               ),
               child: Center(
@@ -426,6 +465,7 @@ class _CalendarDayCell extends StatelessWidget {
     );
   }
 }
+
 /*class QueueCalendarSheet extends StatefulWidget {
   final DateTime? initialSelected;
   final ValueChanged<DateTime> onSelect;

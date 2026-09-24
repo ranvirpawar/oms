@@ -650,16 +650,21 @@ class PatientQueueController extends GetxController {
     );
   }
 
-  Future<bool> reject(AssignedPatient patient, {int? reasonId}) => _runAction(
-    patient.id,
-        () => _service.reject(
-      patient,
-      updatedBy: int.tryParse(empId.value) ?? 0,
-      reasonId: reasonId,
-    ),
-    successMessage: 'Assignment rejected',
-  );
-
+  Future<bool> reject(
+      AssignedPatient patient, {
+        int? reasonId,
+        String otherRemark = '',
+      }) =>
+      _runAction(
+        patient.id,
+            () => _service.reject(
+          patient,
+          updatedBy: int.tryParse(empId.value) ?? 0,
+          reasonId: reasonId,
+          otherRemark: otherRemark,
+        ),
+        successMessage: 'Assignment rejected',
+      );
 
 
   /// Reschedules through the shared updateOrder/assign-status flow. Keeps
@@ -670,6 +675,7 @@ class PatientQueueController extends GetxController {
         required DateTime newDate,
         required AvailableSlot slot,
         required int rescheduleReasonId,
+        String otherRemark = '',
       }) {
     return _runAction(
       patient.id,
@@ -679,6 +685,7 @@ class PatientQueueController extends GetxController {
         rescheduleDate: newDate,
         slot: slot,
         rescheduleReasonId: rescheduleReasonId,
+            otherRemark: otherRemark
       ),
       successMessage: 'Visit rescheduled',
     );

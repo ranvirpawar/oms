@@ -61,9 +61,24 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
   bool _loadingReasons = true;
   bool _submitting = false;
 
-  bool get _canReject =>
-      _selectedReason != null && !_loadingReasons && !_submitting;
 
+  final TextEditingController _otherRemarkController =
+  TextEditingController();
+
+  String? _otherRemarkError;
+
+  bool get _isOtherReason =>
+      _selectedReason?.assignRejectReasonName
+          .trim()
+          .toLowerCase() ==
+          'other';
+
+  bool get _canReject =>
+      _selectedReason != null &&
+          (!_isOtherReason ||
+              _otherRemarkController.text.trim().isNotEmpty) &&
+          !_loadingReasons &&
+          !_submitting;
   // ---------------------------------------------------------------------------
   // Lifecycle
   // ---------------------------------------------------------------------------
@@ -73,7 +88,11 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
     super.initState();
     _loadReasons();
   }
-
+  @override
+  void dispose() {
+    _otherRemarkController.dispose();
+    super.dispose();
+  }
   // ---------------------------------------------------------------------------
   // API
   // ---------------------------------------------------------------------------
@@ -103,6 +122,19 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
   }
 
   Future<void> _handleReject() async {
+    if (_selectedReason == null) return;
+
+    final otherRemark = _isOtherReason
+        ? _otherRemarkController.text.trim()
+        : '';
+
+    if (_isOtherReason && otherRemark.isEmpty) {
+      setState(() {
+        _otherRemarkError = 'Please specify the rejection reason.';
+      });
+      return;
+    }
+
     if (!_canReject) return;
 
     setState(() {
@@ -110,30 +142,21 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
     });
 
     try {
-      /*
-       * Keep this call aligned with your existing controller method.
-       *
-       * If your current method is:
-       *
-       *   reject(patient)
-       *
-       * then pass the assignRejectReasonId to the service inside that method.
-       *
-       * If your controller already accepts assignRejectReasonId:
-       *
-       *   reject(patient, assignRejectReasonId: ...)
-       *
-       * use the version below.
-       */
-
-      await widget.controller.reject(
+      final success = await widget.controller.reject(
         widget.patient,
         reasonId: _selectedReason!.assignRejectReasonId,
+        otherRemark: otherRemark,
       );
 
       if (!mounted) return;
 
-      Navigator.of(context).pop();
+      if (success) {
+        Navigator.of(context).pop();
+      } else {
+        setState(() {
+          _submitting = false;
+        });
+      }
     } catch (e) {
       if (!mounted) return;
 
@@ -206,6 +229,13 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
                       const SizedBox(height: 10),
 
                       _buildReasonSelector(),
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 180),
+                        curve: Curves.easeOutCubic,
+                        child: _isOtherReason
+                            ? _buildOtherRemarkField()
+                            : const SizedBox.shrink(),
+                      ),
                     ],
                   ),
                 ),
@@ -218,7 +248,98 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
       ),
     );
   }
+  Widget _buildOtherRemarkField() {
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.bgCardAlt,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _otherRemarkError != null
+              ? AppColors.redText
+              : AppColors.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.edit_note_rounded,
+                size: 17,
+                color: AppColors.redText,
+              ),
+              SizedBox(width: 6),
+              Text(
+                'Specify rejection reason',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
 
+          const SizedBox(height: 8),
+
+          TextField(
+            controller: _otherRemarkController,
+            minLines: 2,
+            maxLines: 4,
+            maxLength: 250,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(
+              hintText: 'Enter rejection reason...',
+              hintStyle: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textTertiary,
+              ),
+              errorText: _otherRemarkError,
+              counterText: '',
+              filled: true,
+              fillColor: Colors.white,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 11,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(
+                  color: AppColors.border,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(
+                  color: AppColors.border,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(
+                  color: AppColors.redText,
+                  width: 1.3,
+                ),
+              ),
+            ),
+            onChanged: (value) {
+              if (_otherRemarkError != null &&
+                  value.trim().isNotEmpty) {
+                _otherRemarkError = null;
+              }
+
+              // Recalculate _canReject.
+              setState(() {});
+            },
+          ),
+        ],
+      ),
+    );
+  }
   // ---------------------------------------------------------------------------
   // Header
   // ---------------------------------------------------------------------------
@@ -837,10 +958,21 @@ class _RejectAssignmentSheetState extends State<RejectAssignmentSheet> {
         onTap: _submitting
             ? null
             : () {
-                setState(() {
-                  _selectedReason = reason;
-                });
-              },
+          setState(() {
+            _selectedReason = reason;
+
+            final isOther =
+                reason.assignRejectReasonName
+                    .trim()
+                    .toLowerCase() ==
+                    'other';
+
+            if (!isOther) {
+              _otherRemarkController.clear();
+              _otherRemarkError = null;
+            }
+          });
+        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,

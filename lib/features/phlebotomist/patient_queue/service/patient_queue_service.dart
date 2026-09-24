@@ -115,6 +115,7 @@ class PatientQueueService {
         DateTime? rescheduleDate,
         String? rescheduleStartTime,
         String? rescheduleEndTime,
+        String? otherRemark,
       }) async {
     final body = {
       'OrderID': patient.orderId ,
@@ -129,6 +130,7 @@ class PatientQueueService {
       'RescheduleEndTime': rescheduleEndTime,
       'AssignRejectReasonID': rejectReasonId ?? 0,
       'UpdatedBy': updatedBy,
+      'OtherRemark': otherRemark ?? ' ',
     };
 
     Map<String, dynamic> respBody;
@@ -166,15 +168,17 @@ class PatientQueueService {
   }
 
   Future<bool> reject(
-    AssignedPatient patient, {
-    required int updatedBy,
-    int? reasonId,
-  }) {
+      AssignedPatient patient, {
+        required int updatedBy,
+        int? reasonId,
+        String otherRemark = '',
+      }) {
     return _updateAssignStatus(
       patient,
       assignStatusId: AssignStatus.rejected,
       updatedBy: updatedBy,
       rejectReasonId: reasonId,
+      otherRemark: otherRemark,
     );
   }
 
@@ -187,6 +191,7 @@ class PatientQueueService {
     required DateTime rescheduleDate,
     required AvailableSlot slot,
     required int rescheduleReasonId,
+        required String otherRemark
   }) {
     return _updateAssignStatus(
       patient,
@@ -197,6 +202,7 @@ class PatientQueueService {
       rescheduleDate: rescheduleDate,
       rescheduleStartTime: null,
       rescheduleEndTime: null,
+      otherRemark: otherRemark,
     );
   }
 

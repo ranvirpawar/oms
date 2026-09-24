@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../services/user_service.dart';
@@ -185,7 +185,8 @@ class CollectBagFromPhlebotomistController extends GetxController {
     if (isCollect) {
       // Collect validation: bag must be closed
       if (!detail.isBagClosed) {
-        _showErrorSnackbar('Bag is still open. Only closed bags can be collected.');
+        _showErrorSnackbar('Bag cannot be collected because it has already been collected or is not closed.'
+        );
         collectBagState.value = CollectBagState.error;
         Future.delayed(const Duration(seconds: 2), () => resetCollect());
         return;
@@ -349,7 +350,7 @@ class CollectBagFromPhlebotomistController extends GetxController {
   // ── Snackbars ─────────────────────────────────────────────────────────────
 
   void _showSuccessSnackbar(String message) {
-    LiquidSnack.success(message, title: 'Success');
+    LiquidSnack.success(message, title: 'Success', position: SnackPosition.top);
   }
 
   void _showErrorSnackbar(String message) {

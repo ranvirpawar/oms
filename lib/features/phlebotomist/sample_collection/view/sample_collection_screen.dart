@@ -38,11 +38,13 @@ class SampleCollectionScreen extends GetView<SampleCollectionController> {
                         patient: controller.assignedPatient,
                         onFetchSlots: (date) => controller.fetchAvailableSlots(date),
                         onFetchReasons: () => controller.fetchRescheduleReasons(),
-                        onConfirm: (date, slot, reasonId) => controller.reschedule(
+                        onConfirm: (date, slot, reasonId,otherRemark) => controller.reschedule(
                           controller.assignedPatient,
                           newDate: date,
                           slot: slot,
                           rescheduleReasonId: reasonId,
+                          otherRemark: otherRemark,
+
                         ),
                         onSendOtp: (mobileNo, orderId) => controller.sendRescheduleOtp(
                           mobileNo: mobileNo,
