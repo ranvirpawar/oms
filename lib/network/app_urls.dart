@@ -147,6 +147,14 @@ class AppUrls {
 
   static String get getProfileData => '$_baseUrl/GetUserDetailsDecriypt';
 
+  static String get sendUserProfileUpdateOtp =>
+      '$_baseUrl/SendUserProfileUpdateOTP';
+
+  static String get verifyUserProfileUpdateOtp =>
+      '$_baseUrl/VerifyUserProfileUpdateOTP';
+
+  static String get updateUserProfile => '$_baseUrl/UpdateUserProfile';
+
   static String get getRegisteredPatientList =>
       '$_baseUrl/GetPhleboRegisteredPatientList';
 

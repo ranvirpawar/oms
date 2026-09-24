@@ -16,7 +16,6 @@ import 'package:lifenity_connect/features/runner_boy/collected_sample_bags/view/
 import 'package:lifenity_connect/features/phlebotomist/sample_collection/binding/sample_collection_binding.dart';
 
 import '../features/auth/binding/profile_binding.dart';
-import '../features/auth/model/profile_model.dart';
 import '../features/dashboard/dashboard_controller/dashboard_controller.dart';
 import '../features/lab_technician/accept_handover_bag/view/accept_bag_in_lab_view.dart';
 import '../features/phlebotomist/patient_queue/controller/patient_queue_controller.dart';
@@ -48,8 +47,6 @@ class RouteManager {
 
   static void redirectToSignUp() {}
 
-
-
   static void navigateToBagStatusDashboard({isBack = false}) {
     if (isBack) {
       Get.off(
@@ -66,8 +63,6 @@ class RouteManager {
     }
   }
 
-
-
   static void navigateToSampleRecollection([bool isRefresh = false]) {
     if (isRefresh) {
       if (Get.isRegistered<SampleRecollectionController>()) {
@@ -81,8 +76,6 @@ class RouteManager {
       duration: const Duration(milliseconds: 200),
     );
   }
-
-
 
   static void navigateToBagStatus() {
     Get.to(
@@ -138,8 +131,6 @@ class RouteManager {
     );
   }
 
-
-
   /// [isCollectionTrue] opens the queue in "collection mode" (the bag
   /// registration dashboard's Collect action): only orders whose patients
   /// have already Arrived are listed, since a bag can only collect samples
@@ -169,11 +160,10 @@ class RouteManager {
     );
   }
 
-  static void navigateToProfilePage(ProfileData? user) {
+  static void navigateToProfilePage() {
     Get.to(
       () => const ProfileScreen(),
       binding: ProfileBinding(),
-      arguments: {'loggedInUser': user},
       transition: Transition.circularReveal,
       duration: const Duration(milliseconds: 200),
     );
