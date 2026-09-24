@@ -15,6 +15,7 @@ import '../routes/route_manager.dart';
 enum UserRole {
   phlebotomist('Phlebotomist'),
   paramedic('Paramedic'),
+  nurse('Nurse'),
   runnerBoy('Runner Boy'),
   labTechnician('Lab Technician'),
   labAccession('Lab accession'),

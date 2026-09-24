@@ -7,12 +7,14 @@ import 'package:lifenity_connect/features/dashboard/view/widget/dashboard_tile_c
 import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
 import 'package:lifenity_connect/utils/widgets/app_drawer.dart';
 
-import '../../../constants/app_strings.dart';
+import 'package:intl/intl.dart';
+import '../../phlebotomist/patient_queue/view/widgets/queue_calendar_sheet.dart';
 import '../../../theme/app_colors.dart';
 
 import 'package:flutter/services.dart';
 
 import '../../../utils/widgets/metrics_strip.dart';
+import 'widget/dashboard_stats_shimmer.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -40,10 +42,6 @@ class _DashboardScreenState extends State<DashboardScreen>
       duration: const Duration(milliseconds: 1400),
     )..repeat(reverse: true);
     _pulse = CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut);
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.onDashboardBuild();
-    });
   }
 
   @override
@@ -59,24 +57,23 @@ class _DashboardScreenState extends State<DashboardScreen>
     return first.isNotEmpty ? 'Hi, $first' : 'Hi there';
   }
 
-  String get _todayLabel {
-    final now = DateTime.now();
-    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${weekdays[now.weekday - 1]}, ${now.day} ${months[now.month - 1]} ${now.year}';
+  String get _dateLabel {
+    final range = controller.selectedRange.value;
+    if (DateUtils.isSameDay(range.start, range.end)) {
+      return DateFormat('EEE, d MMM yyyy').format(range.start);
+    }
+    return DateFormat('d MMM yy').format(range.start) +
+        ' – ' +
+        DateFormat('d MMM yy').format(range.end);
+  }
+
+  void _openCalendar() {
+    QueueCalendarSheet.show(
+      context,
+      initialRange: controller.selectedRange.value,
+      confirmLabel: 'Show Stats',
+      onSelect: controller.selectDateRange,
+    );
   }
 
   @override
@@ -108,11 +105,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             Expanded(
               child: RefreshIndicator(
                 color: cs.primary,
-                onRefresh: () async {
-                  controller.refreshBagCount();
-                  controller.refreshDashboardStats();
-                  await Future.delayed(const Duration(milliseconds: 400));
-                },
+                onRefresh: controller.refreshDashboardStats,
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(18, 0, 18, 32),
@@ -128,11 +121,22 @@ class _DashboardScreenState extends State<DashboardScreen>
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            MetricsStrip(
-                              items: items,
-                              cellAlignment: items.length > 3 ?CrossAxisAlignment.start: CrossAxisAlignment.center,
-                              animationBuilder: (child) => _FadeSlideIn(index: 0, child: child),
-                            ),
+                            if (controller.isLoadingStats.value)
+                              DashboardStatsShimmer(itemCount: items.length)
+                            else if (controller.statsError.value.isNotEmpty)
+                              Text(
+                                controller.statsError.value,
+                                style: TextStyle(color: cs.error),
+                              )
+                            else
+                              MetricsStrip(
+                                items: items,
+                                cellAlignment: items.length > 3
+                                    ? CrossAxisAlignment.start
+                                    : CrossAxisAlignment.center,
+                                animationBuilder: (child) =>
+                                    _FadeSlideIn(index: 0, child: child),
+                              ),
                             const SizedBox(height: 26),
                           ],
                         );
@@ -203,13 +207,46 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _todayLabel,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white.withOpacity(0.75),
+                  // const SizedBox(height: 2),
+                  Obx(
+                    () => Semantics(
+                      button: true,
+                      label: 'Select dashboard date range',
+                      child: InkWell(
+                        onTap: _openCalendar,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          // color: Colors.red,
+                          constraints: const BoxConstraints(minHeight: 24),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.calendar_month_outlined,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  _dateLabel,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              const Icon(
+                                Icons.expand_more_rounded,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -219,7 +256,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             _GlassIconButton(
               icon: Icons.notifications_none_rounded,
               showDot: true,
-              onTap: () => LiquidSnack.info('comming soon'),
+              onTap: () => LiquidSnack.info('coming soon'),
             ),
           ],
         ),
@@ -285,7 +322,10 @@ class _DashboardScreenState extends State<DashboardScreen>
               const Spacer(),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 220),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: available
                       ? const Color(0xFFFEF2F2)
@@ -376,49 +416,22 @@ class _DashboardGrid extends StatelessWidget {
       ),
       itemBuilder: (context, index) {
         final card = cards[index];
-        final isBagCard =
-            card.title == AppStrings.collectedSampleBags ||
-            card.title == 'Collected Bags';
-
-        final tile = isBagCard
-            ? Obx(() {
-                final count = controller.collectedBagsCount.value;
-                final banner = count > 0
-                    ? '🧪  $count ${count == 1 ? 'bag' : 'bags'} with you  •  Submit to lab or hand over'
-                    : null;
-                return DashboardTileCard(
-                  variant: DashboardTileVariant.modern,
-                  title: card.title,
-                  icon: card.icon,
-                  onTap: card.onTap,
-                  borderColor: card.borderColor,
-                  backgroundImage: card.backgroundImage,
-                  isNetworkImage: card.isNetworkImage,
-                  labelBandFraction: card.labelBandFraction,
-                  subtitle: card.subtitle,
-                  bannerText: banner,
-                  iconRight: card.iconRight,
-                  iconLeft: card.iconLeft,
-                  iconBottom: card.iconBottom,
-                  iconTop: card.iconTop,
-                );
-              })
-            : DashboardTileCard(
-                variant: card.variant,
-                title: card.title,
-                icon: card.icon,
-                onTap: card.onTap,
-                borderColor: card.borderColor,
-                backgroundImage: card.backgroundImage,
-                isNetworkImage: card.isNetworkImage,
-                labelBandFraction: card.labelBandFraction,
-                bannerText: card.bannerText,
-                subtitle: card.subtitle,
-                iconRight: card.iconRight,
-                iconLeft: card.iconLeft,
-                iconBottom: card.iconBottom,
-                iconTop: card.iconTop,
-              );
+        final tile = DashboardTileCard(
+          variant: card.variant,
+          title: card.title,
+          icon: card.icon,
+          onTap: card.onTap,
+          borderColor: card.borderColor,
+          backgroundImage: card.backgroundImage,
+          isNetworkImage: card.isNetworkImage,
+          labelBandFraction: card.labelBandFraction,
+          bannerText: card.bannerText,
+          subtitle: card.subtitle,
+          iconRight: card.iconRight,
+          iconLeft: card.iconLeft,
+          iconBottom: card.iconBottom,
+          iconTop: card.iconTop,
+        );
 
         return _FadeSlideIn(index: index + 1, child: tile);
       },

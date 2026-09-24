@@ -1,0 +1,185 @@
+# Flutter GetX → BLoC Migration — Operating Rules
+
+You are migrating this app **one feature at a time** from GetX to BLoC (industry feature based Clean Architecture style), while the app keeps running on GetX everywhere else.
+This file governs *how* that migration happens. It supplements, and does not
+replace, the main `.clinerules` (Senior Flutter Engineer guidelines) — where the
+two conflict, **this file wins for anything migration-related**.
+
+---
+
+## 0. Prime Directive
+
+This is a **live, working app**. Nothing about the running GetX app may break,
+visually or behaviorally, at any point in this migration. Every feature you
+convert must look pixel-identical and behave identically to a user — only the
+internals (state management + architecture) change. If you're ever unsure
+whether a change is "just architecture" vs. "a logic/UI change," stop and ask.
+
+---
+
+## 1. PHASE 0 — Discovery (mandatory, every time, before touching anything)
+
+Before scaffolding a single BLoC file, you must **read and summarize** the
+following core/shared pieces exactly as they exist today. Do not skim — open
+the files, trace their call sites, and understand the full lifecycle.
+
+1. **`AuthManager`** (or equivalent) — how auth state is stored, how it's
+   exposed to the rest of the app (singleton? `Get.find()`? stream? `.obs`?),
+   how login/logout/token-refresh flows work, and everything that currently
+   listens to it.
+2. **`ApiClient`** (or `ApiService`/`DioClient`/whatever wraps networking) —
+   base URL config, interceptors (auth headers, refresh-token retry, logging,
+   error mapping), how errors are surfaced to callers (exceptions? `Either`?
+   custom `Failure` objects?), and how services currently consume it.
+3. **`SessionCoordinator`** (or equivalent) — what triggers a session
+   start/end, how it talks to `AuthManager`, how it interacts with routing
+   (e.g., force-redirect to login on 401/expired session), and any app-lifecycle
+   hooks (`AppLifecycleState`, deep links, splash/bootstrap logic) tied to it.
+4. Current **routing setup** — `app_pages.dart`/`app_routes.dart`, any custom
+   `Transition` / `Curve` used per route, middlewares (`GetMiddleware` for auth
+   guards), and nested/named-route patterns in use.
+
+**Deliverable for Phase 0 (do this before writing code, every single time you
+touch a new feature that depends on these):** a short written summary (a few
+bullet points is fine) of:
+- Exactly how the feature-under-migration currently talks to `AuthManager` /
+  `ApiClient` / `SessionCoordinator`.
+- Any assumptions the feature makes about their behavior (e.g., "assumes
+  `ApiClient` already has the bearer token injected via interceptor").
+
+**Do NOT modify `AuthManager`, `ApiClient`, or `SessionCoordinator` in this
+phase, or at all, unless explicitly instructed in a later phase of this
+project.** They are the shared spine every other feature (migrated or not)
+depends on. Treat them as a stable, read-only contract for now — the BLoC
+features you build must **consume** them exactly as they are, not fork or
+wrap them into something new yet.
+
+---
+
+## 2. PHASE 1 — Bridging layer (what makes integration smooth)
+
+Because migrated and unmigrated features run side by side for a long time,
+build one small adapter layer once (not per-feature) so BLoC code never talks
+to GetX singletons directly, and vice versa doesn't break:
+
+- **`AuthSessionListenable`** (or similar) — a thin wrapper that exposes
+  `AuthManager`'s current state as a `Stream`/`ValueListenable` that a BLoC can
+  subscribe to, without changing `AuthManager` itself. If `AuthManager`
+  already exposes a stream/Rx, reuse it directly — don't wrap what doesn't
+  need wrapping.
+- **Repository → ApiClient contract** — each new `Repository` in a migrated
+  feature calls the *existing* `ApiClient` instance (via DI, see below) — same
+  base client, same interceptors, same error shapes. Do not spin up a second
+  Dio/http client.
+- **Session-expiry / 401 handling** — confirm how `SessionCoordinator`
+  currently forces logout/redirect, and make sure migrated features surface
+  that same failure type so the existing global handler still catches it
+  (e.g., don't swallow a `SessionExpiredException` inside a new
+  `try/catch` — let it propagate the same way the GetX service did).
+- **DI coexistence** — introduce `get_it` for BLoC-only dependencies
+  (`Bloc`/`Repository`/`DataSource` per migrated feature), but register the
+  **existing** `AuthManager`/`ApiClient`/`SessionCoordinator` singletons into
+  `get_it` as references to the same instances GetX already created —
+  don't instantiate second copies:
+  ```dart
+  // Bridges the existing GetX singleton into get_it without duplicating it.
+  getIt.registerLazySingleton<ApiClient>(() => Get.find<ApiClient>());
+  ```
+
+This bridging layer is written once, reused by every subsequent feature
+migration. Flag it clearly as shared infra so it doesn't get duplicated
+feature-by-feature.
+
+---
+
+## 3. PHASE 2 — Routing (standardized, but behavior-matched)
+
+Goal: move the **migrated route(s) only** onto a standard, industry-common
+router (`go_router`) without changing how navigation *feels* or behaves.
+
+1. **Audit first.** For every route belonging to the feature being migrated,
+   note: the page transition (`Transition.rightToLeft`, custom
+   `CustomTransition`, duration, curve), any `GetMiddleware` guard logic
+   (auth check, onboarding check), and any `arguments`/`parameters` passed via
+   `Get.toNamed(..., arguments: ...)`.
+2. **Recreate transition parity in `go_router`.** Use `CustomTransitionPage`
+   with matching `Curve`/`Duration` so the migrated screen's push/pop
+   animation is indistinguishable from its GetX counterpart. Do not default to
+   `go_router`'s plain Material fade unless that's literally what GetX was
+   already using.
+3. **Recreate guards as `redirect`.** A `GetMiddleware.onPageCalled`/`redirect`
+   check becomes a `GoRoute.redirect` that calls the same
+   `AuthManager`/`SessionCoordinator` check — same logic, same source of
+   truth, just relocated.
+4. **Coexistence, not replacement (yet).** Unmigrated features keep using
+   `Get.toNamed()` on the existing `GetMaterialApp` routing. Only the
+   migrated feature's entry point(s) move to `go_router`. If `go_router` and
+   GetX routing need to trigger each other (e.g., a migrated screen still
+   needs to `Get.toNamed()` into an unmigrated one), use plain
+   `Navigator`-level pushes or a small named-route bridge — confirm this
+   explicitly with me before wiring it, since this is the one place
+   cross-framework navigation can get fragile.
+5. Do not migrate *all* routes to `go_router` in one shot. Route-level
+   migration follows the same feature-by-feature cadence as everything else.
+
+---
+
+## 4. PHASE 3 — Feature conversion (per-feature loop)
+
+For each feature, follow this order and produce reviewable diffs at each
+step (don't dump the whole feature in one file drop):
+
+1. **Data layer** — `Service` → `RemoteDataSource` + `Repository` (returns
+   `Either<Failure, T>` or typed exceptions — match whatever error-handling
+   convention Phase 0 discovery found `ApiClient` already using).
+2. **Domain layer** — entities + abstract `Repository` contract.
+3. **Bloc** — controller methods → `Events`; `.obs` fields → `Equatable`
+   `State` classes. One state per UI condition (loading/success/error/empty).
+4. **Presentation** — `GetView`/`Obx` → `BlocProvider` +
+   `BlocBuilder`/`BlocConsumer`/`BlocSelector`. Same widget tree, same
+   strings, same layout — only the state-reading mechanism changes.
+5. **Routing** — apply Phase 2 rules for this feature's route(s) only.
+6. **DI wiring** — register in `get_it`, including bridged references to
+   `AuthManager`/`ApiClient`/`SessionCoordinator` from Phase 1.
+7. **Comment convention** — every converted method gets:
+   ```dart
+   /// GETX EQUIVALENT: AuthController.login()
+   /// Emits [AuthLoading] → [AuthSuccess]/[AuthFailure]. Logic unchanged,
+   /// only relocated from Rx state to Bloc state.
+   ```
+8. **Verify side-by-side** — old GetX screen and new BLoC screen both
+   reachable during testing (e.g., temporary debug route or feature flag) so
+   they can be compared directly before cutover.
+9. Only after visual/behavioral parity is confirmed, swap the app's real
+   entry route to the new BLoC screen.
+
+---
+
+## 5. What NOT to do
+
+- Don't touch `lib/features/` (existing GetX code) — new work goes in the
+  parallel migration folder only.
+- Don't modify `AuthManager`, `ApiClient`, or `SessionCoordinator` internals.
+- Don't introduce a second HTTP client, a second session/auth source of
+  truth, or a second router covering already-migrated *and* unmigrated
+  routes simultaneously.
+- Don't change copy, layout, spacing, colors, or animations beyond matching
+  what already existed — this is an architecture migration, not a redesign.
+- Don't migrate routing app-wide in one pass — route migration is scoped to
+  whatever feature is currently being converted.
+- Don't guess at `AuthManager`/`ApiClient`/`SessionCoordinator` behavior —
+  if Phase 0 discovery leaves something ambiguous, ask rather than assume.
+
+---
+
+## 6. Definition of "Done" (per migrated feature)
+
+1. Phase 0 discovery summary written and shared before code was touched.
+2. Zero changes to `AuthManager`/`ApiClient`/`SessionCoordinator`.
+3. Feature is byte-for-byte identical in UI and behavior to its GetX version.
+4. Routing transitions/guards match the original GetX route exactly.
+5. `flutter analyze` clean; relevant tests pass or are added.
+6. Every converted method has a `GETX EQUIVALENT:` comment.
+7. Old and new versions were compared side-by-side before cutover.
+8. Any follow-up/trade-off (e.g., "session-expiry bridge is temporary until
+   SessionCoordinator itself is migrated") is noted explicitly.

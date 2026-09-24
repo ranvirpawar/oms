@@ -612,37 +612,6 @@ class _DashboardHeaderContentState extends State<_DashboardHeaderContent>
                         ),
                       ),
                     ),
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 12),
-                      width: 1,
-                      height: 16,
-                      color: (isDark ? Colors.white : Colors.black).withOpacity(
-                        0.12,
-                      ),
-                    ),
-                    const Icon(
-                      Icons.location_on_rounded,
-                      color: Color(0xFF3B82F6),
-                      size: 17,
-                    ),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Obx(
-                        () => Text(
-                          widget.controller.currentLocation.value,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: isDark
-                                ? Colors.white.withOpacity(0.85)
-                                : const Color(0xFF1D2333),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
                     AnimatedRotation(
                       turns: _pillExpanded ? 0.5 : 0,
                       duration: const Duration(milliseconds: 220),
@@ -697,19 +666,6 @@ class _DashboardHeaderContentState extends State<_DashboardHeaderContent>
                 },
               ),
             ),
-            Divider(
-              height: 1,
-              color: (isDark ? Colors.white : Colors.black).withOpacity(0.06),
-            ),
-            _DropdownAction(
-              icon: Icons.my_location_rounded,
-              label: 'Refresh location',
-              isDark: isDark,
-              onTap: () {
-                widget.controller.refreshLocation();
-                _removeDropdown();
-              },
-            ),
           ],
         ),
       ),
@@ -726,20 +682,20 @@ class _DashboardHeaderContentState extends State<_DashboardHeaderContent>
       ),
       _StatItem(
         icon: Icons.science_rounded,
-        label: 'Sample\nCollected',
-        valueGetter: () => widget.controller.testCollectedCount.value,
+        label: 'Clinic Collection\nRequests',
+        valueGetter: () => widget.controller.clinicCollectionRequestCount.value,
         color: const Color(0xFF14B8A6),
       ),
       _StatItem(
         icon: Icons.swap_horiz_rounded,
-        label: 'Handover',
-        valueGetter: () => widget.controller.handoverCount.value,
+        label: 'Home\nRequests',
+        valueGetter: () => widget.controller.homeRequestCount.value,
         color: const Color(0xFF8B5CF6),
       ),
       _StatItem(
         icon: Icons.hourglass_bottom_rounded,
-        label: 'Pending\nHandover',
-        valueGetter: () => widget.controller.pendingHandoverCount.value,
+        label: 'Served\nRequests',
+        valueGetter: () => widget.controller.servedRequestsCount.value,
         color: const Color(0xFFF59E0B),
       ),
     ];

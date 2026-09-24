@@ -133,13 +133,13 @@ class _CredentialsStep extends StatelessWidget {
                     dropdownColor: AppColors.primary,
                     borderRadius: BorderRadius.circular(16),
                     hint: const Text(
-                      'Select Beta User (Auto-Fill)',
+                      'Select  User (Auto-Fill)',
                       style: TextStyle(color: Colors.white70, fontSize: 14),
                     ),
                     value: controller.selectedBetaUser.value,
                     icon: const Icon(Icons.bug_report, color: Colors.white70),
                     style: const TextStyle(color: Colors.white),
-                    items: controller.betaUsers.entries.map((entry) {
+                    items: controller.users.entries.map((entry) {
                       final String role = entry.key.trim();
                       final String phone = entry.value['user']!;
                       return DropdownMenuItem<String>(

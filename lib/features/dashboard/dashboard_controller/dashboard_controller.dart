@@ -8,7 +8,7 @@ import '../../../constants/app_assets.dart';
 import '../../../constants/app_strings.dart';
 import '../../../routes/route_manager.dart';
 import '../../../utils/helper_functions/helper_methods.dart';
-import '../../runner_boy/collected_sample_bags/service/collected_bags_service.dart';
+import 'package:intl/intl.dart';
 import '../model/dashboard_summary_model.dart';
 import '../service/dashboard_service.dart';
 import '../view/widget/dashboard_tile_card.dart';
@@ -19,10 +19,9 @@ import 'package:flutter/material.dart';
 // DashboardController
 // ─────────────────────────────────────────────────────────────────────────────
 
-class   DashboardController extends GetxController {
+class DashboardController extends GetxController {
   final AuthManager _authManager = Get.find<AuthManager>();
   final UserService _userService = Get.put(UserService());
-  final CollectedBagsService _bagsService = CollectedBagsService();
 
   // ── Observables ──────────────────────────────────────────────────────────────
 
@@ -30,16 +29,15 @@ class   DashboardController extends GetxController {
   final Rx<UserModel?> userData = Rx<UserModel?>(null);
   final Rx<UserRole?> userRole = Rx<UserRole?>(null);
   final Rx<ProfileData?> userProfile = Rx<ProfileData?>(null);
-  final RxInt collectedBagsCount = 0.obs;
-  final RxBool isLoadingBagCount = false.obs;
   final RxInt assignedPatientsCount = 0.obs;
-  final RxInt testCollectedCount = 0.obs;
-  final RxInt handoverCount = 0.obs;
-  final RxInt pendingHandoverCount = 0.obs;
-  final RxBool isLoadingStats = false.obs;
+  final RxInt clinicCollectionRequestCount = 0.obs;
+  final RxInt homeRequestCount = 0.obs;
+  final RxInt servedRequestsCount = 0.obs;
+  final RxBool isLoadingStats = true.obs;
 
-  // ── Role-specific Metric Observables (API pending - kept at 0) ──────────────
+  // ── Role-specific Metric Observables ──────────────
   // Runner-Boy
+  final RxInt runnerReadyForPickupCount = 0.obs;
   final RxInt runnerPickupCount = 0.obs;
   final RxInt runnerSubmitToLabCount = 0.obs;
   final RxInt runnerAcceptedByLabCount = 0.obs;
@@ -49,7 +47,6 @@ class   DashboardController extends GetxController {
   final RxInt labAcceptedBagsCount = 0.obs;
 
   final RxBool isAvailable = true.obs;
-  final RxString currentLocation = 'Fetching location…'.obs;
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -57,8 +54,7 @@ class   DashboardController extends GetxController {
   void onInit() {
     super.onInit();
     _bootstrap();
-    // Register route-pop listener so bag count refreshes every time the user
-    // returns from any screen — no changes to RouteManager needed.
+    // Refresh summary counts when returning from workflow screens.
     DashboardRouteObserver.instance.addListener(_onRoutePopped);
   }
 
@@ -69,24 +65,15 @@ class   DashboardController extends GetxController {
   }
 
   void _onRoutePopped() {
-    // Only act for roles that track bags
-    if (_shouldTrackBags) {
-      kPrint('🔄 Route popped — refreshing bag count');
-      refreshBagCount();
-    }
+    refreshDashboardStats();
   }
 
   // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
   Future<void> _bootstrap() async {
     await _loadUserData(); // fast — reads local/cached data
-    await Future.wait([
-      _loadUserProfile(), // non-blocking profile fetch
-      _fetchCollectedBagsCount(),
-      _fetchDashboardStats(),
-      _fetchCurrentLocation(),
-      _fetchNotices(),
-    ]);
+    await _loadUserProfile();
+    await refreshDashboardStats();
   }
 
   // ── Data Loading ──────────────────────────────────────────────────────────────
@@ -124,51 +111,13 @@ class   DashboardController extends GetxController {
     }
   }
 
-  // ── Bag Count ─────────────────────────────────────────────────────────────────
-
-  bool get _shouldTrackBags =>
-      const [UserRole.runnerBoy, UserRole.connector].contains(userRole.value);
-
-  Future<void> _fetchCollectedBagsCount() async {
-    if (!_shouldTrackBags) return;
-
-    try {
-      isLoadingBagCount.value = true;
-
-      final user = await _userService.getUser();
-      if (user == null) {
-        kPrint('❌ getUser() null — cannot fetch bag count');
-        return;
-      }
-
-      final response = await _bagsService.getCollectedQRBagDetails(
-        user.empCode,
-      );
-
-      if (response.isSuccess && response.output != null) {
-        collectedBagsCount.value = response.output!.length;
-        kPrint('✅ Bag count: ${collectedBagsCount.value}');
-      } else {
-        collectedBagsCount.value = 0;
-        kPrint('⚠️ Bag count fetch: no data');
-      }
-    } catch (e) {
-      collectedBagsCount.value = 0;
-      kPrint('❌ _fetchCollectedBagsCount: $e');
-    } finally {
-      isLoadingBagCount.value = false;
-    }
-  }
-
-  /// Public — can be called manually if needed.
-  Future<void> refreshBagCount() => _fetchCollectedBagsCount();
-
   // ── Role-based Cards ──────────────────────────────────────────────────────────
 
   List<DashboardTileCard> getRoleBasedStatCards() {
     switch (userRole.value) {
       case UserRole.phlebotomist:
       case UserRole.paramedic:
+      case UserRole.nurse:
         return _phlebotomistCards();
       case UserRole.runnerBoy:
         return _runnerBoyCards();
@@ -266,7 +215,7 @@ class   DashboardController extends GetxController {
   List<DashboardTileCard> _labTechnicianCards() => [
     DashboardTileCard(
       variant: DashboardTileVariant.modern,
-      title: AppStrings.acceptBagInLab,
+      title: 'Accept Bag In\nLaboratory',
       icon: AppAssets.acceptInLabIcon,
       subtitle: 'Accept submitted bags',
       onTap: RouteManager.navigateToAcceptBagInLaboratory,
@@ -313,6 +262,7 @@ class   DashboardController extends GetxController {
     switch (userRole.value) {
       case UserRole.phlebotomist:
       case UserRole.paramedic:
+      case UserRole.nurse:
         return _phlebotomistMetrics();
 
       case UserRole.runnerBoy:
@@ -335,19 +285,19 @@ class   DashboardController extends GetxController {
       dot: const Color(0xFF3B82F6),
     ),
     MetricData(
-      value: testCollectedCount.value.toString().padLeft(2, '0'),
+      value: clinicCollectionRequestCount.value.toString().padLeft(2, '0'),
       label: 'Clinic\nCollections',
       icon: Icons.science_rounded,
       dot: const Color(0xFF22C55E),
     ),
     MetricData(
-      value: handoverCount.value.toString().padLeft(2, '0'),
-      label: 'Home\nCollections',
+      value: homeRequestCount.value.toString().padLeft(2, '0'),
+      label: 'Home\nRequests',
       icon: Icons.swap_horiz_rounded,
       dot: const Color(0xFF8B5CF6),
     ),
     MetricData(
-      value: pendingHandoverCount.value.toString().padLeft(2, '0'),
+      value: servedRequestsCount.value.toString().padLeft(2, '0'),
       label: 'Served\nRequests',
       icon: Icons.hourglass_bottom_rounded,
       dot: const Color(0xFFF59E0B),
@@ -356,20 +306,26 @@ class   DashboardController extends GetxController {
 
   List<MetricData> _runnerBoyMetrics() => [
     MetricData(
+      value: runnerReadyForPickupCount.value.toString().padLeft(2, '0'),
+      label: 'Ready for\nPick Up',
+      icon: Icons.inventory_2_outlined,
+      dot: const Color(0xFFF59E0B),
+    ),
+    MetricData(
       value: runnerPickupCount.value.toString().padLeft(2, '0'),
-      label: 'Pick Up',
+      label: 'Picked\nUp',
       icon: Icons.local_shipping_rounded,
       dot: const Color(0xFF3B82F6),
     ),
     MetricData(
       value: runnerSubmitToLabCount.value.toString().padLeft(2, '0'),
-      label: 'Submit to lab',
+      label: 'Submitted\nto Lab',
       icon: Icons.send_rounded,
       dot: const Color(0xFF8B5CF6),
     ),
     MetricData(
       value: runnerAcceptedByLabCount.value.toString().padLeft(2, '0'),
-      label: 'Accepted by lab',
+      label: 'Accepted\nin Lab',
       icon: Icons.task_alt_rounded,
       dot: const Color(0xFF22C55E),
     ),
@@ -390,108 +346,67 @@ class   DashboardController extends GetxController {
     ),
   ];
 
-  void _fetchRunnerBoyStats() {
-    // API pending — keep zero for now
-    runnerPickupCount.value = 0;
-    runnerSubmitToLabCount.value = 0;
-    runnerAcceptedByLabCount.value = 0;
-  }
-
-  void _fetchLabStats() {
-    // API pending — keep zero for now
-    labBagsSubmittedCount.value = 0;
-    labAcceptedBagsCount.value = 0;
-  }
-
-  /// Call this to signal a rebuild-triggered refresh
-  void onDashboardBuild() {
-    // Debounce: only re-fetch if not already loading
-    if (!isLoadingBagCount.value && _shouldTrackBags) {
-      refreshBagCount();
-    }
-  }
-
-  final RxInt refreshTick = 0.obs;
-
+  final selectedRange = DateTimeRange(
+    start: DateUtils.dateOnly(DateTime.now()),
+    end: DateUtils.dateOnly(DateTime.now()),
+  ).obs;
+  final statsError = ''.obs;
   final DashboardStatsService _dashboardStatsService = DashboardStatsService();
+  int _statsRequest = 0;
 
-  void tickRefresh() => refreshTick.value++;
+  Future<void> selectDateRange(DateTimeRange range) async {
+    selectedRange.value = range;
+    await refreshDashboardStats();
+  }
 
-  /// Fetches the "orders board" numbers shown in the header stat strip.
-  Future<void> _fetchDashboardStats() async {
-    // Only phlebotomist and paramedic currently have dashboard summary API
-    if (userRole.value != UserRole.phlebotomist &&
-        userRole.value != UserRole.paramedic) {
-      if (userRole.value == UserRole.runnerBoy) {
-        _fetchRunnerBoyStats();
-      } else if (userRole.value == UserRole.labTechnician ||
-          userRole.value == UserRole.labAccession) {
-        _fetchLabStats();
-      }
-      return;
-    }
-
+  Future<void> refreshDashboardStats() async {
+    if (userRole.value == null) return;
+    final request = ++_statsRequest;
+    final range = selectedRange.value;
+    isLoadingStats.value = true;
+    statsError.value = '';
     try {
-      isLoadingStats.value = true;
-
-      final user = await _userService.getUser();
-
-      if (user == null) {
-        kPrint('❌ getUser() null — cannot fetch dashboard stats');
-        return;
+      if (userProfile.value == null) await _loadUserProfile();
+      final user = userData.value;
+      final profile = userProfile.value;
+      if (user == null || profile == null) {
+        throw StateError('User profile unavailable');
       }
-
-      final PhleboDashboardSummary response = await _dashboardStatsService
-          .fetchDashboardCount(userId: user.empCode.toString());
-
-      if (response.status.toLowerCase() != 'success') {
-        kPrint('❌ Dashboard API failed: ${response.message}');
-        return;
-      }
-
-      // Reset values
-      assignedPatientsCount.value = 0;
-      testCollectedCount.value = 0;
-      handoverCount.value = 0;
-      pendingHandoverCount.value = 0;
-
-      for (final item in response.output) {
-        switch (item.assignStatusName.toLowerCase().trim()) {
-          case 'assigned':
-            assignedPatientsCount.value = item.assignstatusCount;
-            break;
-
-          case 'sample collected':
-            testCollectedCount.value = item.assignstatusCount;
-            break;
-
-          case 'handovers':
-            handoverCount.value = item.assignstatusCount;
-            break;
-
-          case 'pending handovers':
-            pendingHandoverCount.value = item.assignstatusCount;
-            break;
-        }
-      }
-
-      kPrint(
-        'Dashboard Stats: '
-        'Assigned=${assignedPatientsCount.value}, '
-        'Collected=${testCollectedCount.value}, '
-        'Handovers=${handoverCount.value}, '
-        'Pending=${pendingHandoverCount.value}',
+      final response = await _dashboardStatsService.fetchDashboardCount(
+        userId: user.empCode.toString(),
+        fromDate: DateFormat('yyyy-MM-dd').format(range.start),
+        toDate: DateFormat('yyyy-MM-dd').format(range.end),
+        designationId: profile.desgId,
       );
+      if (request != _statsRequest || isClosed) return;
+      if (response.status.trim().toLowerCase() != 'success' &&
+          !response.isEmptyResult) {
+        throw StateError(response.message);
+      }
+      final summary = response.output.isEmpty
+          ? const DashboardSummaryItem()
+          : response.output.first;
+      assignedPatientsCount.value = summary.assignedPatientsCount;
+      clinicCollectionRequestCount.value = summary.clinicCollectionRequestCount;
+      homeRequestCount.value = summary.homeRequestCount;
+      servedRequestsCount.value = summary.servedRequests;
+      runnerReadyForPickupCount.value = summary.readyForPickUp;
+      runnerPickupCount.value = summary.pickedUp;
+      runnerSubmitToLabCount.value = summary.submitToLab;
+      runnerAcceptedByLabCount.value = summary.acceptedInLab;
+      labBagsSubmittedCount.value = summary.submitToLab;
+      labAcceptedBagsCount.value = summary.acceptedInLab;
     } catch (e) {
-      kPrint('❌ _fetchDashboardStats: $e');
+      if (request == _statsRequest && !isClosed) {
+        statsError.value =
+            'Unable to load dashboard stats. Pull down to retry.';
+        kPrint('Dashboard stats: $e');
+      }
     } finally {
       isLoadingStats.value = false;
+      // if (request == _statsRequest && !isClosed) isLoadingStats.value = false;
     }
   }
-
-  /// Public — call after a collection/handover action completes so the
-  /// header numbers update immediately, same pattern as refreshBagCount().
-  Future<void> refreshDashboardStats() => _fetchDashboardStats();
 
   /// Toggles the phlebotomist's availability. Optimistic update with revert
   /// on failure — swap the TODO for your real endpoint when ready.
@@ -505,26 +420,6 @@ class   DashboardController extends GetxController {
       isAvailable.value = previous; // revert on failure
       kPrint('❌ toggleAvailability: $e');
     }
-  }
-
-  /// TODO: integrate a geolocation package (e.g. geolocator) + reverse
-  /// geocoding to resolve a human-readable label here.
-  Future<void> _fetchCurrentLocation() async {
-    try {
-      // final pos = await Geolocator.getCurrentPosition();
-      // final placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
-      // currentLocation.value = '${placemarks.first.subLocality}, ${placemarks.first.locality}';
-      currentLocation.value = 'Kothrud, Pune';
-    } catch (e) {
-      currentLocation.value = 'Location unavailable';
-      kPrint('❌ _fetchCurrentLocation: $e');
-    }
-  }
-
-  Future<void> refreshLocation() => _fetchCurrentLocation();
-
-  Future<void> _fetchNotices() async {
-    // notices.value = await _notificationsService.getForToday();
   }
 }
 
@@ -550,6 +445,6 @@ class DashboardRouteObserver extends NavigatorObserver {
   @override
   void didPop(Route route, Route? previousRoute) {
     super.didPop(route, previousRoute);
-    _notify();
+    if (route is PageRoute) _notify();
   }
 }

@@ -12,6 +12,7 @@ import 'package:get/get.dart' hide SnackPosition;
 import '../../../componenents/otp_boxes_input.dart';
 import '../../../network/app_error.dart';
 import '../../../network/session_coordinator.dart';
+import '../../../services/app_envirionment_service.dart';
 import '../../../services/auth_manager.dart';
 import '../../../utils/ui_designs/liquid_snackbar.dart';
 import '../service/login_service.dart';
@@ -87,24 +88,45 @@ class LoginController extends GetxController with CodeAutoFill {
   final AuthManager _authManager = Get.find<AuthManager>();
 
   final Rx<String?> selectedBetaUser = Rx<String?>(null);
-  final Map<String, Map<String, String>> betaUsers = {
+  final Map<String, Map<String, String>> devUsers = {
     'Phlebotomist': {'user': '7070707070', 'pass': '123456'},
     'Paramedic Sandesh': {'user': '7484748474', 'pass': '123456'},
     'Phlebotomist-Renuka': {'user': '8888658717', 'pass': '987654'},
     'Phlebotomist-Aarati': {'user': '8822882288', 'pass': '123456'},
     'Runnerboy': {'user': '9604249812', 'pass': '123456'},
-    'Lab Accession': {'user': '7767876693', 'pass': '123456'},
-    'Runnerboy-  Avinash': {'user': '9604249812', 'pass': '123456'},
-    'Runnerboy-  Nilesh': {'user': '9665253245', 'pass': '123456'},
-    // 'Team Lead': {'user': '9975020260', 'pass': '123456'},
-    // 'Team Lead': {'user': '9975020260', 'pass': '123456'},
-    // 'Lab Accession': {'user': '9975020298', 'pass': '1234567'},
-    // 'Connector': {'user': '8007758869', 'pass': '123456'},
-    // 'Medical Officer': {'user': '8788789878', 'pass': '123456'},
-    // 'BMC Admin': {'user': 'BMCadmin', 'pass': 'Admin2123'},
-    // 'EHO': {'user': '8806191092', 'pass': '123456'},
-    // 'CMS': {'user': '8975276087', 'pass': '123456'},
+    'Lab Accession': {'user': '7767876692', 'pass': '123456'},
+    'Runnerboy- Avinash': {'user': '9604249812', 'pass': '123456'},
+    'Runnerboy- Nilesh': {'user': '9665253245', 'pass': '123456'},
+    'Nurse': {'user': '9322383841', 'pass': '123456'},
   };
+
+  final Map<String, Map<String, String>> betaUsers = {
+    'Phlebotomist - Renuka Kale': {
+      'user': '8475847588',
+      'pass': '123456',
+    },
+    'Paramedics - Paresh Rawat': {
+      'user': '8888658717',
+      'pass': '123456',
+    },
+    'Runner Boy - Kamlesh Sharma': {
+      'user': '8475847575',
+      'pass': '123456',
+    },
+    'Lab Accession - Radhika Mahale': {
+      'user': '8521131111',
+      'pass': '123456',
+    },
+    'Phlebotomist - Karan Patil': {
+      'user': '9764568835',
+      'pass': '123456',
+    },'Nurse': {
+      'user': '8668258532',
+      'pass': '123456',
+    },
+  };
+   Map<String, Map<String, String>> get users =>
+  AppEnvironment.isBeta ? betaUsers : devUsers;
 
   @override
   void onInit() {
@@ -148,11 +170,11 @@ class LoginController extends GetxController with CodeAutoFill {
 
   void fillBetaCredentials(String? userKey) {
     selectedBetaUser.value = userKey;
-    if (userKey != null && betaUsers.containsKey(userKey)) {
+    if (userKey != null && users.containsKey(userKey)) {
       // Force fresh login UI — never show welcome-back banner for beta users
       isReturningUser.value = false;
-      emailController.text = betaUsers[userKey]!['user']!;
-      passwordController.text = betaUsers[userKey]!['pass']!;
+      emailController.text = users[userKey]!['user']!;
+      passwordController.text = users[userKey]!['pass']!;
       formKey.currentState?.validate();
     }
   }

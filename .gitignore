@@ -49,3 +49,5 @@ app.*.map.json
 /clinerules
 .clinerules
 /.agents
+/.vscode
+/lib/migration/

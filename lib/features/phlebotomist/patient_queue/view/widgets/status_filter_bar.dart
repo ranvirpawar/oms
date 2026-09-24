@@ -39,7 +39,7 @@ class StatusFilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final showEmergencyChip = emergencyCount > 0 || isEmergencyActive;
     final showClinicChip =
-        clinics.isNotEmpty && activeVisitType == VisitType.clinic;
+        clinics.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10.0),
       child: SizedBox(
