@@ -16,8 +16,9 @@ import '../service/login_service.dart';
 class LoginBinding extends Bindings {
   @override
   void dependencies() {
+    Get.delete<LoginController>(force: true);
     Get.lazyPut<LoginService>(() => LoginService());
-    Get.lazyPut<LoginController>(() => LoginController());
+    Get.lazyPut<LoginController>(() => LoginController(), fenix: true);
   }
 }
 

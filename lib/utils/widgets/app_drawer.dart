@@ -30,26 +30,8 @@ class CustomDrawer extends StatelessWidget {
         isLogout: false,
       ),
       DrawerItem(
-        icon: Icons.home,
-        titleKey: 'Home',
-        navigationFunction: () {},
-        isLogout: false,
-      ),
-      DrawerItem(
-        icon: Icons.history,
-        titleKey: 'Assigned Tasks',
-        navigationFunction: () {},
-        isLogout: false,
-      ),
-      DrawerItem(
         icon: Icons.note_alt,
         titleKey: 'Tasks History',
-        navigationFunction: () {},
-        isLogout: false,
-      ),
-      DrawerItem(
-        icon: Icons.punch_clock,
-        titleKey: 'End Shift',
         navigationFunction: () {},
         isLogout: false,
       ),
@@ -129,9 +111,7 @@ class CustomDrawer extends StatelessWidget {
                   // Profile Avatar
                   GestureDetector(
                     onTap: () {
-                      RouteManager.navigateToProfilePage(
-                        controller.userProfile.value,
-                      );
+                      RouteManager.navigateToProfilePage();
                     },
                     child: Stack(
                       children: [
