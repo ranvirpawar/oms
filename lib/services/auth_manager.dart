@@ -346,6 +346,7 @@ class AuthManager extends GetxController {
 
       await prefs.remove(_kUserDataKey);
       await prefs.remove(_kLoginDateKey);
+      await prefs.remove('mobileNumber');
       await _secureStorage.delete(key: _kTokenKey);
       // CHANGED: clear the cache alongside secure storage.
       _cachedToken = null;
@@ -359,6 +360,7 @@ class AuthManager extends GetxController {
       }
 
       _userData.value = null;
+      _userMobileNumber.value = '';
       _isLoggedIn.value = false;
       RouteManager.redirectToLogin();
     } catch (e) {

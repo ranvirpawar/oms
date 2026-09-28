@@ -1,10 +1,11 @@
 // profile_controller.dart
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' hide SnackPosition;
 import 'package:lifenity_connect/features/auth/model/profile_model.dart';
 import 'package:lifenity_connect/features/auth/service/profile_service.dart';
 import 'package:lifenity_connect/services/auth_manager.dart';
 import 'package:lifenity_connect/utils/helper_functions/helper_methods.dart';
+import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
 
 class ProfileController extends GetxController {
   final AuthManager authManager = Get.find<AuthManager>();
@@ -106,9 +107,10 @@ class ProfileController extends GetxController {
     final resolvedName = profile.name.isNotEmpty
         ? profile.name
         : '${profile.firstName} ${profile.middleName} ${profile.lastName}'
-            .trim();
-    nameController.text =
-        resolvedName.isNotEmpty ? resolvedName : profile.username;
+              .trim();
+    nameController.text = resolvedName.isNotEmpty
+        ? resolvedName
+        : profile.username;
     empIdController.text = profile.empCode.toString();
     designationController.text = profile.designation;
 
@@ -243,6 +245,12 @@ class ProfileController extends GetxController {
     final lastName = lastNameController.text.trim();
     final newMobileNo = mobileNumberController.text.trim();
 
+    // Check if the mobile number was changed or differs from saved session credentials
+    final savedCreds = await authManager.getSavedCredentials();
+    final bool isNumberChanged =
+        (newMobileNo.isNotEmpty && newMobileNo != _originalMobile) ||
+        (savedCreds != null && savedCreds.username != newMobileNo);
+
     try {
       final success = await _profileService.updateUserProfile(
         userId: user!.empCode,
@@ -254,9 +262,11 @@ class ProfileController extends GetxController {
 
       if (!success) return;
 
-      final fullName = [firstName, midName, lastName]
-          .where((p) => p.isNotEmpty)
-          .join(' ');
+      final fullName = [
+        firstName,
+        midName,
+        lastName,
+      ].where((p) => p.isNotEmpty).join(' ');
 
       final updatedUser = user!.copyWith(
         name: fullName.isNotEmpty ? fullName : user!.name,
@@ -283,22 +293,23 @@ class ProfileController extends GetxController {
       nameController.text = fullName.isNotEmpty ? fullName : user!.name;
       await authManager.saveUserProfileToStorage(user!);
 
-      Get.snackbar(
-        'Success',
+      LiquidSnack.success(
         'Profile updated successfully. Please log in again.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF22C55E),
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
-        borderRadius: 8,
-        duration: const Duration(seconds: 2),
+        title: 'Success',
       );
 
       // Give the snackbar a moment to display before logging out.
       await Future.delayed(const Duration(seconds: 2));
-      await authManager.logoutUser(clearCredentials: false);
+
+      // If mobile number was updated, wipe saved credentials so the previous
+      // number is cleared and login starts completely fresh.
+      if (isNumberChanged) {
+        await authManager.clearSavedCredentials();
+      }
+      await authManager.logoutUser(clearCredentials: isNumberChanged);
     } catch (e) {
       kPrint('saveProfile error: $e');
+      LiquidSnack.error('Failed to update profile. Please try again.');
     }
   }
 
