@@ -129,13 +129,17 @@ class BagRegistrationController extends GetxController {
     if (allSessions.isEmpty) {
       await checkBagSession(showFeedback: false);
     } else {
-      final openSessions = allSessions.where((s) => s.isOpen).toList();
-      if (openSessions.isNotEmpty) {
-        await Future.wait(openSessions.map(_loadBagDetails));
-      }
+      await loadAllBagDetails();
+      // final openSessions = allSessions.where((s) => s.isOpen).toList();
+      // if (openSessions.isNotEmpty) {
+      //   await Future.wait(openSessions.map(_loadBagDetails));
+      // }
     }
   }
-
+  /// Fetches capacity for every bag so the picker can show it for closed bags too.
+  Future<void> loadAllBagDetails() async {
+    await Future.wait(allSessions.map(_loadBagDetails));
+  }
   Future<void> ensureBagDetailsLoaded(int bagId) async {
     if (bagDetailsMap.containsKey(bagId)) return; // already cached
     final session = allSessions.firstWhereOrNull((s) => s.bagId == bagId);
@@ -165,8 +169,10 @@ class BagRegistrationController extends GetxController {
         allSessions.assignAll(sessions);
 
         // Load details for all open bags in parallel
-        final openSessions = sessions.where((s) => s.isOpen).toList();
-        await Future.wait(openSessions.map(_loadBagDetails));
+        // final openSessions = sessions.where((s) => s.isOpen).toList();
+        // checkBagSession(): load details for ALL sessions, not only open ones
+        allSessions.assignAll(sessions);
+        await Future.wait(sessions.map(_loadBagDetails));
       } else {
         allSessions.clear();
         bagDetailsMap.clear();

@@ -190,7 +190,7 @@ class _NoOpenBagContent extends StatelessWidget {
               if (closedSessions.isNotEmpty) ...[
                 _TextAction(
                   label: 'Reopen bag',
-                  onTap: () => showBagPicker(context, controller),
+                  onTap: () => showBagPicker(context, controller, controller.requiredTubeCount),
                 ),
                 const SizedBox(width: 20),
                 _TextAction(
@@ -440,7 +440,7 @@ class _OpenBagContent extends StatelessWidget {
                   if (closedSessions.isNotEmpty) ...[
                     _TextAction(
                       label: 'Reopen bag',
-                      onTap: () => showBagPicker(context, controller),
+                      onTap: () => showBagPicker(context, controller, requiredTubes),
                     ),
                     const SizedBox(width: 16),
                   ],
@@ -494,7 +494,7 @@ class _OpenBagContent extends StatelessWidget {
                     if (closedSessions.isNotEmpty) ...[
                       _TextAction(
                         label: 'Reopen bag',
-                        onTap: () => showBagPicker(context, controller),
+                        onTap: () => showBagPicker(context, controller, requiredTubes),
                       ),
                       const SizedBox(width: 16),
                     ],
