@@ -33,9 +33,20 @@ class PatientQueueScrollController extends GetxController
   /// True once the list has scrolled under the pinned chips (drives the shadow).
   final ValueNotifier<bool> hasScrolled = ValueNotifier<bool>(false);
 
+  /// Scroll distance (px) in one direction before the header starts to move.
+  /// Prevents the header from twitching on small or accidental scrolls.
+  static const double hideThreshold = 64;
+
+  /// Upward distance (px) before a hidden header starts coming back.
+  /// Kept smaller than [hideThreshold] so it returns quickly when wanted.
+  static const double revealThreshold = 24;
+
   late final AnimationController _snap;
   Animatable<double>? _snapTween;
   bool _revealing = false;
+
+  /// Distance travelled in the current scroll direction.
+  double _travel = 0;
 
   bool get isReady => collapsibleHeight.value >= 0 && pinnedHeight.value >= 0;
 
@@ -46,9 +57,9 @@ class PatientQueueScrollController extends GetxController
       vsync: this,
       duration: const Duration(milliseconds: 260),
     )..addListener(() {
-        final tween = _snapTween;
-        if (tween != null) hiddenOffset.value = tween.evaluate(_snap);
-      });
+      final tween = _snapTween;
+      if (tween != null) hiddenOffset.value = tween.evaluate(_snap);
+    });
   }
 
   // ── Measurements (reported by the header widget) ──────────────────────────
@@ -77,6 +88,7 @@ class PatientQueueScrollController extends GetxController
 
     if (n is ScrollStartNotification) {
       _snap.stop(); // user grabbed the list mid-snap
+      _travel = 0;
     } else if (n is ScrollUpdateNotification) {
       final delta = n.scrollDelta ?? 0;
       if (delta == 0) return false;
@@ -85,16 +97,27 @@ class PatientQueueScrollController extends GetxController
       // Ignore rubber-band overscroll at the bottom edge.
       if (pixels > n.metrics.maxScrollExtent) return false;
 
-      _revealing = delta < 0;
+      hasScrolled.value = pixels > 1;
 
-      // The header follows the finger 1:1 …
-      var next = (hiddenOffset.value + delta).clamp(0.0, maxHidden);
-      // … but never hides more than the list has actually scrolled, so near
-      // the top it moves exactly like ordinary scrolled content.
+      // Direction changed => start measuring the new gesture from zero.
+      final revealing = delta < 0;
+      if (revealing != _revealing) _travel = 0;
+      _revealing = revealing;
+      _travel += delta.abs();
+
+      // Dead zone: only the distance beyond the threshold moves the header,
+      // so it eases in smoothly instead of jumping when the threshold is hit.
+      final overshoot =
+          _travel - (revealing ? revealThreshold : hideThreshold);
+      if (overshoot <= 0) return false;
+      final applied = math.min(delta.abs(), overshoot);
+
+      var next = (hiddenOffset.value + (revealing ? -applied : applied))
+          .clamp(0.0, maxHidden);
+      // Never hide more than the list has actually scrolled.
       next = math.min(next, math.max(pixels, 0.0));
 
       hiddenOffset.value = next;
-      hasScrolled.value = pixels > 1;
     } else if (n is ScrollEndNotification) {
       _settle(n.metrics.pixels);
     }

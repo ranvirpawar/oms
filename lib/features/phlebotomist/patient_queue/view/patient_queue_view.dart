@@ -234,46 +234,42 @@ class PatientQueueView extends GetView<PatientQueueController> {
             itemCount: patients.length,
             itemBuilder: (context, index) {
               final patient = patients[index];
-              return _AnimatedListEntry(
-                key: ValueKey(patient.id),
-                index: index,
-                child: Obx(
-                      () => PatientCard(
-                    key: ValueKey('card_${patient.id}'),
+              return Obx(
+                    () => PatientCard(
+                  key: ValueKey('card_${patient.id}'),
+                  patient: patient,
+                  isProcessing: controller.processingIds.contains(patient.id),
+                  onTapDetails: () => _openPatientDetails(patient),
+                  onReject: () => _confirmReject(context, patient),
+                  onReschedule: () => RescheduleSheet.show(
+                    context,
                     patient: patient,
-                    isProcessing: controller.processingIds.contains(patient.id),
-                    onTapDetails: () => _openPatientDetails(patient),
-                    onReject: () => _confirmReject(context, patient),
-                    onReschedule: () => RescheduleSheet.show(
-                      context,
-                      patient: patient,
-                      onFetchSlots: (date) => controller.fetchAvailableSlots(date),
-                      onFetchReasons: () => controller.fetchRescheduleReasons(),
-                      onConfirm: (date, slot, reasonId, otherRemark) =>
-                          controller.rescheduleAssignment(
-                            patient,
-                            newDate: date,
-                            slot: slot,
-                            rescheduleReasonId: reasonId,
-                            otherRemark: otherRemark,
-                          ),
-                      onSendOtp: (mobileNo, orderId) =>
-                          controller.sendRescheduleOtp(
-                            mobileNo: mobileNo,
-                            sampleCollectionOrderId: orderId,
-                          ),
-                      onVerifyOtp: (mobileNo, otp, orderId) =>
-                          controller.verifyRescheduleOtp(
-                            mobileNo: mobileNo,
-                            otp: otp,
-                            sampleCollectionOrderId: orderId,
-                          ),
-                    ),
-                    onPrimaryAction: () => _handlePrimaryAction(patient),
-                    onStartRoute: () => controller.startRoute(patient),
-                    onSyncToLis: () => controller.syncToLis(patient),
-                    onMarkArrived: () => controller.markArrived(patient),
+                    onFetchSlots: (date) => controller.fetchAvailableSlots(date),
+                    onFetchReasons: () => controller.fetchRescheduleReasons(),
+                    onConfirm: (date, slot, reasonId, otherRemark) =>
+                        controller.rescheduleAssignment(
+                          patient,
+                          newDate: date,
+                          slot: slot,
+                          rescheduleReasonId: reasonId,
+                          otherRemark: otherRemark,
+                        ),
+                    onSendOtp: (mobileNo, orderId) =>
+                        controller.sendRescheduleOtp(
+                          mobileNo: mobileNo,
+                          sampleCollectionOrderId: orderId,
+                        ),
+                    onVerifyOtp: (mobileNo, otp, orderId) =>
+                        controller.verifyRescheduleOtp(
+                          mobileNo: mobileNo,
+                          otp: otp,
+                          sampleCollectionOrderId: orderId,
+                        ),
                   ),
+                  onPrimaryAction: () => _handlePrimaryAction(patient),
+                  onStartRoute: () => controller.startRoute(patient),
+                  onSyncToLis: () => controller.syncToLis(patient),
+                  onMarkArrived: () => controller.markArrived(patient),
                 ),
               );
             },
