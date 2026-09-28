@@ -200,9 +200,11 @@ class _PasswordField extends StatelessWidget {
           obscureText: !isVisible,
           validator: validator,
           cursorColor: AppColors.primary,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9@#$!%^&*]')),
           ],
+
           style: const TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w500,

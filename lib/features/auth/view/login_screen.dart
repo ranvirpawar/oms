@@ -43,7 +43,9 @@ class LoginScreenView extends GetView<LoginController> {
           // Login card
           Expanded(
             flex: 5,
+
             child: Container(
+              width: double.infinity,
               decoration: BoxDecoration(
                 color: AppColors.primary,
                 borderRadius: const BorderRadius.only(

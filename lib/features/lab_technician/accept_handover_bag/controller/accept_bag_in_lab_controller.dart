@@ -130,7 +130,11 @@ class AcceptBagInLabController extends GetxController {
 
   // ─── Full Scan Flow (Step 1 → Step 2a → Step 2b → Step 2c) ───────────────
   Future<void> _runFullScanFlow(String bagcode) async {
+    if (isLoading.value) return;
+
     isLoading.value = true;
+    scannerActive.value = false;
+
     scanResult.value = null;
     bagDetails.value = null;
     facilityList.value = null;
@@ -138,77 +142,188 @@ class AcceptBagInLabController extends GetxController {
     selectedFacility.value = null;
 
     try {
-      // ── Step 1: GET SessionID via /GETScanQRBag ──────────────────────────
+      // ─────────────────────────────────────────────────────────────
+      // STEP 1
+      // ─────────────────────────────────────────────────────────────
       debugPrint('⚙️ [Flow] Step 1 — scanQRBag($bagcode)');
-      final step1 = await _apiService.scanQRBag(bagcode: bagcode);
 
-      if (step1.status != 'Success' ||
-          step1.output == null ||
-          step1.output!.isEmpty) {
-        final msg = step1.message.isNotEmpty
+      final step1 = await _apiService.scanQRBag(
+        bagcode: bagcode,
+      );
+
+      // Don't depend on status/statusCode.
+      // Required output itself is the validation.
+      if (step1.output == null || step1.output!.isEmpty) {
+        final message = step1.message.isNotEmpty
             ? step1.message
-            : 'Bag not found or cannot be collected';
-        debugPrint('⚠️ [Flow] Step 1 failed: $msg');
-        LiquidSnack.warning(msg);
-        Future.delayed(const Duration(seconds: 3), resetScanner);
+            : 'Bag not found';
+
+        debugPrint('⚠️ [Flow] Step 1 invalid: $message');
+
+        LiquidSnack.warning(message);
+
+        await _resetScannerAfterFailure();
         return;
       }
 
       final firstResult = step1.output!.first;
+
       scanResult.value = firstResult;
-      debugPrint('✅ [Flow] Step 1 success. SessionID: ${firstResult.sessionID}');
 
       final sessionId = firstResult.sessionID.toString();
 
-      // ── Step 2a + 2b + 2c in parallel ────────────────────────────────────
-      debugPrint('⚙️ [Flow] Steps 2a/2b/2c — parallel bag detail fetches');
+      debugPrint(
+        '✅ [Flow] Step 1 complete. SessionID: $sessionId',
+      );
+
+      // ─────────────────────────────────────────────────────────────
+      // STEP 2A
+      //
+      // MAIN VALIDATION CALL.
+      // DO NOT start type 2 / type 4 before this succeeds.
+      // ─────────────────────────────────────────────────────────────
+      debugPrint(
+        '⚙️ [Flow] Step 2a — validating bag before further calls',
+      );
+
       bagDetailsLoading.value = true;
 
-      final results = await Future.wait([
-        _apiService.getBagDetailsForLabTeam(
+      BagDetailsForLabResponse step2a;
+
+      try {
+        step2a = await _apiService.getBagDetailsForLabTeam(
           sessionId: sessionId,
           facilityCode: facilityCode.value,
+        );
+      } catch (e) {
+        // Backend rejected the bag.
+        // Show message ONCE and STOP here.
+        final message = _extractErrorMessage(e);
+
+        debugPrint(
+          '❌ [Flow] Bag validation failed: $message',
+        );
+
+        LiquidSnack.warning(message);
+
+        await _resetScannerAfterFailure();
+
+        return;
+      }
+
+      // Even if the request doesn't throw,
+      // no output means we cannot continue.
+      if (step2a.output == null) {
+        final message = step2a.message.isNotEmpty
+            ? step2a.message
+            : 'Bag details not available';
+
+        debugPrint(
+          '⚠️ [Flow] Bag details empty: $message',
+        );
+
+        LiquidSnack.warning(message);
+
+        await _resetScannerAfterFailure();
+
+        return;
+      }
+
+      // ─────────────────────────────────────────────────────────────
+      // Type 1 valid → bag can continue
+      // ─────────────────────────────────────────────────────────────
+      bagDetails.value = step2a.output;
+
+      debugPrint(
+        '✅ [Flow] Bag validated successfully: '
+            '${bagDetails.value?.bagQRCode}',
+      );
+
+      // ─────────────────────────────────────────────────────────────
+      // STEP 2B + 2C
+      //
+      // These calls happen ONLY after type 1 passes.
+      // ─────────────────────────────────────────────────────────────
+      debugPrint(
+        '⚙️ [Flow] Fetching facility + patient details...',
+      );
+
+      final results = await Future.wait([
+        _apiService.getBagFacilityList(
+          sessionId: sessionId,
         ),
-        _apiService.getBagFacilityList(sessionId: sessionId),
-        _apiService.getBagPatientList(sessionId: sessionId),
+        _apiService.getBagPatientList(
+          sessionId: sessionId,
+        ),
       ]);
 
-      // 2a: main bag details (type=1)
-      final step2a = results[0] as BagDetailsForLabResponse;
-      if (step2a.status == 'Success' && step2a.output != null) {
-        bagDetails.value = step2a.output;
+      final facilityResponse =
+      results[0] as BagFacilityListResponse;
+
+      final patientResponse =
+      results[1] as BagPatientListResponse;
+
+      // Again: no status/statusCode checks.
+      if (facilityResponse.output != null) {
+        facilityList.value = facilityResponse.output;
       }
 
-      // 2b: facility list (type=2)
-      final step2b = results[1] as BagFacilityListResponse;
-      if (step2b.status == 'Success' && step2b.output != null) {
-        facilityList.value = step2b.output;
+      if (patientResponse.output != null) {
+        patientList.value = patientResponse.output;
       }
 
-      // 2c: patient list (type=4)
-      final step2c = results[2] as BagPatientListResponse;
-      if (step2c.status == 'Success' && step2c.output != null) {
-        patientList.value = step2c.output;
-      }
-
-      debugPrint('✅ [Flow] All detail steps complete.');
-
-      LiquidSnack.success(
-        'Session #${firstResult.sessionID} — ${firstResult.tubecount} tubes',
-        title: 'Bag Scanned',
+      debugPrint(
+        '✅ [Flow] Full bag scan completed.',
       );
-      bagDetailsLoading.value = false;
-    } catch (e) {
-      debugPrint('❌ [Flow] Error: $e');
-      LiquidSnack.error('Failed to process bag: $e');
-      bagDetailsLoading.value = false;
-      resetScanner();
+
+      /*LiquidSnack.success(
+        'Session #${firstResult.sessionID} — '
+            '${firstResult.tubecount} tubes',
+        title: 'Bag Scanned',
+      );*/
+    } catch (e, stackTrace) {
+      final message = _extractErrorMessage(e);
+
+      debugPrint('❌ [Flow] Unexpected error: $e');
+      debugPrint('$stackTrace');
+
+      LiquidSnack.error(message);
+
+      await _resetScannerAfterFailure();
     } finally {
       bagDetailsLoading.value = false;
       isLoading.value = false;
     }
   }
 
+  String _extractErrorMessage(Object error) {
+    final errorText = error.toString();
+
+    // Your current exception looks like:
+    //
+    // Exception: Network error:
+    // UnknownError(
+    //   status: 400,
+    //   message: This bag has not yet been submitted to the laboratory.
+    // )
+
+    final match = RegExp(
+      r'message:\s*(.*?)(?:\)|$)',
+    ).firstMatch(errorText);
+
+    if (match != null) {
+      final message = match.group(1)?.trim();
+
+      if (message != null && message.isNotEmpty) {
+        return message;
+      }
+    }
+
+    return errorText
+        .replaceFirst('Exception: ', '')
+        .replaceFirst('Network error: ', '')
+        .trim();
+  }
   // ─── Step 3: Accept Bag ────────────────────────────────────────────────────
   Future<void> acceptBag() async {
     if (scanResult.value == null) {
@@ -263,5 +378,33 @@ class AcceptBagInLabController extends GetxController {
     scannerActive.value = true;
     manualBarcodeController.clear();
     debugPrint('🔄 [State] Scanner reset.');
+  }
+  Future<void> _resetScannerAfterFailure() async {
+    scannedBarcode.value = null;
+    scanResult.value = null;
+    bagDetails.value = null;
+    facilityList.value = null;
+    patientList.value = null;
+    selectedFacility.value = null;
+
+    manualBarcodeController.clear();
+
+    // Keep scanner OFF so the same QR does not
+    // immediately trigger another API call.
+    scannerActive.value = false;
+
+    debugPrint(
+      '⏳ [Scanner] Failure handled. Waiting before reactivation...',
+    );
+
+    await Future.delayed(
+      const Duration(seconds: 2),
+    );
+
+    scannerActive.value = true;
+
+    debugPrint(
+      '🔄 [Scanner] Ready for next scan.',
+    );
   }
 }

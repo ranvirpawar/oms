@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import '../controller/patient_queue_controller.dart';
+import '../controller/patient_queue_scroll_controller.dart';
 import '../service/patient_queue_service.dart';
 
 
@@ -22,5 +23,6 @@ class PatientQueueBinding extends Bindings {
       ),
       fenix: true,
     );
+    Get.lazyPut<PatientQueueScrollController>(() => PatientQueueScrollController());
   }
 }

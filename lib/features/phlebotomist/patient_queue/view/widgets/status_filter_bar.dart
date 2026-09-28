@@ -46,7 +46,7 @@ class StatusFilterBar extends StatelessWidget {
         height: 36,
         child: ListView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
           children: [
             if (filters.isNotEmpty) ...[
               _FilterChip(

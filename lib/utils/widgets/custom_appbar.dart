@@ -141,7 +141,9 @@ class _CustomAppBarState extends State<CustomAppBar> {
       title: _buildTitleArea(context),
       centerTitle: false,
       backgroundColor: Colors.transparent,
+
       flexibleSpace: Container(
+
         decoration: const BoxDecoration(
           gradient: AppColors.primaryGradient,
           borderRadius: BorderRadius.only(
