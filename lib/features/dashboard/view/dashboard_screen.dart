@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lifenity_connect/features/dashboard/dashboard_controller/dashboard_controller.dart';
 import 'package:lifenity_connect/features/dashboard/view/widget/dashboard_tile_card.dart';
+import 'package:lifenity_connect/features/dashboard/view/widget/runner_action.dart';
 import 'package:lifenity_connect/utils/ui_designs/liquid_snackbar.dart';
 import 'package:lifenity_connect/utils/widgets/app_drawer.dart';
 
 import 'package:intl/intl.dart';
+import '../../../services/auth_manager.dart';
 import '../../phlebotomist/patient_queue/view/widgets/queue_calendar_sheet.dart';
 import '../../../theme/app_colors.dart';
 
@@ -62,9 +64,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (DateUtils.isSameDay(range.start, range.end)) {
       return DateFormat('EEE, d MMM yyyy').format(range.start);
     }
-    return DateFormat('d MMM yy').format(range.start) +
-        ' – ' +
-        DateFormat('d MMM yy').format(range.end);
+    return '${DateFormat('d MMM yy').format(range.start)} – ${DateFormat('d MMM yy').format(range.end)}';
   }
 
   void _openCalendar() {
@@ -89,77 +89,89 @@ class _DashboardScreenState extends State<DashboardScreen>
         child: _buildAppBar(),
       ),
       drawer: CustomDrawer(controller: controller),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Fixed header — never scrolls away.
-            // _buildAppBar(),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18),
-              child: _buildAvailabilityPill(),
-            ),
-            const SizedBox(height: 16),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Column(
+              children: [
+                // Fixed header — never scrolls away.
+                // _buildAppBar(),
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: _buildAvailabilityPill(),
+                ),
+                const SizedBox(height: 16),
 
-            // Scrollable content below the fold.
-            Expanded(
-              child: RefreshIndicator(
-                color: cs.primary,
-                onRefresh: controller.refreshDashboardStats,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 32),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Obx(() {
-                        final items = controller.getRoleBasedMetrics();
-                        if (items.isEmpty) {
-                          return const SizedBox.shrink();
-                        }
+                // Scrollable content below the fold.
+                Expanded(
+                  child: RefreshIndicator(
+                    color: cs.primary,
+                    onRefresh: controller.refreshDashboardStats,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.fromLTRB(
+                        18, 0, 18,
+                        controller.userRole.value == UserRole.runnerBoy ? 100 : 32,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Obx(() {
+                            final items = controller.getRoleBasedMetrics();
+                            if (items.isEmpty) {
+                              return const SizedBox.shrink();
+                            }
 
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (controller.isLoadingStats.value)
-                              DashboardStatsShimmer(itemCount: items.length)
-                            else if (controller.statsError.value.isNotEmpty)
-                              Text(
-                                controller.statsError.value,
-                                style: TextStyle(color: cs.error),
-                              )
-                            else
-                              MetricsStrip(
-                                items: items,
-                                cellAlignment: items.length > 3
-                                    ? CrossAxisAlignment.start
-                                    : CrossAxisAlignment.center,
-                                animationBuilder: (child) =>
-                                    _FadeSlideIn(index: 0, child: child),
-                              ),
-                            const SizedBox(height: 26),
-                          ],
-                        );
-                      }),
-                      _sectionLabel(cs, 'Quick Actions'),
-                      const SizedBox(height: 14),
-                      Obx(() {
-                        if (controller.userRole.value == null) {
-                          return const _ShimmerGrid();
-                        }
-                        final cards = controller.getRoleBasedStatCards();
-                        return _DashboardGrid(
-                          cards: cards,
-                          controller: controller,
-                        );
-                      }),
-                    ],
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (controller.isLoadingStats.value)
+                                  DashboardStatsShimmer(itemCount: items.length)
+                                else if (controller.statsError.value.isNotEmpty)
+                                  Text(
+                                    controller.statsError.value,
+                                    style: TextStyle(color: cs.error),
+                                  )
+                                else
+                                  MetricsStrip(
+                                    items: items,
+                                    cellAlignment: items.length > 3
+                                        ? CrossAxisAlignment.start
+                                        : CrossAxisAlignment.center,
+                                    animationBuilder: (child) =>
+                                        _FadeSlideIn(index: 0, child: child),
+                                  ),
+                                const SizedBox(height: 26),
+                              ],
+                            );
+                          }),
+                          _sectionLabel(cs, 'Quick Actions'),
+                          const SizedBox(height: 14),
+                          Obx(() {
+                            if (controller.userRole.value == null) {
+                              return const _ShimmerGrid();
+                            }
+                            final cards = controller.getRoleBasedStatCards();
+                            return _DashboardGrid(
+                              cards: cards,
+                              controller: controller,
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+          Positioned.fill(
+            child: Obx(() => controller.userRole.value == UserRole.runnerBoy
+                ? RunnerActionFab(actions: controller.getRunnerQuickActions())
+                : const SizedBox.shrink()),
+          ),
+        ],
       ),
     );
   }

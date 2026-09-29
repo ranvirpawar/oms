@@ -15,6 +15,8 @@ import '../view/widget/dashboard_tile_card.dart';
 import '../../../utils/widgets/metrics_data.dart';
 import 'package:flutter/material.dart';
 
+import '../view/widget/runner_action.dart';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // DashboardController
 // ─────────────────────────────────────────────────────────────────────────────
@@ -345,7 +347,29 @@ class DashboardController extends GetxController {
       dot: const Color(0xFF22C55E),
     ),
   ];
-
+  List<RunnerAction> getRunnerQuickActions() => [
+    RunnerAction(
+      label: 'Collect Destination Bag',
+      subtitle: 'Pick up empty bags',
+      icon: Icons.inventory_2_outlined,
+      color: const Color(0xFF3B82F6),
+      onTap: RouteManager.navigateToCollectEmptyBag,
+    ),
+    RunnerAction(
+      label: 'Collect from Phlebotomist',
+      subtitle: 'Receive samples for transfer',
+      icon: Icons.local_shipping_rounded,
+      color: const Color(0xFF14B8A6),
+      onTap: RouteManager.navigateToCollectBagsFromPhlebotomist,
+    ),
+    RunnerAction(
+      label: 'Handover Bags',
+      subtitle: 'Hand over samples to lab',
+      icon: Icons.send_rounded,
+      color: const Color(0xFF8B5CF6),
+      onTap: RouteManager.navigateToCollectedBags,
+    ),
+  ];
   final selectedRange = DateTimeRange(
     start: DateUtils.dateOnly(DateTime.now()),
     end: DateUtils.dateOnly(DateTime.now()),

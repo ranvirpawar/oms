@@ -178,7 +178,7 @@ class PatientListController extends GetxController {
 
       final response = await _service.insertQRBagSessionEvent(
         sessionId: session.sessionID,
-        processId: int.parse(BagProcessId.endBagSession.processId),
+        processId: int.parse(BagProcessId.bagSubmittedToLab.processId),
         userId: userId.value,
       );
 
