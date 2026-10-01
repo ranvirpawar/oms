@@ -344,12 +344,20 @@ class CollectedBagsController extends GetxController {
 
   //---------- Handover to lab staff / runner boy (unchanged) -----------
 
+  final RxnString runnerBoyError = RxnString();          // friendly message or null
+  final RxBool hasLoadedRunnerBoys = false.obs;          // avoids "empty" flash on first frame
+
+
+// 2) REPLACE initHandoverPage / resetHandoverPage / fetchRunnerBoys ----------
+
   void initHandoverPage() {
     selectedConnector.value = null;
     searchQuery.value = '';
     isHandOverToRunnerBoy.value = true;
     submissionState.value = SubmissionState.idle;
     submissionErrors.clear();
+    runnerBoyError.value = null;
+    hasLoadedRunnerBoys.value = false;
     fetchRunnerBoys();
   }
 
@@ -359,30 +367,53 @@ class CollectedBagsController extends GetxController {
     searchQuery.value = '';
     submissionState.value = SubmissionState.idle;
     submissionErrors.clear();
+    runnerBoyError.value = null;
+    hasLoadedRunnerBoys.value = false;
   }
 
   Future<void> fetchRunnerBoys() async {
     try {
       isFetchingRunnerBoys.value = true;
+      runnerBoyError.value = null;
+
       final list = await bagsService.getConnectorList('3', userId.value);
       runnerBoyList.value = list;
+
+      // If the previously selected person is no longer in the list, clear it.
+      final sel = selectedConnector.value;
+      if (sel != null && !list.any((e) => e.userId == sel.userId)) {
+        selectedConnector.value = null;
+      }
     } catch (e) {
-      _showSnackbar('Error', e.toString(), isError: true);
+      // Session death is handled centrally (redirect to Login).
+      if (e is AppError && e.isSessionTerminal) return;
+
+      // Never surface the raw exception — log it, show a friendly retry state.
+      debugPrint('❌ fetchRunnerBoys failed: $e');
+      runnerBoyList.clear();
+      runnerBoyError.value =
+      'Please check your connection and try again.';
     } finally {
+      hasLoadedRunnerBoys.value = true;
       isFetchingRunnerBoys.value = false;
     }
   }
 
+
+// 3) REPLACE filteredConnectors (adds clinic search) -------------------------
+
   List<Connector> get filteredConnectors {
     final source = runnerBoyList;
-    if (searchQuery.value.isEmpty) return source;
-    final q = searchQuery.value.toLowerCase();
+    final q = searchQuery.value.trim().toLowerCase();
+    if (q.isEmpty) return source;
     return source
         .where((c) =>
     c.userName.toLowerCase().contains(q) ||
-        c.userId.toString().contains(q))
+        c.userId.toString().contains(q) ||
+        c.facilityName.toLowerCase().contains(q))
         .toList();
   }
+
 
   bool get isCurrentTabLoading => isFetchingRunnerBoys.value;
 

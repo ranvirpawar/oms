@@ -7,11 +7,11 @@ class QRBag {
   final int sessionId;
   final int bagId;
   final String bagcode;
-  final String collectedDate;   // still keep for display if needed
-  final DateTime collectedAt;   // now uses the real timestamp
+  final String collectedDate; // still keep for display if needed
+  final DateTime collectedAt; // now uses the real timestamp
   final String status;
   final int tubeCount;
-  final String facilityName;
+  final List<String> facilityNames;
   final DateTime createdAt;
 
   QRBag({
@@ -22,7 +22,7 @@ class QRBag {
     required this.collectedAt,
     required this.status,
     required this.tubeCount,
-    required this.facilityName,
+    required this.facilityNames,
     required this.createdAt,
   });
 
@@ -43,7 +43,7 @@ class QRBag {
       collectedAt: collectedAt,
       status: json['Status']?.toString() ?? '',
       tubeCount: json['Tubecount'] ?? 0,
-      facilityName: json['FacilityName']?.toString() ?? '—',
+      facilityNames: _parseFacilities(json['FacilityName']),
       createdAt: createdAt,
     );
   }
@@ -58,6 +58,22 @@ class QRBag {
       return fallback ?? DateTime.now();
     }
   }
+
+  String get facilityName => facilityNames.join(', ');
+
+  static List<String> _parseFacilities(dynamic v) {
+    final raw = v is List
+        ? v.map((e) => e.toString())
+        : (v?.toString() ?? '').split(',');
+    final names = raw
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toSet()
+        .toList();
+    return names.isEmpty ? ['—'] : names;
+  }
+
+  // in fromJson: facilityNames: _parseFacilities(json['FacilityName']),
 }
 
 class QRBagListResponse {
@@ -87,6 +103,7 @@ class QRBagListResponse {
     );
   }
 }
+
 class CollectedBag {
   final int transactionId;
   final int bagId;
@@ -158,8 +175,8 @@ class CollectedBagListResponse {
       message: json['message'] ?? '',
       output: json['output'] != null
           ? (json['output'] as List)
-          .map((item) => CollectedBag.fromJson(item))
-          .toList()
+                .map((item) => CollectedBag.fromJson(item))
+                .toList()
           : null,
     );
   }
@@ -169,10 +186,7 @@ class LabSubmissionResponse {
   final String status;
   final String message;
 
-  LabSubmissionResponse({
-    required this.status,
-    required this.message,
-  });
+  LabSubmissionResponse({required this.status, required this.message});
 
   bool get isSuccess => status.toLowerCase() == 'success';
 
@@ -183,4 +197,3 @@ class LabSubmissionResponse {
     );
   }
 }
-
