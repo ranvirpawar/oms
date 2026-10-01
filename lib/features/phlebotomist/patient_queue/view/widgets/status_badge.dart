@@ -346,6 +346,13 @@ class StatusBadge extends StatelessWidget {
           AppColors.blueLight,
           Icons.event_repeat_rounded,
         );
+        case PatientStatus.partiallyCollected:
+          return const _StatusStyle(
+            'Partially Collected',
+            AppColors.blueText,
+            AppColors.blueLight,
+            Icons.event_repeat_rounded,
+          );
       case PatientStatus.unableToCollect:
         return const _StatusStyle(
           'Unable to Collect',

@@ -35,6 +35,7 @@ class ChecklistItem {
     this.fastingDurationIn,
   });
 
+  int? get testId => int.tryParse(rawJson['TestID']?.toString() ?? '');
   final int checklistId;
   final String checklistName;
   final ChecklistDataType dataType;

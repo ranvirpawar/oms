@@ -10,6 +10,7 @@ import '../../../routes/route_manager.dart';
 import '../../../utils/helper_functions/helper_methods.dart';
 import 'package:intl/intl.dart';
 import '../model/dashboard_summary_model.dart';
+import '../model/dashboard_metrics.dart';
 import '../service/dashboard_service.dart';
 import '../view/widget/dashboard_tile_card.dart';
 import '../../../utils/widgets/metrics_data.dart';
@@ -167,6 +168,8 @@ class DashboardController extends GetxController {
       title: 'Bag\nHistory',
       subtitle: 'Track bag movement',
       icon: AppAssets.bagHistoryIcon,
+      iconBottom: -6,
+      iconRight: -6,
       borderColor: const Color(0xFF22C55E),
       // green
       onTap: RouteManager.navigateToBagStatus,
@@ -260,93 +263,22 @@ class DashboardController extends GetxController {
 
   // ── Role-based Metrics ────────────────────────────────────────────────────────
 
+  final summaryMetrics = <DashboardSummaryMetric>[].obs;
+  final _metricPresentation = DashboardMetrics();
+
   List<MetricData> getRoleBasedMetrics() {
     switch (userRole.value) {
       case UserRole.phlebotomist:
       case UserRole.paramedic:
       case UserRole.nurse:
-        return _phlebotomistMetrics();
-
       case UserRole.runnerBoy:
-        return _runnerBoyMetrics();
-
       case UserRole.labTechnician:
       case UserRole.labAccession:
-        return _labTechnicianMetrics();
-
+        return _metricPresentation.build(summaryMetrics);
       default:
         return const [];
     }
   }
-
-  List<MetricData> _phlebotomistMetrics() => [
-    MetricData(
-      value: assignedPatientsCount.value.toString().padLeft(2, '0'),
-      label: 'Assigned\nPatients',
-      icon: Icons.people_alt_rounded,
-      dot: const Color(0xFF3B82F6),
-    ),
-    MetricData(
-      value: clinicCollectionRequestCount.value.toString().padLeft(2, '0'),
-      label: 'Clinic\nCollections',
-      icon: Icons.science_rounded,
-      dot: const Color(0xFF22C55E),
-    ),
-    MetricData(
-      value: homeRequestCount.value.toString().padLeft(2, '0'),
-      label: 'Home\nRequests',
-      icon: Icons.swap_horiz_rounded,
-      dot: const Color(0xFF8B5CF6),
-    ),
-    MetricData(
-      value: servedRequestsCount.value.toString().padLeft(2, '0'),
-      label: 'Served\nRequests',
-      icon: Icons.hourglass_bottom_rounded,
-      dot: const Color(0xFFF59E0B),
-    ),
-  ];
-
-  List<MetricData> _runnerBoyMetrics() => [
-    MetricData(
-      value: runnerReadyForPickupCount.value.toString().padLeft(2, '0'),
-      label: 'Ready for\nPick Up',
-      icon: Icons.inventory_2_outlined,
-      dot: const Color(0xFFF59E0B),
-    ),
-    MetricData(
-      value: runnerPickupCount.value.toString().padLeft(2, '0'),
-      label: 'Picked\nUp',
-      icon: Icons.local_shipping_rounded,
-      dot: const Color(0xFF3B82F6),
-    ),
-    MetricData(
-      value: runnerSubmitToLabCount.value.toString().padLeft(2, '0'),
-      label: 'Submitted\nto Lab',
-      icon: Icons.send_rounded,
-      dot: const Color(0xFF8B5CF6),
-    ),
-    MetricData(
-      value: runnerAcceptedByLabCount.value.toString().padLeft(2, '0'),
-      label: 'Accepted\nin Lab',
-      icon: Icons.task_alt_rounded,
-      dot: const Color(0xFF22C55E),
-    ),
-  ];
-
-  List<MetricData> _labTechnicianMetrics() => [
-    MetricData(
-      value: labBagsSubmittedCount.value.toString().padLeft(2, '0'),
-      label: 'Bags submitted\nto lab',
-      icon: Icons.inventory_2_outlined,
-      dot: const Color(0xFF3B82F6),
-    ),
-    MetricData(
-      value: labAcceptedBagsCount.value.toString().padLeft(2, '0'),
-      label: 'Bags accepted\nby lab',
-      icon: Icons.task_alt_rounded,
-      dot: const Color(0xFF22C55E),
-    ),
-  ];
   List<RunnerAction> getRunnerQuickActions() => [
    /* RunnerAction(
       label: 'Collect Destination Bag',
@@ -407,6 +339,7 @@ class DashboardController extends GetxController {
           !response.isEmptyResult) {
         throw StateError(response.message);
       }
+      summaryMetrics.assignAll(response.metrics);
       final summary = response.output.isEmpty
           ? const DashboardSummaryItem()
           : response.output.first;

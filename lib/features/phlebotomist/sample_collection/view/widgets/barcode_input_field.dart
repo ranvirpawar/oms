@@ -38,6 +38,10 @@ class TubeBarcodeGroup extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          for (final tube in entry.apiTubeTypes)
+            Padding(padding: const EdgeInsets.only(bottom: 6),
+              child: Text('${tube.tubeType}: ${1 + entry.manualTubes.where((t) => t.tubeTypeId == tube.tubeTypeId).length} tube(s)',
+                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary))),
           for (int i = 0; i < rows.length; i++) ...[
             if (i > 0) const SizedBox(height: 6),
             _TubeRow(

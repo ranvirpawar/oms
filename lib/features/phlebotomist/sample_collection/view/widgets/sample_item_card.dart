@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../../theme/app_colors.dart';
 
@@ -19,6 +20,7 @@ import '../../model/sample_collection_models.dart';
 import '../../model/sample_stype_style.dart';
 
 import 'barcode_input_field.dart';
+import 'test_reschedule_fields.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -86,14 +88,15 @@ class SampleItemCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            if (status == SampleCollectionStatus.incomplete)
-              _buildFullyUnusableBanner(context)
-            else ...[
-              TubeBarcodeGroup(entry: entry, controller: controller),
-              if (entry.hasPartialIncomplete) ...[
-                const SizedBox(height: 10),
-                _buildPartialBanner(context),
-              ],
+            if (!entry.isFullyUnusable)
+              TubeBarcodeGroup(entry: entry, controller: controller)
+            else
+              const Text('No tests to collect against this sample type',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+            if (entry.testIncompleteMap.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              for (final test in entry.tests.where((t) => entry.testIncompleteMap.containsKey(t.testId)))
+                _buildRescheduledTestRow(test),
             ],
 
           ],
@@ -102,69 +105,42 @@ class SampleItemCard extends StatelessWidget {
     });
   }
 
-  Widget _buildFullyUnusableBanner(BuildContext context) {
+  Widget _buildRescheduledTestRow(TestInfo test) {
+    final info = entry.testIncompleteMap[test.testId]!;
+    final timing = info.hasSchedule
+        ? '${DateFormat('dd MMM').format(info.appointmentDate!)} · ${formatCollectionStartTime(info.slotLabel)}'
+        : info.reason.reason;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.only(left: 10),
       decoration: BoxDecoration(
-        color: AppColors.redLight.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.amberLight.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(10),
       ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline_rounded, size: 16, color: AppColors.redText),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              "Couldn't collect — every test flagged.",
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
-            ),
-          ),
-          TextButton(
-            onPressed: () => controller.undoAllIncomplete(entry),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              minimumSize: const Size(0, 32),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: const Text('Undo', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
+      child: Row(children: [
+        Icon(info.hasSchedule ? Icons.event_repeat_rounded : Icons.event_busy_rounded,
+          size: 15, color: AppColors.amberText),
+        const SizedBox(width: 8),
+        Expanded(child: Tooltip(
+          message: '${test.testName} • ${info.reason.reason} • $timing',
+          child: Text.rich(TextSpan(children: [
+            TextSpan(text: test.testName,
+              style: const TextStyle(fontWeight: FontWeight.w700)),
+            TextSpan(text: ' · $timing'),
+          ]), maxLines: 2, overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary)),
+        )),
+        IconButton(
+          tooltip: 'Review rescheduled tests',
+          onPressed: () => controller.openIncompleteTestsSheet(entry),
+          icon: const Icon(Icons.remove_red_eye_outlined, size: 16, color: AppColors.primary),
+          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+          padding: const EdgeInsets.all(10),
+        ),
+      ]),
     );
   }
 
-  Widget _buildPartialBanner(BuildContext context) {
-    final total = entry.tests.length;
-    final flagged = entry.testIncompleteMap.length;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.amberLight.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.warning_amber_rounded, size: 16, color: AppColors.amberText),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '$flagged of $total test${total == 1 ? '' : 's'} marked unsuitable',
-              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
-            ),
-          ),
-          TextButton(
-            onPressed: () => controller.openIncompleteTestsSheet(entry),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              minimumSize: const Size(0, 32),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: const Text('Review', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 /// Small direct-tap report action, replacing the old three-dot menu (which

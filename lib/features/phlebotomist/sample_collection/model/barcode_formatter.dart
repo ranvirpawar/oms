@@ -123,6 +123,12 @@ class SampleBarcodeEntry {
     return result;
   }
 
+  List<TestTubeDetailEntry> get testTubeDetails => [
+    for (final test in tests)
+      for (final tubeId in test.tubeTypes.map((t) => t.tubeTypeId).toSet())
+        TestTubeDetailEntry(testId: test.testId, sampleTypeId: sampleTypeId, tubeTypeId: tubeId,
+          tubeCount: 1 + manualTubes.where((t) => t.tubeTypeId == tubeId).length),
+  ];
   int get tubeCount {
     final count = apiTubeTypes.length + manualTubes.length;
     return count > 0 ? count : 1;
@@ -130,7 +136,8 @@ class SampleBarcodeEntry {
 
   bool get isCollected => status.value == SampleCollectionStatus.collected;
   bool get isPending => status.value == SampleCollectionStatus.pending;
-  bool get isFullyUnusable => tests.isNotEmpty && testIncompleteMap.length == tests.length;
+  bool get isFullyUnusable =>
+      tests.isNotEmpty && tests.every((test) => testIncompleteMap.containsKey(test.testId));
   bool get hasPartialIncomplete => testIncompleteMap.isNotEmpty && !isFullyUnusable;
   bool get isResolved => isCollected || isFullyUnusable;
 

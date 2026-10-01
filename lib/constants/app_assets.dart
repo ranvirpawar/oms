@@ -82,7 +82,8 @@ class AppAssets {
   static const String manageOrderIcon =
       'assets/dashboard_icons/manage-order-icon.png';
   static const String bagHistoryIcon =
-      'assets/dashboard_icons/bag-history-icon.png';
+      'assets/dashboard_icons/collect-destination-bag.png';
+      // 'assets/dashboard_icons/bag-history-icon.png';
   static const String sampleRecollectionIconOg =
       'assets/dashboard_icons/sample-recollection-icon.png';
   static const String collectedBagsIcon =

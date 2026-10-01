@@ -48,15 +48,15 @@ C09: concurrent-route control is app-level and intentionally retained; currently
 - C04: one sample barcode shared across tube-type rows and extra tubes is intentional.
 - JAA + 7-9 digits; format/local duplicate checks -> debounced availability API; stale field responses ignored.
 - Up to 3 manual extra tubes per sample entry; preserve existing tubeCount calculation.
-- Incomplete sheet drafts per-test reasons/remarks; confirmation replaces the whole map; empty map clears flags.
-- Each entry must be collected or fully unusable. Any incomplete tests -> PARTIALLY_COLLECTED payload.
+- The review sheet shows only existing rescheduled tests, with editable per-test reasons/remarks and appointment date/slot. It cannot deselect tests or clear saved appointments; cancelling timing edits preserves the saved plan. Fasting conflicts require a per-test incomplete reason and backend slot before checklist continuation; these drafts pass through the collection binding and remain reviewable on collection. Date/slot selection opens a compact bottom sheet with the reschedule date strip, backend slot tiles and an explicit confirm action; dismissing the sheet preserves the previous selection. User-facing copy describes planning another collection visit.
+- Each entry must be collected or fully unusable. Barcode entry remains available while any actual test in the sample is collectable; full unavailability checks test-ID membership rather than map size or a stale status. Affected tests appear as compact one-line summaries with an eye icon. The review sheet shows each test name directly above the shared checklist reason/timing rows, always visible without expand/collapse. The optional note field is commented out; saved notes and apply-to-all reasons are preserved. Slot summaries show only start time, falling back safely to saved labels when API InTime is absent. Any incomplete tests -> PARTIALLY_COLLECTED payload.
 - C05: fully incomplete requirements limited; do not redesign. G05 records payload observations.
 - C06: order status 6 is relevant LIS condition. Do not revive legacy textual status parsing.
 
 ## OTP and checklist
 Patient OTP is separate from login OTP; preserve exact `isOtpVerified == 'Yes'` gate.
 Checklist fetch uses POST despite GET comments.
-Existing nonempty answers for every checklist item skip repeat UI.
+Existing nonempty answers for every checklist item skip repeat UI only when there are no current fasting conflicts.
 Fasting rows share meal time; existing min/max comparison and advisory acknowledgment are intentional (C15).
 Do not reinterpret fastingDurationIN or introduce stronger clinical validation without requirement.
 C14: local IST/date behavior. C18: additional OTP/session requirements Unknown.
@@ -65,7 +65,7 @@ C14: local IST/date behavior. C18: additional OTP/session requirements Unknown.
 PatientQueueService: orders/details; UpdateSampleOrderStatus (assignment 2/3/4); slots/reasons/reschedule OTP.
 LocationTrackingService: START/END payload includes assignment ID, collection-order ID and GPS.
 SampleCollectionService: requirements, barcode availability, collection OTP, checklist, collection submit, DISHA retry.
-Payload carries OrderID, user, current BagID/SessionID, tube count, collected timestamp, complications, incomplete tests.
+Payload carries OrderID, user, current bagId/SessionID, tube count, collected timestamp, complications, incomplete tests (TestID, reason, optional AppointmentDate/SlotID), and TestTubeDetails (TestId, SampleTypeID, TubeTypeID, TubeCount). Test tube counts start at one per required type and include manual duplicates; sample barcodes remain in SampleCollectionDetails. Only collected, usable samples contribute physical barcode/tube totals.
 Preserve spelling/casing; see [API conventions](../API_CONVENTIONS.md).
 
 ## Save vs sync

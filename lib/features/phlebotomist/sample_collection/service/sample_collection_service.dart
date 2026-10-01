@@ -455,9 +455,19 @@ class SampleCollectionService {
 
       final output = body['output'];
       final List<dynamic> list = output is List ? output : [];
+      /*return list
+          .whereType<Map<String, dynamic>>()
+          .map(ChecklistItem.fromJson)
+          .toList();*/
+      final seen = <String>{};
+
       return list
           .whereType<Map<String, dynamic>>()
           .map(ChecklistItem.fromJson)
+          .where((item) {
+        final key = '${item.checklistId}_${item.testId ?? 0}';
+        return seen.add(key);
+      })
           .toList();
     } on SampleCollectionException {
       rethrow;

@@ -790,6 +790,10 @@ class PatientQueueController extends GetxController {
         return 'En Route';
       case PatientStatus.arrived:
         return 'Arrived';
+      case PatientStatus.partiallyCollected:
+        return 'Partially Collected';
+
+
       default:
         return status.toString().split('.').last;
     }

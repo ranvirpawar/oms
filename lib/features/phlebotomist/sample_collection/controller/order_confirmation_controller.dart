@@ -1,5 +1,3 @@
-
-
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
@@ -10,10 +8,10 @@ import 'package:intl/intl.dart';
 import '../../../../componenents/otp_boxes_input.dart';
 import '../../../../routes/route_manager.dart';
 import '../../../../services/auth_manager.dart';
-import '../../patient_queue/service/location_tracking_service.dart';
 import '../../../../utils/helper_functions/helper_methods.dart';
 import '../../../../utils/ui_designs/liquid_snackbar.dart';
 import '../../patient_queue/model/patient_queue_model.dart';
+import '../../patient_queue/service/location_tracking_service.dart';
 import '../../patient_queue/service/patient_queue_service.dart';
 import '../binding/sample_collection_binding.dart';
 import '../model/pre_collection_checklist.dart';
@@ -23,12 +21,11 @@ import '../view/collection_checklist_screen.dart';
 import '../view/sample_collection_screen.dart';
 import '../view/widgets/otp_verification_screen.dart';
 import 'bag_context_mixin.dart';
-
 import 'sample_collection_controller.dart';
 
 class OrderConfirmationController extends GetxController with HasBagContext {
   OrderConfirmationController({required this.assignedPatient})
-      : orderId = assignedPatient.orderId.toString();
+    : orderId = assignedPatient.orderId.toString();
   final PatientQueueService _patientQueueService = PatientQueueService();
   final AssignedPatient assignedPatient;
   final String orderId;
@@ -40,6 +37,7 @@ class OrderConfirmationController extends GetxController with HasBagContext {
 
   final RxString empId = ''.obs;
   final RxBool isRescheduling = false.obs;
+
   int get _userId => int.tryParse(empId.value) ?? 0;
 
   bool get isOrderAccepted =>
@@ -49,8 +47,13 @@ class OrderConfirmationController extends GetxController with HasBagContext {
       assignedPatient.status == PatientStatus.arrived;
 
   bool get needsToStartRoute =>
-      assignedPatient.status == PatientStatus.accepted /*|| assignedPatient.status == PatientStatus.rescheduled*/;
-bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.rescheduled;
+      assignedPatient.status ==
+      PatientStatus
+          .accepted /*|| assignedPatient.status == PatientStatus.rescheduled*/;
+
+  bool get needRescheduleOrderAccept =>
+      assignedPatient.status == PatientStatus.rescheduled;
+
   // ---- Order details -------------------------------------------------
   final Rxn<OrderConfirmationDetails> orderDetails =
       Rxn<OrderConfirmationDetails>();
@@ -68,6 +71,7 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
   double? _initialDistanceMeters;
 
   double? get destinationLat => assignedPatient.destinationLat;
+
   double? get destinationLng => assignedPatient.destinationLng;
 
   double? get distanceToPatientMeters {
@@ -90,6 +94,7 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
   // ---- OTP ---------------------------------------------------------------
   final GlobalKey<OtpBoxesInputState> otpInputKey =
       GlobalKey<OtpBoxesInputState>();
+
   String get otpValue => otpInputKey.currentState?.code ?? '';
 
   final RxBool isSendingOtp = false.obs;
@@ -120,7 +125,7 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
     await _loadEmpId();
     if (!isOrderAccepted) return;
     if (needsToStartRoute) return;
-    if(needRescheduleOrderAccept) return;
+    if (needRescheduleOrderAccept) return;
 
     if (assignedPatient.status == PatientStatus.inRoute) {
       showRouteMap.value = true;
@@ -181,7 +186,8 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
     if (isMarkingArrived.value) return;
     isMarkingArrived.value = true;
     try {
-      final pos = currentPosition.value ??
+      final pos =
+          currentPosition.value ??
           await Geolocator.getCurrentPosition(
             desiredAccuracy: LocationAccuracy.high,
           );
@@ -210,10 +216,7 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
     } on LocationTrackingException catch (e) {
       LiquidSnack.error(e.message, title: 'Action failed');
     } catch (_) {
-      LiquidSnack.error(
-        'Please try again.',
-        title: 'Action failed',
-      );
+      LiquidSnack.error('Please try again.', title: 'Action failed');
     } finally {
       isMarkingArrived.value = false;
     }
@@ -256,7 +259,10 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
         userId: empId.value,
         collectionOrderId: orderDetails.value?.sampleCollectionOrderId ?? '',
       );
-      LiquidSnack.success('OTP has been send successfully',position: SnackPosition.top );
+      LiquidSnack.success(
+        'OTP has been send successfully',
+        position: SnackPosition.top,
+      );
       _startResendTimer();
     } catch (e) {
       otpError.value = 'Unable to send OTP. Please try again.';
@@ -323,9 +329,7 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
 
   Future<void> confirmAndCollect() async {
     if (!hasOpenBag) {
-      LiquidSnack.error(
-        'You need to open a bag first for sample collection',
-      );
+      LiquidSnack.error('You need to open a bag first for sample collection');
       return;
     }
 
@@ -340,9 +344,7 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
 
       await sendOtp();
 
-      await Get.to(
-            () => const OtpVerificationScreen(),
-      );
+      await Get.to(() => const OtpVerificationScreen());
 
       // User pressed back without verifying OTP
       if (!_otpVerifiedThisSession) {
@@ -373,6 +375,7 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
     // ---------------------------------------------
     await _goToSampleCollection();
   }
+
   /// Whether the checklist has already been answered previously.
   ///
   /// This is based ONLY on values returned from the GET checklist API.
@@ -381,10 +384,9 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
   bool get hasExistingChecklistAnswers {
     if (checklistItems.isEmpty) return false;
 
-    return checklistItems.every(
-          (item) => item.value.trim().isNotEmpty,
-    );
+    return checklistItems.every((item) => item.value.trim().isNotEmpty);
   }
+
   /// Loads and pushes the collection checklist. Returns true only if the
   /// phlebotomist submitted it successfully.
   Future<bool> _goToChecklist() async {
@@ -404,9 +406,9 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
     // If answers already exist in GET API, checklist was already
     // completed previously. Don't show the checklist again.
     // ---------------------------------------------------------
-    if (hasExistingChecklistAnswers) {
+    /*if (hasExistingChecklistAnswers && mealTimeConflicts.isEmpty) {
       return true;
-    }
+    }*/
 
     // Some answers are missing -> user needs to complete checklist.
     await Get.to(() => const CollectionChecklistScreen());
@@ -427,6 +429,7 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
       binding: SampleCollectionBinding(
         orderId: orderId,
         assignedPatient: assignedPatient,
+        fastingIncompleteTests: Map.of(fastingIncompleteTests),
       ),
       transition: Transition.circularReveal,
       duration: const Duration(milliseconds: 200),
@@ -440,6 +443,7 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
       bagController.checkBagSession(showFeedback: false),
     ]);
   }
+
   Future<List<RescheduleReason>> fetchRescheduleReasons() {
     return _patientQueueService.fetchRescheduleReasons();
   }
@@ -450,10 +454,11 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
       appointmentDate: date,
     );
   }
+
   Future<bool> _runAction(
-      Future<bool> Function() action, {
-        required String successMessage,
-      }) async {
+    Future<bool> Function() action, {
+    required String successMessage,
+  }) async {
     isRescheduling.value = true;
     try {
       final success = await action();
@@ -476,7 +481,6 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
       isRescheduling.value = false;
     }
   }
-
 
   Future<bool> sendRescheduleOtp({
     required String mobileNo,
@@ -503,13 +507,13 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
   }
 
   Future<bool> reschedule(
-      AssignedPatient patient, {
-        required DateTime newDate,
-        required AvailableSlot slot,
-        required int rescheduleReasonId,
-      }) {
+    AssignedPatient patient, {
+    required DateTime newDate,
+    required AvailableSlot slot,
+    required int rescheduleReasonId,
+  }) {
     return _runAction(
-          () => _service.reschedule(
+      () => _service.reschedule(
         orderId: patient.orderId,
         userId: _userId,
         createdBy: _userId,
@@ -520,25 +524,39 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
       successMessage: 'Visit rescheduled',
     );
   }
+
   /// Tube count for the active order. Each sampleRequirement entry corresponds
   /// to exactly one tube, so totalSampleTypes == tubes needed.
   @override
   int get requiredTubeCount {
     return orderDetails.value?.totalSampleTypes ?? 0;
   }
+
   // ---------------------------------------------------------------------
-// Collection checklist
-// ---------------------------------------------------------------------
+  // Collection checklist
+  // ---------------------------------------------------------------------
   final RxList<ChecklistItem> checklistItems = <ChecklistItem>[].obs;
   final RxBool isLoadingChecklist = false.obs;
   final RxBool isSubmittingChecklist = false.obs;
   final RxString checklistError = ''.obs;
-// ---------------------------------------------------------------------
-// Fasting-linked meal time (shared across all IsFastingReq rows)
-// ---------------------------------------------------------------------
+
+  // ---------------------------------------------------------------------
+  // Fasting-linked meal time (shared across all IsFastingReq rows)
+  // ---------------------------------------------------------------------
   static final DateFormat _checklistDtFormat = DateFormat('dd-MM-yyyy HH:mm');
 
   final RxBool fastingAdvisoryAcknowledged = false.obs;
+  final RxMap<int, TestIncompleteInfo> fastingIncompleteTests =
+      <int, TestIncompleteInfo>{}.obs;
+  final RxList<IncompleteReasonOption> incompleteReasonOptions =
+      <IncompleteReasonOption>[].obs;
+
+  ChecklistItem itemForConflict(MealTimeConflict conflict) => checklistItems
+      .firstWhere((item) => item.checklistId == conflict.checklistId);
+
+  void setFastingIncompleteTest(int testId, TestIncompleteInfo info) {
+    fastingIncompleteTests[testId] = info;
+  }
 
   List<ChecklistItem> get fastingLinkedItems =>
       checklistItems.where((i) => i.isFastingReq).toList();
@@ -563,8 +581,7 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
       return [];
     }
 
-    final hoursSince =
-        DateTime.now().difference(mealTime).inMinutes / 60.0;
+    final hoursSince = DateTime.now().difference(mealTime).inMinutes / 60.0;
 
     final conflicts = <MealTimeConflict>[];
     for (final item in linked) {
@@ -574,15 +591,17 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
       final max = item.fastingMaxTime;
       if (min == null || max == null) continue;
       if (hoursSince < min || hoursSince > max) {
-        conflicts.add(MealTimeConflict(
-          checklistId: item.checklistId,
-          label: (item.testName?.isNotEmpty ?? false)
-              ? item.testName!
-              : item.checklistName,
-          hoursSinceMeal: hoursSince,
-          minHours: min,
-          maxHours: max,
-        ));
+        conflicts.add(
+          MealTimeConflict(
+            checklistId: item.checklistId,
+            label: (item.testName?.isNotEmpty ?? false)
+                ? item.testName!
+                : item.checklistName,
+            hoursSinceMeal: hoursSince,
+            minHours: min,
+            maxHours: max,
+          ),
+        );
       }
     }
     return conflicts;
@@ -594,12 +613,20 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
     if (mealTimeConflicts.isNotEmpty && !fastingAdvisoryAcknowledged.value) {
       return false;
     }
+    for (final conflict in mealTimeConflicts) {
+      final testId = itemForConflict(conflict).testId;
+      if (testId == null ||
+          fastingIncompleteTests[testId]?.hasSchedule != true) {
+        return false;
+      }
+    }
     return true;
   }
 
   void setChecklistAnswer(int checklistId, String value) {
-    final index =
-    checklistItems.indexWhere((i) => i.checklistId == checklistId);
+    final index = checklistItems.indexWhere(
+      (i) => i.checklistId == checklistId,
+    );
     if (index == -1) return;
     final target = checklistItems[index];
     checklistItems[index].value = value;
@@ -607,6 +634,7 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
     // All fasting-linked rows share one physical meal-time fact — fan the
     // answer out so the phlebotomist only ever fills it once.
     if (target.isFastingReq) {
+      fastingIncompleteTests.clear();
       for (final i in checklistItems) {
         if (i.checklistId != checklistId && i.isFastingReq) {
           i.value = value;
@@ -617,7 +645,6 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
     fastingAdvisoryAcknowledged.value = false;
     checklistItems.refresh();
   }
-
 
   /// Mirrors [_otpVerifiedThisSession] — set only for the lifetime of a
   /// single checklist-screen visit, read right after it's popped.
@@ -634,22 +661,24 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
       );
 
       checklistItems.assignAll(items);
+      fastingIncompleteTests.clear();
+      fastingAdvisoryAcknowledged.value = false;
+      incompleteReasonOptions.assignAll(
+        await _service.fetchIncompleteReasons(),
+      );
 
       return true;
     } on SampleCollectionException catch (e) {
       checklistError.value = e.message;
 
-      LiquidSnack.error(
-        e.message,
-        title: 'Unable to load checklist',
-      );
+      LiquidSnack.error(e.message, title: 'Unable to load checklist');
 
       return false;
     } catch (e) {
       kPrint(e.toString());
 
       checklistError.value =
-      'Something went wrong while loading the checklist.';
+          'Something went wrong while loading the checklist.';
 
       LiquidSnack.error(
         checklistError.value,
@@ -662,7 +691,6 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
     }
   }
 
-
   Future<bool> _submitChecklist() async {
     if (!isChecklistComplete) {
       LiquidSnack.error('Please answer every checklist item before continuing');
@@ -671,10 +699,12 @@ bool get  needRescheduleOrderAccept => assignedPatient.status == PatientStatus.r
     isSubmittingChecklist.value = true;
     try {
       final answers = checklistItems
-          .map((i) => ChecklistAnswer(
-        checklistId: i.checklistId,
-        checklistValue: i.value,
-      ))
+          .map(
+            (i) => ChecklistAnswer(
+              checklistId: i.checklistId,
+              checklistValue: i.value,
+            ),
+          )
           .toList();
       return await _service.submitCollectionChecklist(
         orderId: orderId,

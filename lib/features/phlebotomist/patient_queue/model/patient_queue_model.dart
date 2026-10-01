@@ -167,6 +167,10 @@ enum PatientStatus {
   /// OrderStatusID 13 / RAL
   receivedAtLis,
 
+  /// OrderStatusID 18, /SPC18	SPC	Sample Partially Collected
+  partiallyCollected,
+
+
   /// Sample(s) were collected but the push to LIS (Disha) failed — the
   /// order is stuck in "collect" until it is manually re-synced. This is
   /// a local/app-level state, not part of the OrderStatus master table.
@@ -238,6 +242,8 @@ extension PatientStatusX on PatientStatus {
         return PatientStatus.sampleRejected;
       case 13: // RAL - Received At LIS
         return PatientStatus.receivedAtLis;
+        case 18: // SPC - Sample Partially Collected
+        return PatientStatus.partiallyCollected;
       default:
         return PatientStatus.assigned;
     }

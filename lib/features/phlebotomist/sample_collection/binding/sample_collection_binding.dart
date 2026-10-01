@@ -9,6 +9,7 @@ import 'package:get/get.dart';
 
 import '../../patient_queue/model/patient_queue_model.dart';
 import '../controller/order_confirmation_controller.dart';
+import '../model/sample_collection_models.dart';
 import '../controller/sample_collection_controller.dart';
 
 class OrderConfirmationBinding extends Bindings {
@@ -28,8 +29,10 @@ class SampleCollectionBinding extends Bindings {
   SampleCollectionBinding({
     required this.orderId,
     required this.assignedPatient,
+    this.fastingIncompleteTests = const {},
   });
 
+  final Map<int, TestIncompleteInfo> fastingIncompleteTests;
   final String orderId;
   final AssignedPatient assignedPatient;
 
@@ -39,6 +42,7 @@ class SampleCollectionBinding extends Bindings {
           () => SampleCollectionController(
         orderId: orderId,
         assignedPatient: assignedPatient,
+        fastingIncompleteTests: fastingIncompleteTests,
       ),
     );
   }

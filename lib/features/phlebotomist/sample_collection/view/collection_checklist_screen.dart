@@ -11,6 +11,7 @@ import '../../../../utils/widgets/custom_appbar.dart';
 import '../controller/order_confirmation_controller.dart';
 import '../model/pre_collection_checklist.dart';
 import '../model/sample_collection_models.dart';
+import 'widgets/test_reschedule_fields.dart';
 
 /// ----------------------------------------------------------------------
 /// Design tokens (local to this screen — pull from a shared AppRadii /
@@ -706,11 +707,11 @@ class _MealTimeCard extends GetView<OrderConfirmationController> {
                 ),
               ),
             ),
-            const Text(
+           /* const Text(
               'Must be within the last 2 days',
               style: TextStyle(fontSize: 11, color: AppColors.textMuted),
             ),
-
+*/
             // Per-test result chips — only rendered once a time is set.
             if (value.isNotEmpty) ...[
               const SizedBox(height: _S.sm + 2),
@@ -748,16 +749,38 @@ class _MealTimeCard extends GetView<OrderConfirmationController> {
             // Detail + single ack, shown only when there's something to ack.
             if (conflicts.isNotEmpty) ...[
               const SizedBox(height: _S.sm),
-              ...conflicts.map((c) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: AppColors.amberLight,
+                  borderRadius: BorderRadius.circular(10)),
                 child: Text(
-                  '${c.label} needs ${_fmt(c.minHours)}–${_fmt(c.maxHours)}h since the meal — '
-                      'logged gap is ${_fmt(c.hoursSinceMeal)}h, so it can\'t be collected '
-                      'alongside the others at this timing.',
-                  style: const TextStyle(
-                      fontSize: 12, color: AppColors.warning, height: 1.4),
+                  conflicts.length == 1
+                    ? 'This test cannot be collected with the other tests because the fasting requirement has not been met. Ask the patient when we should return to collect it.'
+                    : 'These tests cannot be collected with the other tests because their fasting requirements have not been met. Ask the patient when we should return to collect them.',
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
                 ),
-              )),
+              ),
+              for (final conflict in conflicts)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(conflict.label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 2),
+                    Text('Fasting required: ${_fmt(conflict.minHours)}–${_fmt(conflict.maxHours)}h · Since last meal: ${_fmt(conflict.hoursSinceMeal)}h',
+                      style: const TextStyle(fontSize: 11, color: AppColors.textTertiary)),
+                    const SizedBox(height: 8),
+                    if (controller.itemForConflict(conflict).testId == null)
+                      const Text('Test ID missing. Reload the checklist before continuing.', style: TextStyle(color: AppColors.error))
+                    else TestRescheduleFields(
+                      key: ValueKey('${controller.itemForConflict(conflict).testId}:$value'),
+                      testName: conflict.label,
+                      reasonOptions: controller.incompleteReasonOptions,
+                      initialInfo: controller.fastingIncompleteTests[controller.itemForConflict(conflict).testId],
+                      onFetchSlots: controller.fetchAvailableSlots,
+                      onChanged: (info) => controller.setFastingIncompleteTest(controller.itemForConflict(conflict).testId!, info),
+                    ),
+                  ]),
+                ),
               const SizedBox(height: 4),
               _Pressable(
                 onTap: () => controller.fastingAdvisoryAcknowledged.toggle(),

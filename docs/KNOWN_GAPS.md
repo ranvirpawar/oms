@@ -32,7 +32,7 @@ Unknown means neither source nor product clarification establishes the answer.
 - Action: preserve naming and behavior. Do not invent new capacity enforcement or normalize extra tubes.
 
 ## G05 — Fully incomplete collection
-- Implementation: entries may be resolved as fully unusable; payload inclusion uses nonempty barcode text. A barcode entry starts with a prefix. Sources: `lib/features/phlebotomist/sample_collection/model/barcode_formatter.dart`, `lib/features/phlebotomist/sample_collection/controller/sample_collection_controller.dart`.
+- Implementation: entries may be resolved as fully unusable; physical barcode/tube payload inclusion uses collected, usable entries, excluding untouched prefixes. Invalid fasting tests now carry patient-selected appointment dates/slots. Sources: `lib/features/phlebotomist/sample_collection/model/barcode_formatter.dart`, `lib/features/phlebotomist/sample_collection/controller/sample_collection_controller.dart`.
 - Product intent C05: requirements are limited; expansion is deferred.
 - Difference: complete business treatment of a collection with no usable sample is not defined.
 - Action: none now. Do not redesign validation/payload semantics; obtain requirements only when this behavior becomes the requested task.
@@ -113,3 +113,8 @@ Unknown means neither source nor product clarification establishes the answer.
 - Implementation: runner timestamps may fall back to current time; tracking services may return empty data on failure; runner handover can obtain location without transmitting it. Sources: `lib/features/runner_boy/collected_sample_bags/model/collected_bag_model.dart`, `lib/features/team_lead/sample_live_tracking/services/live_tracking_service.dart`, `lib/features/runner_boy/collected_sample_bags/view/handover_bag_view.dart`.
 - Difference: empty UI is not always proof of an empty backend dataset; acquired GPS is not proof of server tracking.
 - Action: preserve current contracts unless the requested change covers them. Do not claim background tracking/notifications (C19) or introduce timezone normalization (C14).
+
+## G19 — Missing tube metadata in sample requirements
+- Implementation: the collection UI can render a generic tube when a test has no tubeTypes. TestTubeDetails uses the actual per-test tube type IDs supplied by sample requirements. Source: `lib/features/phlebotomist/sample_collection/model/barcode_formatter.dart`.
+- Unknown: the backend TubeTypeID to use for a generic fallback tube when requirements omit tube metadata.
+- Action: do not invent a tube ID or infer it from another test. Backend requirements must provide tubeTypes to serialize those test/tube rows.

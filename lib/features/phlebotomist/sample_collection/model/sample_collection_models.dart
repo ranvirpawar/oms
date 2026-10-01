@@ -2,6 +2,7 @@
 // Tests / special instructions
 // ---------------------------------------------------------------------------
 import 'package:flutter/cupertino.dart';
+import 'package:intl/intl.dart';
 
 enum SampleCollectionStatus { pending, collected, incomplete }
 /// A tube type associated with a test (new in the sample-requirements
@@ -317,10 +318,21 @@ class IncompleteReasonOption {
 }
 
 class TestIncompleteInfo {
-  TestIncompleteInfo({required this.reason, this.remarks = ''});
+  TestIncompleteInfo({
+    required this.reason,
+    this.remarks = '',
+    this.appointmentDate,
+    this.slotId,
+    this.slotLabel = '',
+  });
 
   final IncompleteReasonOption reason;
   final String remarks;
+  final DateTime? appointmentDate;
+  final int? slotId;
+  final String slotLabel;
+  bool get hasSchedule =>
+      appointmentDate != null && slotId != null && slotId! > 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -357,28 +369,50 @@ class SampleCollectionComplicationEntry {
   };
 }
 
-/// Now test-level: a single sample type can feed several tests, and only
-/// some of them may be unsuitable, so we send both IDs.
-/// ⚠️ Confirm the backend accepts `TestID` here — the old code's comment
-/// said this endpoint only tracked SampleTypeID.
+/// Per-test incomplete reason and optional rescheduled appointment.
 class IncompleteTestEntry {
   final int sampleTypeId;
   final int testId;
   final int incompleteReasonId;
   final String incompleteReason;
+  final DateTime? appointmentDate;
+  final int? slotId;
 
   IncompleteTestEntry({
     required this.sampleTypeId,
     required this.testId,
     required this.incompleteReasonId,
     required this.incompleteReason,
+    this.appointmentDate,
+    this.slotId,
   });
 
   Map<String, dynamic> toJson() => {
-    'SampleTypeID': sampleTypeId,
     'TestID': testId,
     'IncompleteReasonID': incompleteReasonId,
     'IncompleteReason': incompleteReason,
+    if (appointmentDate != null)
+      'AppointmentDate': DateFormat('yyyy-MM-dd').format(appointmentDate!),
+    if (slotId != null) 'SlotID': slotId,
+  };
+}
+
+class TestTubeDetailEntry {
+  const TestTubeDetailEntry({
+    required this.testId,
+    required this.sampleTypeId,
+    required this.tubeTypeId,
+    required this.tubeCount,
+  });
+  final int testId;
+  final int sampleTypeId;
+  final int tubeTypeId;
+  final int tubeCount;
+  Map<String, dynamic> toJson() => {
+    'TestId': testId,
+    'SampleTypeID': sampleTypeId,
+    'TubeTypeID': tubeTypeId,
+    'TubeCount': tubeCount,
   };
 }
 
@@ -443,6 +477,7 @@ class SampleCollectionPayload {
   final List<SampleCollectionDetailEntry> sampleCollectionDetails;
   final List<SampleCollectionComplicationEntry> sampleCollectionComplications;
   final List<IncompleteTestEntry> incompleteTests;
+  final List<TestTubeDetailEntry> testTubeDetails;
 
   SampleCollectionPayload({
     required this.orderId,
@@ -456,6 +491,7 @@ class SampleCollectionPayload {
     required this.sampleCollectionDetails,
     required this.sampleCollectionComplications,
     required this.incompleteTests,
+    this.testTubeDetails = const [],
   });
 
   Map<String, dynamic> toJson() => {
@@ -473,6 +509,7 @@ class SampleCollectionPayload {
     'SampleCollectionComplications':
     sampleCollectionComplications.map((e) => e.toJson()).toList(),
     'IncompleteTests': incompleteTests.map((e) => e.toJson()).toList(),
+    'TestTubeDetails': testTubeDetails.map((e) => e.toJson()).toList(),
 
   };
 }

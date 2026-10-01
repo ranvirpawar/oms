@@ -33,12 +33,15 @@ class SampleCollectionController extends GetxController with HasBagContext {
   SampleCollectionController({
     required this.orderId,
     required this.assignedPatient,
-  });
+    this.fastingIncompleteTests = const {},
+    SampleCollectionService? service,
+  }) : _service = service ?? SampleCollectionService();
 
+  final Map<int, TestIncompleteInfo> fastingIncompleteTests;
   final String orderId;
   final AssignedPatient assignedPatient;
 
-  final SampleCollectionService _service = SampleCollectionService();
+  final SampleCollectionService _service;
   final PatientQueueService _patientQueueService = PatientQueueService();
   final AuthManager _authManager = AuthManager();
 
@@ -199,6 +202,13 @@ class SampleCollectionController extends GetxController with HasBagContext {
           )
           .toList(),
     );
+    for (final entry in sampleEntries) {
+      for (final test in entry.tests) {
+        final info = fastingIncompleteTests[test.testId];
+        if (info != null) entry.testIncompleteMap[test.testId] = info;
+      }
+      _recomputeStatus(entry);
+    }
   }
 
   // ---------------------------------------------------------------------
@@ -366,9 +376,11 @@ class SampleCollectionController extends GetxController with HasBagContext {
 
   void openIncompleteTestsSheet(SampleBarcodeEntry entry) {
     Get.bottomSheet(
+
       IncompleteTestsBottomSheet(
         entry: entry,
         reasonOptions: incompleteReasonOptions,
+        onFetchSlots: fetchAvailableSlots,
         onConfirm: (testInfos) => _applyIncompleteSelection(entry, testInfos),
       ),
       isScrollControlled: true,
@@ -421,7 +433,7 @@ class SampleCollectionController extends GetxController with HasBagContext {
       }
     }
     final seen = <String>{};
-    for (final entry in sampleEntries) {
+    for (final entry in sampleEntries.where((e) => e.isCollected && !e.isFullyUnusable)) {
       final value = entry.barcodeController.text.trim();
       if (value.isEmpty) continue;
       if (!seen.add(value)) {
@@ -433,7 +445,7 @@ class SampleCollectionController extends GetxController with HasBagContext {
 
   SampleCollectionPayload _buildPayload() {
     final collected = sampleEntries.where(
-      (e) => e.barcodeController.text.trim().isNotEmpty,
+      (e) => e.isCollected && !e.isFullyUnusable,
     );
 
     final totalTubeCount = collected.fold<int>(
@@ -441,22 +453,23 @@ class SampleCollectionController extends GetxController with HasBagContext {
       (sum, e) => sum + e.tubeCount,
     );
 
-    final incompleteTests = <IncompleteTestEntry>[];
+    final incompleteTestsById = <int, IncompleteTestEntry>{};
     for (final entry in sampleEntries) {
       entry.testIncompleteMap.forEach((testId, info) {
-        incompleteTests.add(
-          IncompleteTestEntry(
+        incompleteTestsById[testId] = IncompleteTestEntry(
             sampleTypeId: entry.sampleTypeId,
             testId: testId,
             incompleteReasonId: info.reason.reasonId,
             incompleteReason: info.remarks.isNotEmpty
                 ? info.remarks
                 : info.reason.reason,
-          ),
-        );
+            appointmentDate: info.appointmentDate,
+            slotId: info.slotId,
+          );
       });
     }
 
+    final incompleteTests = incompleteTestsById.values.toList();
     return SampleCollectionPayload(
       orderId: orderId,
       userId: _userId,
@@ -488,6 +501,7 @@ class SampleCollectionController extends GetxController with HasBagContext {
           )
           .toList(),
       incompleteTests: incompleteTests,
+      testTubeDetails: collected.expand((e) => e.testTubeDetails).toList(),
     );
   }
 
@@ -498,7 +512,7 @@ class SampleCollectionController extends GetxController with HasBagContext {
   Future<SampleSubmissionResult?> submitCollection() async {
     final error = validate();
     if (error != null) {
-      LiquidSnack.warning(error, title: 'Incomplete');
+      LiquidSnack.warning(error, title: 'Collection pending');
       return null;
     }
 
