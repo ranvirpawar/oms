@@ -8,6 +8,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../utils/widgets/custom_appbar.dart';
 import '../../../lab_technician/accept_handover_bag/view/widgets/scanner_bottomsheet.dart';
+import '../../collect_empty_bag/view/collect_destination_bag.dart';
 import '../controller/collect_bag_from_phlebo_controller.dart';
 import '../model/qr_bag_detail.dart';
 
@@ -22,7 +23,7 @@ class CollectBagFromPhlebotomistView extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: CustomAppBar(
-        title: 'Collect Bag From Phlebotomist',
+        title: 'Collect Bags',
         actions: [
           Obx(() => Padding(
             padding: const EdgeInsets.only(right: 10),
@@ -61,6 +62,7 @@ class CollectBagFromPhlebotomistView extends StatelessWidget {
                 children: [
                   _buildCollectBagFlow(context),
                   _buildTransferBagFlow(context),
+                  const CollectDestinationBagView(embedded: true),
                 ],
               ),
             ),
@@ -75,7 +77,7 @@ class CollectBagFromPhlebotomistView extends StatelessWidget {
 
   Widget _buildTabSelector() {
     return Container(
-      margin: const EdgeInsets.all(20),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 12), // slightly tighter for 3 tabs
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: const Color(0xFFF3F4F6),
@@ -84,7 +86,7 @@ class CollectBagFromPhlebotomistView extends StatelessWidget {
       child: Obx(() => Row(
         children: [
           _buildTabItem(
-            title: 'Collect Bag',
+            title: 'Pickup',
             icon: Icons.shopping_bag_outlined,
             isSelected: controller.selectedTabIndex.value == 0,
             onTap: () => controller.switchTab(0),
@@ -94,6 +96,12 @@ class CollectBagFromPhlebotomistView extends StatelessWidget {
             icon: Icons.swap_horiz,
             isSelected: controller.selectedTabIndex.value == 1,
             onTap: () => controller.switchTab(1),
+          ),
+          _buildTabItem(
+            title: 'Add Bags',
+            icon: Icons.move_to_inbox_outlined,
+            isSelected: controller.selectedTabIndex.value == 2,
+            onTap: () => controller.switchTab(2),
           ),
         ],
       )),
@@ -106,13 +114,17 @@ class CollectBagFromPhlebotomistView extends StatelessWidget {
     required bool isSelected,
     required VoidCallback onTap,
   }) {
+    final fg = isSelected ? Colors.white : Colors.grey.shade600;
+
     return Expanded(
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 10),
           curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
             color: isSelected ? AppColors.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
@@ -127,15 +139,21 @@ class CollectBagFromPhlebotomistView extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 18,
-                  color: isSelected ? Colors.white : Colors.grey.shade600),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isSelected ? Colors.white : Colors.grey.shade600,
+              Icon(icon, size: 16, color: fg),
+              const SizedBox(width: 4),
+              FittedBox(
+                fit: BoxFit.scaleDown, // guards against overflow on small screens
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    height: 1.15,
+                    letterSpacing: -0.1,
+                    fontWeight: FontWeight.w600,
+                    color: fg,
+                  ),
                 ),
               ),
             ],

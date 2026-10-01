@@ -174,7 +174,7 @@ class DashboardController extends GetxController {
   ];
 
   List<DashboardTileCard> _runnerBoyCards() => [
-    DashboardTileCard(
+   /* DashboardTileCard(
       variant: DashboardTileVariant.modern,
       title: AppStrings.collectDestinationBag,
       icon: AppAssets.collectDestinationBag,
@@ -183,11 +183,11 @@ class DashboardController extends GetxController {
       iconRight: -9,
 
       onTap: RouteManager.navigateToCollectEmptyBag,
-    ),
+    ),*/
     DashboardTileCard(
       variant: DashboardTileVariant.modern,
-      title: 'Collect Bag From\nPhlebotomist',
-      subtitle: 'Receive samples for transfer',
+      title: 'Collect Bags',
+      subtitle: 'Pickup bags, Sample transfer and add bags',
 
       icon: AppAssets.collectBagIcon,
       onTap: RouteManager.navigateToCollectBagsFromPhlebotomist,
@@ -348,7 +348,7 @@ class DashboardController extends GetxController {
     ),
   ];
   List<RunnerAction> getRunnerQuickActions() => [
-    RunnerAction(
+   /* RunnerAction(
       label: 'Collect Destination Bag',
       subtitle: 'Pick up empty bags',
       icon: Icons.inventory_2_outlined,
@@ -368,7 +368,7 @@ class DashboardController extends GetxController {
       icon: Icons.send_rounded,
       color: const Color(0xFF8B5CF6),
       onTap: RouteManager.navigateToCollectedBags,
-    ),
+    ),*/
   ];
   final selectedRange = DateTimeRange(
     start: DateUtils.dateOnly(DateTime.now()),

@@ -473,5 +473,6 @@ class SampleCollectionPayload {
     'SampleCollectionComplications':
     sampleCollectionComplications.map((e) => e.toJson()).toList(),
     'IncompleteTests': incompleteTests.map((e) => e.toJson()).toList(),
+
   };
 }

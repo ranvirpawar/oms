@@ -8,6 +8,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../../services/user_service.dart';
 import '../../../../utils/ui_designs/liquid_snackbar.dart';
 import '../../../auth/model/login_response_model.dart';
+import '../../collect_empty_bag/controller/collect_destination_bag_controller.dart';
 import '../model/qr_bag_detail.dart';
 import '../service/collect_bag_service.dart';
 enum CollectBagState { idle, scanning, validating, validated, processing, success, error }
@@ -53,6 +54,9 @@ class CollectBagFromPhlebotomistController extends GetxController {
   final errorMessage = ''.obs;
   late MobileScannerController scannerController;
 
+  //collect destination bag
+  late final CollectDestinationBagController destinationController;
+
   @override
   void onInit() {
     super.onInit();
@@ -63,6 +67,7 @@ class CollectBagFromPhlebotomistController extends GetxController {
       isManualInputActive.value = manualInputFocusNode.hasFocus;
     });
     _loadUser();
+    destinationController = Get.put(CollectDestinationBagController());
   }
 
   @override
@@ -73,6 +78,7 @@ class CollectBagFromPhlebotomistController extends GetxController {
     destinationBagcodeController.dispose();
     scannerController.dispose();
     manualInputFocusNode.dispose();
+    Get.delete<CollectDestinationBagController>();
     super.onClose();
   }
 
@@ -92,6 +98,10 @@ class CollectBagFromPhlebotomistController extends GetxController {
 
   void switchTab(int index) {
     HapticFeedback.lightImpact();
+    // 👇 reset destination tab state when switching (mirrors what reset() does for the others)
+    destinationController.resetScanner();
+    destinationController.flashlightEnabled.value = false;
+
     selectedTabIndex.value = index;
     pageController.animateToPage(
       index,
@@ -102,6 +112,10 @@ class CollectBagFromPhlebotomistController extends GetxController {
   }
 
   void toggleFlash() {
+    if (selectedTabIndex.value == 2) {
+      destinationController.toggleFlashlight(); // 👈 delegate to destination scanner
+      return;
+    }
     scannerController.toggleTorch();
     flashEnabled.value = !flashEnabled.value;
   }
