@@ -673,56 +673,48 @@ class _DashboardHeaderContentState extends State<_DashboardHeaderContent>
   }
 
   Widget _buildStatsRow(bool isDark) {
-    final stats = <_StatItem>[
-      _StatItem(
-        icon: Icons.people_alt_rounded,
-        label: 'Assigned\nPatients',
-        valueGetter: () => widget.controller.assignedPatientsCount.value,
-        color: const Color(0xFF3B82F6),
-      ),
-      _StatItem(
-        icon: Icons.science_rounded,
-        label: 'Clinic Collection\nRequests',
-        valueGetter: () => widget.controller.clinicCollectionRequestCount.value,
-        color: const Color(0xFF14B8A6),
-      ),
-      _StatItem(
-        icon: Icons.swap_horiz_rounded,
-        label: 'Home\nRequests',
-        valueGetter: () => widget.controller.homeRequestCount.value,
-        color: const Color(0xFF8B5CF6),
-      ),
-      _StatItem(
-        icon: Icons.hourglass_bottom_rounded,
-        label: 'Served\nRequests',
-        valueGetter: () => widget.controller.servedRequestsCount.value,
-        color: const Color(0xFFF59E0B),
-      ),
-    ];
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: List.generate(stats.length * 2 - 1, (i) {
-          if (i.isOdd) return const SizedBox(width: 8);
-          final idx = i ~/ 2;
-          final start = 0.25 + (idx * 0.08);
-          final end = (start + 0.5).clamp(0.0, 1.0);
-          final anim = _stagger(start, end);
-          return Expanded(
-            child: FadeTransition(
-              opacity: anim,
-              child: SlideTransition(
-                position: anim.drive(
-                  Tween(begin: const Offset(0, 0.3), end: Offset.zero),
-                ),
-                child: _StatCard(item: stats[idx], isDark: isDark),
-              ),
+    return Obx(() {
+      final metrics = widget.controller.getRoleBasedMetrics();
+      if (metrics.isEmpty) return const SizedBox.shrink();
+      final stats = metrics
+          .map(
+            (metric) => _StatItem(
+              icon: Icons.bar_chart_rounded,
+              label: metric.label,
+              valueGetter: () {
+                for (final current in widget.controller.summaryMetrics) {
+                  if (current.label == metric.label) return current.value;
+                }
+                return 0;
+              },
+              color: metric.dot,
             ),
-          );
-        }),
-      ),
-    );
+          )
+          .toList();
+      return IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: List.generate(stats.length * 2 - 1, (i) {
+            if (i.isOdd) return const SizedBox(width: 8);
+            final idx = i ~/ 2;
+            final start = 0.25 + (idx * 0.08);
+            final end = (start + 0.5).clamp(0.0, 1.0);
+            final anim = _stagger(start, end);
+            return Expanded(
+              child: FadeTransition(
+                opacity: anim,
+                child: SlideTransition(
+                  position: anim.drive(
+                    Tween(begin: const Offset(0, 0.3), end: Offset.zero),
+                  ),
+                  child: _StatCard(item: stats[idx], isDark: isDark),
+                ),
+              ),
+            );
+          }),
+        ),
+      );
+    });
   }
 }
 

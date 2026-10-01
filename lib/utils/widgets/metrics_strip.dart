@@ -12,6 +12,7 @@ class MetricsStrip extends StatelessWidget {
   final Color? dividerColor;
   final CrossAxisAlignment cellAlignment; // ← new
   final Widget Function(Widget child)? animationBuilder;
+  final bool reserveTwoLabelLines;
 
   const MetricsStrip({
     super.key,
@@ -24,6 +25,7 @@ class MetricsStrip extends StatelessWidget {
     this.dividerColor,
     this.cellAlignment = CrossAxisAlignment.center, // default center
     this.animationBuilder,
+    this.reserveTwoLabelLines = false,
   });
 
   @override
@@ -33,7 +35,8 @@ class MetricsStrip extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(borderRadius),
-        boxShadow: boxShadow ??
+        boxShadow:
+            boxShadow ??
             [
               BoxShadow(
                 color: Colors.black.withOpacity(0.05),
@@ -55,6 +58,7 @@ class MetricsStrip extends StatelessWidget {
             child: MetricCell(
               data: items[i ~/ 2],
               alignment: cellAlignment, // pass it down
+              reserveTwoLabelLines: reserveTwoLabelLines,
             ),
           );
         }),

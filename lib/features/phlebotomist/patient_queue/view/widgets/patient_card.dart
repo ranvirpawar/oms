@@ -8,9 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../theme/app_colors.dart';
 import '../../model/patient_queue_model.dart';
-import 'action_pop_up.dart';
 import 'emergency_badge.dart';
-import 'priority_indicator.dart';
 import 'queue_action_button.dart';
 import 'queue_info_chip.dart';
 import 'status_badge.dart';
@@ -115,13 +113,17 @@ class _PatientCardState extends State<PatientCard> {
   // -- Header: visit type ribbon (edge-to-edge) + status badge ------------
   Widget _buildHeader() {
     return Container(
-      decoration: const BoxDecoration(color: AppColors.bgCardAlt), // no emergency tint
+      decoration: const BoxDecoration(color: AppColors.bgCardAlt),
+      // no emergency tint
       child: IntrinsicHeight(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            VisitTypeBadge(visitType: widget.patient.visitType, cornerRadius: 16),
+            VisitTypeBadge(
+              visitType: widget.patient.visitType,
+              cornerRadius: 16,
+            ),
             Padding(
               padding: const EdgeInsets.only(right: 10, top: 4, bottom: 4),
               child: StatusBadge(status: widget.patient.status, compact: true),
@@ -172,15 +174,15 @@ class _PatientCardState extends State<PatientCard> {
           ),
         ),
         Column(
-          children: [if (_isEmergency)
-            PriorityCornerBadge(priority: widget.patient.priority),
+          children: [
+            if (_isEmergency)
+              PriorityCornerBadge(priority: widget.patient.priority),
             if (widget.patient.phone?.isNotEmpty == true) ...[
               const SizedBox(height: 8),
               _buildCallButton(widget.patient.phone!),
             ],
           ],
-        )
-
+        ),
       ],
     );
   }
@@ -291,7 +293,6 @@ class _PatientCardState extends State<PatientCard> {
           if (hasTubes) ...[
             const SizedBox(height: 6),
             Tooltip(
-
               message: "${widget.patient.tubes.map((t) => t.label).join(', ')}",
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -323,6 +324,7 @@ class _PatientCardState extends State<PatientCard> {
       ),
     );
   }
+
   String _formatSlotDateTime(DateTime dt) {
     final datePart = DateFormat('dd MMM').format(dt);
 
@@ -333,6 +335,7 @@ class _PatientCardState extends State<PatientCard> {
 
     return '$datePart • ${DateFormat('hh:mm a').format(dt)}';
   }
+
   Widget _buildFastingChip() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
@@ -459,7 +462,8 @@ class _PatientCardState extends State<PatientCard> {
                 onPressed: () {
                   final lat = widget.patient.destinationLat;
                   final lng = widget.patient.destinationLng;
-                  if(lat == null || lng == null) LiquidSnack.warning('No destination coordinates available');
+                  if (lat == null || lng == null)
+                    LiquidSnack.warning('No destination coordinates available');
                   if (lat != null && lng != null) _launchDirections(lat, lng);
                 },
               ),
@@ -508,6 +512,7 @@ class _PatientCardState extends State<PatientCard> {
       case PatientStatus.assigned:
       case PatientStatus.pending:
       case PatientStatus.notAssigned:
+      case PatientStatus.partiallyCollected:
         final notAssigned = widget.patient.status == PatientStatus.notAssigned;
         return Row(
           children: [

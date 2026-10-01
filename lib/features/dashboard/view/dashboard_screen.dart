@@ -15,7 +15,7 @@ import '../../../theme/app_colors.dart';
 
 import 'package:flutter/services.dart';
 
-import '../../../utils/widgets/metrics_strip.dart';
+import 'widget/dashboard_metrics_strip.dart';
 import 'widget/dashboard_stats_shimmer.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -119,7 +119,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                         children: [
                           Obx(() {
                             final items = controller.getRoleBasedMetrics();
-                            if (items.isEmpty) {
+                            if (items.isEmpty &&
+                                !controller.isLoadingStats.value &&
+                                controller.statsError.value.isEmpty) {
                               return const SizedBox.shrink();
                             }
 
@@ -127,18 +129,15 @@ class _DashboardScreenState extends State<DashboardScreen>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 if (controller.isLoadingStats.value)
-                                  DashboardStatsShimmer(itemCount: items.length)
+                                  DashboardStatsShimmer(itemCount: items.isEmpty ? 4 : items.length)
                                 else if (controller.statsError.value.isNotEmpty)
                                   Text(
                                     controller.statsError.value,
                                     style: TextStyle(color: cs.error),
                                   )
                                 else
-                                  MetricsStrip(
+                                  DashboardMetricsStrip(
                                     items: items,
-                                    cellAlignment: items.length > 3
-                                        ? CrossAxisAlignment.start
-                                        : CrossAxisAlignment.center,
                                     animationBuilder: (child) =>
                                         _FadeSlideIn(index: 0, child: child),
                                   ),
