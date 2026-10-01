@@ -241,7 +241,11 @@ class PatientQueueController extends GetxController {
       .length;
 
   void toggleEmergencyFilter() {
-    isEmergencyOnly.value = !isEmergencyOnly.value;
+    final turnOn = !isEmergencyOnly.value;
+    isEmergencyOnly.value = turnOn;
+    if (turnOn) {
+      activeStatusFilter.value = null;
+    }
   }
 
   /// True when any *clearable* filter is active (search, status, emergency, or a
@@ -762,8 +766,10 @@ class PatientQueueController extends GetxController {
     ];
   }
 
-  void setStatusFilter(PatientStatus? status) =>
-      activeStatusFilter.value = status;
+  void setStatusFilter(PatientStatus? status) {
+    isEmergencyOnly.value = false;
+    activeStatusFilter.value = status;
+  }
 
   /// Human-readable label for a filter chip. Reuse StatusBadge's mapping
   /// here if one already exists, instead of duplicating it.
@@ -821,10 +827,15 @@ class PatientQueueController extends GetxController {
 
     if (isEmergencyOnly.value) {
       result = result.where(
-        (p) =>
-            p.priority == PriorityLevel.high ||
+            (p) =>
+        p.priority == PriorityLevel.high ||
             p.priority == PriorityLevel.urgent,
       );
+    } else {
+      final statusFilter = activeStatusFilter.value;
+      if (statusFilter != null) {
+        result = result.where((p) => p.status == statusFilter);
+      }
     }
 
     final statusFilter = activeStatusFilter.value;

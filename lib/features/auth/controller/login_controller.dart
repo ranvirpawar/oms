@@ -1,13 +1,14 @@
+import 'dart:async';
 import 'dart:developer' as AppLogger;
 import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:lifenity_connect/routes/route_manager.dart';
-
 // login_controller.dart
 import 'package:get/get.dart' hide SnackPosition;
-
+import 'package:lifenity_connect/routes/route_manager.dart';
+import 'package:sms_autofill/sms_autofill.dart';
 
 import '../../../componenents/otp_boxes_input.dart';
 import '../../../network/app_error.dart';
@@ -16,12 +17,6 @@ import '../../../services/app_envirionment_service.dart';
 import '../../../services/auth_manager.dart';
 import '../../../utils/ui_designs/liquid_snackbar.dart';
 import '../service/login_service.dart';
-
-import 'dart:async';
-
-import 'package:flutter/foundation.dart';
-import 'package:sms_autofill/sms_autofill.dart';
-
 
 enum LoginStep { credentials, otp }
 
@@ -101,32 +96,18 @@ class LoginController extends GetxController with CodeAutoFill {
   };
 
   final Map<String, Map<String, String>> betaUsers = {
-    'Phlebotomist - Renuka Kale': {
-      'user': '8475847588',
-      'pass': '123456',
-    },
-    'Paramedics - Paresh Rawat': {
-      'user': '8888658717',
-      'pass': '123456',
-    },
-    'Runner Boy - Kamlesh Sharma': {
-      'user': '8475847575',
-      'pass': '123456',
-    },
-    'Lab Accession - Radhika Mahale': {
-      'user': '8521131111',
-      'pass': '123456',
-    },
-    'Phlebotomist - Karan Patil': {
-      'user': '9764568835',
-      'pass': '123456',
-    },'Nurse': {
-      'user': '8668258532',
-      'pass': '123456',
-    },
+    'Phlebotomist - Renuka Kale': {'user': '8475847588', 'pass': '123456'},
+    'Paramedics - Paresh Rawat': {'user': '8888658717', 'pass': '123456'},
+    'Runner Boy - Kamlesh Sharma': {'user': '8475847575', 'pass': '123456'},
+    'Lab Accession - Radhika Mahale': {'user': '8521131111', 'pass': '123456'},
+    'Phlebotomist - Karan Patil': {'user': '9764568835', 'pass': '123456'},
+    'Nurse': {'user': '8668258532', 'pass': '123456'},
+    'Paramedics-Hari Lokhande': {'user': '7588865555', 'pass': '123456'},
+    'Phlebotomist-Paresh Patel': {'user': '7563236635', 'pass': '123456'},
   };
-   Map<String, Map<String, String>> get users =>
-  AppEnvironment.isBeta ? betaUsers : devUsers;
+
+  Map<String, Map<String, String>> get users =>
+      AppEnvironment.isBeta ? betaUsers : devUsers;
 
   @override
   void onInit() {
@@ -137,9 +118,11 @@ class LoginController extends GetxController with CodeAutoFill {
     if (kDebugMode) {
       // One-time helper so you can hand the hash to the backend team.
       // Prints something like: FA+9qCX9VSu
-      SmsAutoFill().getAppSignature.then((sig) {
-        AppLogger.log('📱 SMS Autofill app signature: $sig');
-      }).catchError((_) {});
+      SmsAutoFill().getAppSignature
+          .then((sig) {
+            AppLogger.log('📱 SMS Autofill app signature: $sig');
+          })
+          .catchError((_) {});
     }
   }
 
@@ -251,7 +234,11 @@ class LoginController extends GetxController with CodeAutoFill {
         _startResendCooldown();
         await _startSmsListener();
       } else {
-        LiquidSnack.error(loginResponse.message, title: 'Login failed',position: SnackPosition.top );
+        LiquidSnack.error(
+          loginResponse.message,
+          title: 'Login failed',
+          position: SnackPosition.top,
+        );
       }
     } catch (e) {
       if (e is AppError && e.isSessionTerminal) {
@@ -304,11 +291,15 @@ class LoginController extends GetxController with CodeAutoFill {
         await fetchUserProfile(verifyResponse.user!.empCode.toString());
         RouteManager.redirectToHomeDashboard();
       } else {
-        otpAttemptsLeft.value = (otpAttemptsLeft.value - 1).clamp(0, _maxOtpAttempts);
+        otpAttemptsLeft.value = (otpAttemptsLeft.value - 1).clamp(
+          0,
+          _maxOtpAttempts,
+        );
         clearOtpInput();
 
         if (otpAttemptsLeft.value == 0) {
-          otpError.value = 'Too many incorrect attempts. Please request a new code.';
+          otpError.value =
+              'Too many incorrect attempts. Please request a new code.';
         } else {
           otpError.value = (verifyResponse.message.isNotEmpty)
               ? verifyResponse.message
@@ -386,7 +377,7 @@ class LoginController extends GetxController with CodeAutoFill {
   Future<void> _startSmsListener() async {
     try {
       await SmsAutoFill().unregisterListener();
-       listenForCode();
+      listenForCode();
     } catch (_) {
       // No Play Services (emulator/older device) — user can still type
       // the code manually, so we swallow this rather than surfacing it.
@@ -410,7 +401,9 @@ class LoginController extends GetxController with CodeAutoFill {
       // final String encodedUserId = base64.encode(utf8.encode(userId.toString()));
       // AppLogger.log('Encoded USERID: $encodedUserId');
 
-      final profileData = await _loginService.fetchUserProfile(userId.toString());
+      final profileData = await _loginService.fetchUserProfile(
+        userId.toString(),
+      );
       if (profileData != null) {
         await _authManager.saveUserProfileToStorage(profileData);
         AppLogger.log('✅ User profile saved in AuthManager');

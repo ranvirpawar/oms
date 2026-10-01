@@ -138,15 +138,25 @@ class CollectBagFromPhlebotomistController extends GetxController {
       final output = response['output'];
 
       if (response['status'] == 'Success' &&
-          output != null &&
-          (output as List).isNotEmpty) {
-        return QRBagCountDetail.fromJson(output.first);
+          output is List &&
+          output.isNotEmpty) {
+        final item = output.first as Map<String, dynamic>;
+
+        // Inner status: API can return outer "Success" with inner "Failed"
+        final innerStatus = item['Status']?.toString();
+        if (innerStatus != null && innerStatus.toLowerCase() == 'failed') {
+          throw Exception(item['Message']?.toString() ?? 'Bag validation failed');
+        }
+
+        return QRBagCountDetail.fromJson(item);
       }
 
       throw Exception(response['message'] ?? 'Bag not found');
     } catch (e) {
-      errorMessage.value = e.toString();
-      _showErrorSnackbar(e.toString());
+      // Strip the "Exception: " prefix so the snackbar shows a clean message
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      errorMessage.value = msg;
+      _showErrorSnackbar(msg);
       return null;
     } finally {
       isLoading.value = false;
@@ -354,6 +364,6 @@ class CollectBagFromPhlebotomistController extends GetxController {
   }
 
   void _showErrorSnackbar(String message) {
-    LiquidSnack.error(message, title: 'Error');
+    LiquidSnack.error(message, title: 'Error', position: SnackPosition.top);
   }
 }

@@ -129,34 +129,40 @@ class CollectedBagsService {
   // --------------------------------------------------------------
   Future<List<Connector>> getConnectorList(String desgid, String userId) async {
     try {
-      kPrint('👥 Fetching connector list for designation: $desgid');
+      kPrint('👥 Fetching Runner Boy list for designation: $desgid');
 
       final response = await apiClient.post(
         AppUrls.getPhlebotomistList,
         data: {
           'desgid': desgid,
-          'userid' : userId
+          'userid': userId,
         },
       );
 
-      kPrint('✅ Connector list response: ${response.body}');
+      kPrint('✅ Runner Boy list response: ${response.body}');
 
       final responseData = response.body;
 
       if (responseData['status'] != 'Success') {
         kPrint(
-          '⚠️ Failed to fetch connector list: ${responseData['message']}',
+          'ℹ️ No Runner Boys found: ${responseData['message']}',
         );
-        throw Exception(responseData['message'] ?? 'Failed');
+        return [];
       }
 
       final List<dynamic> list = responseData['output'] ?? [];
-      kPrint('📦 Parsed ${list.length} connectors successfully');
+
+      if (list.isEmpty) {
+        kPrint('ℹ️ Runner Boy list is empty');
+        return [];
+      }
+
+      kPrint('📦 Parsed ${list.length} Runner Boys successfully');
 
       return list.map((e) => Connector.fromJson(e)).toList();
     } catch (e) {
-      kPrint('❌ Error in getConnectorList: $e');
-      throw Exception('Failed to get connector list: $e');
+      kPrint('❌ Error in getRunnerBoyList: $e');
+      throw Exception('Failed to get Runner Boys: $e');
     }
   }
 
