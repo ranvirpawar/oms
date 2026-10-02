@@ -20,23 +20,24 @@ android {
     flavorDimensions "environment"
 
     productFlavors {
-        // 🧭 First flavor in the "environment" dimension is the DEFAULT
-        // used when `flutter run` / `flutter build` runs without --flavor.
-        production {
-            dimension "environment"
-            applicationId "com.lifenityhealth.connect"
-            versionName "1.36"
-        }
-        dev {
-            dimension "environment"
-            applicationId "com.lifenity_health.oms.dev"
-            versionName "1.0.0"
-        }
-        beta {
-            dimension "environment"
-            applicationId "com.lifenity_health.oms"
-            versionName "1.0.18"
-        }
+    production {
+        dimension "environment"
+        applicationId "com.lifenityhealth.connect"
+        versionName "1.36"
+    }
+
+    dev {
+        dimension "environment"
+        applicationId "com.lifenity_health.oms.dev"
+        versionName "1.0.0"
+        signingConfig signingConfigs.debug
+    }
+
+    beta {
+        dimension "environment"
+        applicationId "com.lifenity_health.oms"
+        versionName "1.0.18"
+    }
     }
 
     compileOptions {
@@ -85,6 +86,11 @@ android {
         debug {
             signingConfig = signingConfigs.debug
         }
+    }
+    applicationVariants.all { variant ->
+    if (variant.name == "devRelease") {
+        variant.signingConfig = signingConfigs.debug
+    }
     }
 }
 
