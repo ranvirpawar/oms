@@ -37,3 +37,6 @@ jobs:
         with:
           name: dev-apk
           path: build/app/outputs/flutter-apk/*.apk
+
+
+
