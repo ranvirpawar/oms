@@ -87,11 +87,7 @@ android {
             signingConfig = signingConfigs.debug
         }
     }
-    applicationVariants.all { variant ->
-    if (variant.name == "devRelease") {
-        variant.signingConfig = signingConfigs.debug
-    }
-    }
+    
 }
 
 flutter {
